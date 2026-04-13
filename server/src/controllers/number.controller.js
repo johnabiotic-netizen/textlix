@@ -10,6 +10,7 @@ const fivesim = require('../providers/sms/fivesim.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const { getSettingNum } = require('../utils/settings');
+const logger = require('../config/logger');
 
 // Map country code to 5sim country name (5sim uses lowercase full names)
 const countryCodeTo5sim = {
