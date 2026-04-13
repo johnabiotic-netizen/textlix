@@ -10,6 +10,7 @@ router.get('/dashboard', adminController.getDashboard);
 router.get('/users', adminController.getUsers);
 router.get('/users/:id', adminController.getUser);
 router.patch('/users/:id', adminController.updateUser);
+router.delete('/users/:id', adminController.deleteUser);
 router.post('/users/:id/adjust-credits', adminController.adjustCredits);
 
 router.get('/transactions', adminController.getTransactions);

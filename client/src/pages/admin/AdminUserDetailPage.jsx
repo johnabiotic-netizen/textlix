@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { getUser, updateUser, adjustCredits, getTransactions, getOrders } from '../../api/admin';
+import { getUser, updateUser, deleteUser, adjustCredits, getTransactions, getOrders } from '../../api/admin';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
@@ -14,6 +14,7 @@ import { MdArrowBack } from 'react-icons/md';
 
 export default function AdminUserDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [txPage, setTxPage] = useState(1);
   const [ordPage, setOrdPage] = useState(1);
@@ -43,6 +44,21 @@ export default function AdminUserDetailPage() {
     },
     onError: () => toast.error('Action failed'),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteUser(id),
+    onSuccess: () => {
+      toast.success('User deleted');
+      navigate('/admin/users');
+    },
+    onError: (err) => toast.error(err.response?.data?.error?.message || 'Delete failed'),
+  });
+
+  const handleDelete = () => {
+    if (window.confirm(`Delete ${user?.name} (${user?.email})? This cannot be undone.`)) {
+      deleteMutation.mutate();
+    }
+  };
 
   const adjustMutation = useMutation({
     mutationFn: () => adjustCredits(id, { amount: Number(adjustForm.amount), note: adjustForm.note }),
@@ -96,6 +112,7 @@ export default function AdminUserDetailPage() {
               <Button size="sm" variant={user?.isBanned ? 'secondary' : 'danger'} loading={banMutation.isPending} onClick={() => banMutation.mutate()}>
                 {user?.isBanned ? 'Unban' : 'Ban'}
               </Button>
+              <Button size="sm" variant="danger" loading={deleteMutation.isPending} onClick={handleDelete}>Delete</Button>
             </div>
           </div>
 

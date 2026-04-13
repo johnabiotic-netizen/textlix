@@ -4,6 +4,7 @@ export const getDashboard = () => api.get('/admin/dashboard');
 export const getUsers = (params) => api.get('/admin/users', { params });
 export const getUser = (id) => api.get(`/admin/users/${id}`);
 export const updateUser = (id, data) => api.patch(`/admin/users/${id}`, data);
+export const deleteUser = (id) => api.delete(`/admin/users/${id}`);
 export const adjustCredits = (id, data) => api.post(`/admin/users/${id}/adjust-credits`, data);
 export const getTransactions = (params) => api.get('/admin/transactions', { params });
 export const getPayments = (params) => api.get('/admin/payments', { params });

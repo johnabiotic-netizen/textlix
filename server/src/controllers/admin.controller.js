@@ -115,6 +115,23 @@ exports.updateUser = async (req, res, next) => {
   }
 };
 
+exports.deleteUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
+    if (user.role === 'ADMIN') throw new AppError('FORBIDDEN', 403, 'Cannot delete admin accounts');
+    await Promise.all([
+      User.findByIdAndDelete(req.params.id),
+      CreditTransaction.deleteMany({ userId: req.params.id }),
+      Payment.deleteMany({ userId: req.params.id }),
+      NumberOrder.deleteMany({ userId: req.params.id }),
+    ]);
+    success(res, { message: 'User deleted' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.adjustCredits = async (req, res, next) => {
   try {
     const { amount, reason } = req.body;
