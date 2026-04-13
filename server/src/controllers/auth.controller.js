@@ -179,7 +179,7 @@ exports.verifyEmail = async (req, res, next) => {
     user.emailVerifyToken = null;
     await user.save();
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
     res.redirect(`${frontendUrl}/dashboard?verified=true`);
   } catch (err) {
     next(err);

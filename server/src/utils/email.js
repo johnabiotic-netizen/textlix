@@ -32,7 +32,7 @@ const sendEmail = async ({ to, subject, html }) => {
 };
 
 const sendVerificationEmail = async (email, token) => {
-  const url = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  const url = `${(process.env.SERVER_URL || process.env.FRONTEND_URL).trim()}/api/v1/auth/verify-email/${token}`;
   await sendEmail({
     to: email,
     subject: 'Verify your TextLix email',
@@ -41,7 +41,7 @@ const sendVerificationEmail = async (email, token) => {
 };
 
 const sendPasswordResetEmail = async (email, token) => {
-  const url = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  const url = `${(process.env.FRONTEND_URL || '').trim()}/reset-password?token=${token}`;
   await sendEmail({
     to: email,
     subject: 'Reset your TextLix password',
