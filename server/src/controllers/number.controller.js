@@ -14,11 +14,45 @@ const logger = require('../config/logger');
 
 // Map country code to 5sim country name (5sim uses lowercase full names)
 const countryCodeTo5sim = {
-  US: 'usa', GB: 'england', IN: 'india', NG: 'nigeria', RU: 'russia',
-  BR: 'brazil', DE: 'germany', FR: 'france', CA: 'canada', AU: 'australia',
-  ID: 'indonesia', PH: 'philippines', VN: 'vietnam', MX: 'mexico',
-  PK: 'pakistan', BD: 'bangladesh', KE: 'kenya', GH: 'ghana',
-  ZA: 'southafrica', UA: 'ukraine',
+  US:'usa', GB:'england', IN:'india', NG:'nigeria', RU:'russia',
+  BR:'brazil', DE:'germany', FR:'france', CA:'canada', AU:'australia',
+  ID:'indonesia', PH:'philippines', VN:'vietnam', MX:'mexico',
+  PK:'pakistan', BD:'bangladesh', KE:'kenya', GH:'ghana',
+  ZA:'southafrica', UA:'ukraine',
+  // Europe
+  ES:'spain', IT:'italy', NL:'netherlands', PL:'poland', SE:'sweden',
+  NO:'norway', DK:'denmark', FI:'finland', PT:'portugal', BE:'belgium',
+  AT:'austria', CH:'switzerland', GR:'greece', RO:'romania', CZ:'czech',
+  HU:'hungary', SK:'slovakia', HR:'croatia', BG:'bulgaria', RS:'serbia',
+  IE:'ireland', LT:'lithuania', LV:'latvia', EE:'estonia', MD:'moldova',
+  BY:'belarus', AL:'albania', MK:'northmacedonia', BA:'bih', ME:'montenegro',
+  SI:'slovenia', CY:'cyprus', LU:'luxembourg',
+  // Middle East
+  SA:'saudiarabia', EG:'egypt', MA:'morocco', TN:'tunisia', DZ:'algeria',
+  IL:'israel', JO:'jordan', KW:'kuwait', OM:'oman', BH:'bahrain',
+  // Asia
+  TH:'thailand', MY:'malaysia', TW:'taiwan', HK:'hongkong', KH:'cambodia',
+  LA:'laos', LK:'srilanka', NP:'nepal', MN:'mongolia',
+  // Central Asia
+  KZ:'kazakhstan', UZ:'uzbekistan', AZ:'azerbaijan', GE:'georgia',
+  AM:'armenia', KG:'kyrgyzstan', TJ:'tajikistan', TM:'turkmenistan',
+  // Latin America
+  AR:'argentina', CO:'colombia', CL:'chile', PE:'peru', VE:'venezuela',
+  EC:'ecuador', BO:'bolivia', PY:'paraguay', UY:'uruguay', GT:'guatemala',
+  CR:'costarica', PA:'panama', DO:'dominicana', HN:'honduras', SV:'salvador',
+  NI:'nicaragua', PR:'puertorico', JM:'jamaica', HT:'haiti', GY:'guyana',
+  BB:'barbados', TT:'trinidad',
+  // Africa
+  ET:'ethiopia', TZ:'tanzania', UG:'uganda', CM:'cameroon', CI:'ivorycoast',
+  SN:'senegal', RW:'rwanda', MZ:'mozambique', ZM:'zambia', MW:'malawi',
+  NA:'namibia', BW:'botswana', MG:'madagascar', SL:'sierraleone', LR:'liberia',
+  GN:'guinea', BJ:'benin', TG:'togo', BF:'burkinafaso', TD:'chad',
+  AO:'angola', GA:'gabon', CG:'congo', BI:'burundi', DJ:'djibouti',
+  GM:'gambia', GW:'guineabissau', CV:'capeverde', MR:'mauritania',
+  MU:'mauritius', SC:'seychelles', KM:'comoros', LS:'lesotho', GQ:'equatorialguinea',
+  LY:'libya',
+  // Pacific / Other
+  MV:'maldives', TL:'easttimor', PG:'papuanewguinea',
 };
 
 exports.getCountries = async (req, res, next) => {
