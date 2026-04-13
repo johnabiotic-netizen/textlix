@@ -46,6 +46,24 @@ const services = [
   { name: 'Discord', slug: 'discord', icon: 'discord', sortOrder: 10 },
   { name: 'Uber', slug: 'uber', icon: 'uber', sortOrder: 11 },
   { name: 'Amazon', slug: 'amazon', icon: 'amazon', sortOrder: 12 },
+  { name: 'Netflix', slug: 'netflix', icon: 'netflix', sortOrder: 13 },
+  { name: 'Apple', slug: 'apple', icon: 'apple', sortOrder: 14 },
+  { name: 'Microsoft', slug: 'microsoft', icon: 'microsoft', sortOrder: 15 },
+  { name: 'Steam', slug: 'steam', icon: 'steam', sortOrder: 16 },
+  { name: 'Tinder', slug: 'tinder', icon: 'tinder', sortOrder: 17 },
+  { name: 'Airbnb', slug: 'airbnb', icon: 'airbnb', sortOrder: 18 },
+  { name: 'Yahoo', slug: 'yahoo', icon: 'yahoo', sortOrder: 19 },
+  { name: 'Viber', slug: 'viber', icon: 'viber', sortOrder: 20 },
+  { name: 'WeChat', slug: 'wechat', icon: 'wechat', sortOrder: 21 },
+  { name: 'Line', slug: 'line', icon: 'line', sortOrder: 22 },
+  { name: 'Twitch', slug: 'twitch', icon: 'twitch', sortOrder: 23 },
+  { name: 'eBay', slug: 'ebay', icon: 'ebay', sortOrder: 24 },
+  { name: 'Blizzard', slug: 'blizzard', icon: 'blizzard', sortOrder: 25 },
+  { name: 'Shopee', slug: 'shopee', icon: 'shopee', sortOrder: 26 },
+  { name: 'Lazada', slug: 'lazada', icon: 'lazada', sortOrder: 27 },
+  { name: 'PayPal', slug: 'paypal', icon: 'paypal', sortOrder: 28 },
+  { name: 'Truecaller', slug: 'truecaller', icon: 'truecaller', sortOrder: 29 },
+  { name: 'Signal', slug: 'signal', icon: 'signal', sortOrder: 30 },
 ];
 
 const settings = [
@@ -101,14 +119,14 @@ async function seed() {
   // Seed pricing (sample prices per country/service)
   console.log('Seeding pricing...');
   const basePrices = {
-    US: { whatsapp: 15, telegram: 12, google: 10, facebook: 8, instagram: 12, twitter: 10, tiktok: 15, snapchat: 12, linkedin: 8, discord: 8, uber: 20, amazon: 15 },
-    GB: { whatsapp: 18, telegram: 15, google: 12, facebook: 10, instagram: 15, twitter: 12, tiktok: 18, snapchat: 15, linkedin: 10, discord: 10, uber: 22, amazon: 18 },
-    IN: { whatsapp: 5, telegram: 4, google: 3, facebook: 3, instagram: 5, twitter: 4, tiktok: 6, snapchat: 5, linkedin: 3, discord: 3, uber: 8, amazon: 5 },
-    NG: { whatsapp: 8, telegram: 6, google: 5, facebook: 5, instagram: 8, twitter: 6, tiktok: 10, snapchat: 8, linkedin: 5, discord: 5, uber: 12, amazon: 8 },
-    RU: { whatsapp: 10, telegram: 8, google: 6, facebook: 6, instagram: 10, twitter: 8, tiktok: 12, snapchat: 10, linkedin: 6, discord: 6, uber: 15, amazon: 10 },
+    US: { whatsapp: 15, telegram: 12, google: 10, facebook: 8, instagram: 12, twitter: 10, tiktok: 15, snapchat: 12, linkedin: 8, discord: 8, uber: 20, amazon: 15, netflix: 25, apple: 8, microsoft: 12, steam: 18, tinder: 20, airbnb: 30, yahoo: 8, viber: 15, wechat: 45, line: 8, twitch: 10, ebay: 25, blizzard: 6, shopee: 30, lazada: 25, paypal: 20, truecaller: 12, signal: 6 },
+    GB: { whatsapp: 18, telegram: 15, google: 12, facebook: 10, instagram: 15, twitter: 12, tiktok: 18, snapchat: 15, linkedin: 10, discord: 10, uber: 22, amazon: 18, netflix: 28, apple: 9, microsoft: 13, steam: 20, tinder: 22, airbnb: 32, yahoo: 9, viber: 16, wechat: 48, line: 9, twitch: 11, ebay: 27, blizzard: 7, shopee: 32, lazada: 27, paypal: 22, truecaller: 13, signal: 7 },
+    IN: { whatsapp: 5, telegram: 4, google: 3, facebook: 3, instagram: 5, twitter: 4, tiktok: 6, snapchat: 5, linkedin: 3, discord: 3, uber: 8, amazon: 5, netflix: 17, apple: 4, microsoft: 8, steam: 14, tinder: 14, airbnb: 21, yahoo: 5, viber: 12, wechat: 38, line: 4, twitch: 8, ebay: 20, blizzard: 3, shopee: 26, lazada: 8, paypal: 10, truecaller: 13, signal: 4 },
+    NG: { whatsapp: 8, telegram: 6, google: 5, facebook: 5, instagram: 8, twitter: 6, tiktok: 10, snapchat: 8, linkedin: 5, discord: 5, uber: 12, amazon: 8, netflix: 20, apple: 6, microsoft: 10, steam: 15, tinder: 16, airbnb: 25, yahoo: 6, viber: 13, wechat: 40, line: 6, twitch: 9, ebay: 22, blizzard: 5, shopee: 28, lazada: 20, paypal: 15, truecaller: 10, signal: 5 },
+    RU: { whatsapp: 10, telegram: 8, google: 6, facebook: 6, instagram: 10, twitter: 8, tiktok: 12, snapchat: 10, linkedin: 6, discord: 6, uber: 15, amazon: 10, netflix: 22, apple: 7, microsoft: 11, steam: 16, tinder: 18, airbnb: 28, yahoo: 7, viber: 14, wechat: 42, line: 7, twitch: 9, ebay: 23, blizzard: 5, shopee: 29, lazada: 22, paypal: 17, truecaller: 11, signal: 5 },
   };
 
-  const defaultPrices = { whatsapp: 10, telegram: 8, google: 7, facebook: 6, instagram: 10, twitter: 8, tiktok: 12, snapchat: 10, linkedin: 6, discord: 6, uber: 15, amazon: 10 };
+  const defaultPrices = { whatsapp: 10, telegram: 8, google: 7, facebook: 6, instagram: 10, twitter: 8, tiktok: 12, snapchat: 10, linkedin: 6, discord: 6, uber: 15, amazon: 10, netflix: 22, apple: 7, microsoft: 11, steam: 16, tinder: 18, airbnb: 28, yahoo: 7, viber: 14, wechat: 42, line: 7, twitch: 9, ebay: 23, blizzard: 5, shopee: 29, lazada: 22, paypal: 17, truecaller: 11, signal: 5 };
 
   for (const countryDoc of countryDocs) {
     const countryPrices = basePrices[countryDoc.code] || defaultPrices;

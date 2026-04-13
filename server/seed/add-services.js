@@ -1,0 +1,86 @@
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+const mongoose = require('mongoose');
+
+const Country = require('../src/models/Country');
+const Service = require('../src/models/Service');
+const NumberPricing = require('../src/models/NumberPricing');
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/verifynow';
+
+const newServices = [
+  { name: 'Netflix', slug: 'netflix', icon: 'netflix', sortOrder: 13 },
+  { name: 'Apple', slug: 'apple', icon: 'apple', sortOrder: 14 },
+  { name: 'Microsoft', slug: 'microsoft', icon: 'microsoft', sortOrder: 15 },
+  { name: 'Steam', slug: 'steam', icon: 'steam', sortOrder: 16 },
+  { name: 'Tinder', slug: 'tinder', icon: 'tinder', sortOrder: 17 },
+  { name: 'Airbnb', slug: 'airbnb', icon: 'airbnb', sortOrder: 18 },
+  { name: 'Yahoo', slug: 'yahoo', icon: 'yahoo', sortOrder: 19 },
+  { name: 'Viber', slug: 'viber', icon: 'viber', sortOrder: 20 },
+  { name: 'WeChat', slug: 'wechat', icon: 'wechat', sortOrder: 21 },
+  { name: 'Line', slug: 'line', icon: 'line', sortOrder: 22 },
+  { name: 'Twitch', slug: 'twitch', icon: 'twitch', sortOrder: 23 },
+  { name: 'eBay', slug: 'ebay', icon: 'ebay', sortOrder: 24 },
+  { name: 'Blizzard', slug: 'blizzard', icon: 'blizzard', sortOrder: 25 },
+  { name: 'Shopee', slug: 'shopee', icon: 'shopee', sortOrder: 26 },
+  { name: 'Lazada', slug: 'lazada', icon: 'lazada', sortOrder: 27 },
+  { name: 'PayPal', slug: 'paypal', icon: 'paypal', sortOrder: 28 },
+  { name: 'Truecaller', slug: 'truecaller', icon: 'truecaller', sortOrder: 29 },
+  { name: 'Signal', slug: 'signal', icon: 'signal', sortOrder: 30 },
+];
+
+const prices = {
+  US: { netflix: 25, apple: 8, microsoft: 12, steam: 18, tinder: 20, airbnb: 30, yahoo: 8, viber: 15, wechat: 45, line: 8, twitch: 10, ebay: 25, blizzard: 6, shopee: 30, lazada: 25, paypal: 20, truecaller: 12, signal: 6 },
+  GB: { netflix: 28, apple: 9, microsoft: 13, steam: 20, tinder: 22, airbnb: 32, yahoo: 9, viber: 16, wechat: 48, line: 9, twitch: 11, ebay: 27, blizzard: 7, shopee: 32, lazada: 27, paypal: 22, truecaller: 13, signal: 7 },
+  IN: { netflix: 17, apple: 4, microsoft: 8, steam: 14, tinder: 14, airbnb: 21, yahoo: 5, viber: 12, wechat: 38, line: 4, twitch: 8, ebay: 20, blizzard: 3, shopee: 26, lazada: 8, paypal: 10, truecaller: 13, signal: 4 },
+  NG: { netflix: 20, apple: 6, microsoft: 10, steam: 15, tinder: 16, airbnb: 25, yahoo: 6, viber: 13, wechat: 40, line: 6, twitch: 9, ebay: 22, blizzard: 5, shopee: 28, lazada: 20, paypal: 15, truecaller: 10, signal: 5 },
+  RU: { netflix: 22, apple: 7, microsoft: 11, steam: 16, tinder: 18, airbnb: 28, yahoo: 7, viber: 14, wechat: 42, line: 7, twitch: 9, ebay: 23, blizzard: 5, shopee: 29, lazada: 22, paypal: 17, truecaller: 11, signal: 5 },
+};
+
+const defaultPrices = { netflix: 22, apple: 7, microsoft: 11, steam: 16, tinder: 18, airbnb: 28, yahoo: 7, viber: 14, wechat: 42, line: 7, twitch: 9, ebay: 23, blizzard: 5, shopee: 29, lazada: 22, paypal: 17, truecaller: 11, signal: 5 };
+
+async function run() {
+  console.log('Connecting to MongoDB...');
+  await mongoose.connect(MONGODB_URI, { dbName: 'verifynow' });
+  console.log('Connected!');
+
+  // Upsert new services
+  console.log('Adding new services...');
+  const serviceDocs = [];
+  for (const svc of newServices) {
+    const doc = await Service.findOneAndUpdate(
+      { slug: svc.slug },
+      svc,
+      { upsert: true, new: true }
+    );
+    serviceDocs.push(doc);
+    console.log(`  ✓ ${svc.name}`);
+  }
+
+  // Get all countries
+  const countries = await Country.find({ isEnabled: true });
+  console.log(`\nAdding pricing for ${countries.length} countries × ${serviceDocs.length} services...`);
+
+  let count = 0;
+  for (const country of countries) {
+    const countryPrices = prices[country.code] || defaultPrices;
+    for (const svc of serviceDocs) {
+      const providerCost = countryPrices[svc.slug] || defaultPrices[svc.slug] || 10;
+      const finalPrice = Math.ceil(providerCost * 1.3);
+      await NumberPricing.findOneAndUpdate(
+        { countryId: country._id, serviceId: svc._id },
+        { countryId: country._id, serviceId: svc._id, providerCost, marginPercent: 30, finalPrice, isAvailable: true },
+        { upsert: true, new: true }
+      );
+      count++;
+    }
+  }
+
+  console.log(`\n✅ Done! Added ${count} pricing entries.`);
+  console.log(`   ${serviceDocs.length} new services × ${countries.length} countries`);
+  await mongoose.disconnect();
+}
+
+run().catch((err) => {
+  console.error('Failed:', err);
+  process.exit(1);
+});
