@@ -44,7 +44,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:5000',
+        target: process.env.VITE_API_URL || process.env.NODE_ENV === 'production' ? 'https://lucky-appreciation-production-9f57.up.railway.app' : 'http://localhost:5000',
         changeOrigin: true,
       },
     },
