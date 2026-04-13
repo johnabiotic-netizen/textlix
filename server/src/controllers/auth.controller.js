@@ -125,7 +125,7 @@ exports.oauthCallback = (user, res) => {
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
   setRefreshCookie(res, refreshToken);
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
   res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}`);
 };
 
