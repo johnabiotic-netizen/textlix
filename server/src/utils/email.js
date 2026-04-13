@@ -1,38 +1,29 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const logger = require('../config/logger');
 
-const createTransporter = () => {
-  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-  }
+const getClient = () => {
+  if (process.env.SMTP_PASS) return new Resend(process.env.SMTP_PASS);
   return null;
 };
 
 const sendEmail = async ({ to, subject, html }) => {
-  const transporter = createTransporter();
-  if (!transporter) {
+  const client = getClient();
+  if (!client) {
     logger.info(`[EMAIL] To: ${to} | Subject: ${subject}`);
-    logger.info(`[EMAIL] ${html.replace(/<[^>]+>/g, '')}`);
     return;
   }
-  await transporter.sendMail({
+  const { error } = await client.emails.send({
     from: process.env.EMAIL_FROM || 'noreply@textlix.com',
     to,
     subject,
     html,
   });
+  if (error) logger.error('Email send error:', error);
 };
 
 const sendVerificationEmail = async (email, token) => {
-  const url = `${(process.env.SERVER_URL || process.env.FRONTEND_URL).trim()}/api/v1/auth/verify-email/${token}`;
+  const serverUrl = (process.env.SERVER_URL || '').trim();
+  const url = `${serverUrl}/api/v1/auth/verify-email/${token}`;
   await sendEmail({
     to: email,
     subject: 'Verify your TextLix email',
@@ -41,7 +32,8 @@ const sendVerificationEmail = async (email, token) => {
 };
 
 const sendPasswordResetEmail = async (email, token) => {
-  const url = `${(process.env.FRONTEND_URL || '').trim()}/reset-password?token=${token}`;
+  const frontendUrl = (process.env.FRONTEND_URL || '').trim();
+  const url = `${frontendUrl}/reset-password?token=${token}`;
   await sendEmail({
     to: email,
     subject: 'Reset your TextLix password',
