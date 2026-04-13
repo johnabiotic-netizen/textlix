@@ -61,7 +61,7 @@ if (process.env.GOOGLE_CLIENT_ID) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: '/api/v1/auth/google/callback',
+        callbackURL: `${process.env.SERVER_URL}/api/v1/auth/google/callback`,
       },
       (at, rt, profile, done) => handleOAuth(at, rt, profile, done, 'GOOGLE')
     )
