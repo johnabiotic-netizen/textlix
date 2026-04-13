@@ -112,7 +112,9 @@ exports.orderNumber = async (req, res, next) => {
     try {
       providerResponse = await fivesim.buyNumber(countryName, 'any', service.slug);
     } catch (err) {
-      throw new AppError('PROVIDER_ERROR', 502, 'Could not get a number right now. Please try again.');
+      const detail = err.response?.data || err.message;
+      logger.error(`5sim buyNumber failed — country: ${countryName}, service: ${service.slug}, error:`, detail);
+      throw new AppError('PROVIDER_ERROR', 502, `Could not get a number: ${JSON.stringify(detail)}`);
     }
 
     const timeoutMinutes = await getSettingNum('number_timeout_minutes', 20);
