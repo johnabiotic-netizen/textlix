@@ -128,14 +128,77 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="py-20 px-4 bg-gray-50">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">Common Questions</h2>
+          <p className="text-gray-500 text-center mb-10">Quick answers to what people ask most</p>
+          <div className="space-y-3 mb-8">
+            {[
+              { q: 'What happens if I don\'t receive an SMS?', a: 'If no SMS arrives within 20 minutes, your number expires and credits are automatically refunded.' },
+              { q: 'Which services can I verify with?', a: 'You can use TextLix with any service that requires SMS verification — WhatsApp, Telegram, Google, Facebook, and hundreds more.' },
+              { q: 'Do credits expire?', a: 'No. Your credits never expire and stay on your account indefinitely.' },
+              { q: 'Is it safe to use?', a: 'Yes. SMS content is automatically deleted after 24 hours. We never store more data than needed.' },
+            ].map((item) => (
+              <div key={item.q} className="bg-white border border-gray-200 rounded-xl p-5">
+                <p className="font-semibold text-gray-900 text-sm mb-1">{item.q}</p>
+                <p className="text-sm text-gray-500">{item.a}</p>
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <Link to="/faq" className="text-brand-600 font-semibold hover:underline text-sm">View all FAQs →</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 px-4 bg-gradient-to-br from-brand-600 to-purple-600 text-white">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-4">Ready to get started?</h2>
+          <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with TextLix.</p>
+          <Link to="/register" className="bg-white text-brand-600 font-semibold text-lg px-8 py-4 rounded-xl hover:bg-brand-50 transition-colors shadow-lg inline-block">
+            Create Free Account
+          </Link>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="border-t border-gray-200 py-10 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">© 2024 TextLix. All rights reserved.</p>
-          <div className="flex gap-6 text-sm text-gray-500">
-            <a href="#" className="hover:text-gray-700">Terms</a>
-            <a href="#" className="hover:text-gray-700">Privacy</a>
-            <a href="#" className="hover:text-gray-700">Contact</a>
+      <footer className="border-t border-gray-200 py-12 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 mb-2">
+                <span>✓</span> TextLix
+              </div>
+              <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 50+ countries.</p>
+            </div>
+            <div className="flex gap-16">
+              <div>
+                <p className="font-semibold text-gray-900 text-sm mb-3">Product</p>
+                <div className="space-y-2">
+                  <a href="#pricing" className="block text-sm text-gray-500 hover:text-gray-700">Pricing</a>
+                  <Link to="/faq" className="block text-sm text-gray-500 hover:text-gray-700">FAQ</Link>
+                  <Link to="/support" className="block text-sm text-gray-500 hover:text-gray-700">Support</Link>
+                </div>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 text-sm mb-3">Legal</p>
+                <div className="space-y-2">
+                  <Link to="/terms" className="block text-sm text-gray-500 hover:text-gray-700">Terms of Service</Link>
+                  <Link to="/privacy" className="block text-sm text-gray-500 hover:text-gray-700">Privacy Policy</Link>
+                </div>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 text-sm mb-3">Contact</p>
+                <div className="space-y-2">
+                  <a href="mailto:support@textlix.com" className="block text-sm text-gray-500 hover:text-gray-700">support@textlix.com</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 pt-6 text-center">
+            <p className="text-sm text-gray-400">© {new Date().getFullYear()} TextLix. All rights reserved.</p>
           </div>
         </div>
       </footer>

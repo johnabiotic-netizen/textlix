@@ -16,6 +16,10 @@ import RegisterPage from './pages/public/RegisterPage';
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
 import ResetPasswordPage from './pages/public/ResetPasswordPage';
 import OAuthCallbackPage from './pages/public/OAuthCallbackPage';
+import FaqPage from './pages/public/FaqPage';
+import SupportPage from './pages/public/SupportPage';
+import TermsPage from './pages/public/TermsPage';
+import PrivacyPage from './pages/public/PrivacyPage';
 
 // Dashboard pages
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -105,6 +109,10 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+        <Route path="/faq" element={<FaqPage />} />
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
 
         {/* User dashboard */}
         <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
