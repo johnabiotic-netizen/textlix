@@ -6,7 +6,7 @@ const BASE_URL = 'https://5sim.net/v1';
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
-    Authorization: `Bearer ${process.env.FIVESIM_API_KEY}`,
+    Authorization: `Bearer ${(process.env.FIVESIM_API_KEY || '').trim()}`,
     Accept: 'application/json',
   },
   timeout: 15000,
