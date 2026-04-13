@@ -43,7 +43,7 @@ exports.register = async (req, res, next) => {
       emailVerifyToken,
     });
 
-    await sendVerificationEmail(user.email, emailVerifyToken).catch(() => {});
+    sendVerificationEmail(user.email, emailVerifyToken).catch(() => {});
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
@@ -139,7 +139,7 @@ exports.forgotPassword = async (req, res, next) => {
       user.resetPasswordToken = token;
       user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
       await user.save();
-      await sendPasswordResetEmail(user.email, token).catch(() => {});
+      sendPasswordResetEmail(user.email, token).catch(() => {});
     }
     success(res, { message: 'If this email exists, a reset link has been sent' });
   } catch (err) {
