@@ -74,7 +74,7 @@ if (process.env.GITHUB_CLIENT_ID) {
       {
         clientID: process.env.GITHUB_CLIENT_ID,
         clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        callbackURL: '/api/v1/auth/github/callback',
+        callbackURL: `${process.env.SERVER_URL}/api/v1/auth/github/callback`,
         scope: ['user:email'],
       },
       (at, rt, profile, done) => handleOAuth(at, rt, profile, done, 'GITHUB')
