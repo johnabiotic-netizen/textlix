@@ -23,11 +23,12 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const allowed = [
-        process.env.FRONTEND_URL,
-        process.env.FRONTEND_URL_ALT,
+        'https://www.textlix.com',
+        'https://textlix.com',
+        'https://textlix-production.up.railway.app',
         'http://localhost:5173',
         'http://localhost:5174',
-      ].filter(Boolean);
+      ];
       if (!origin || allowed.includes(origin)) return callback(null, true);
       return callback(null, false);
     },
