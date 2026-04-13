@@ -29,7 +29,7 @@ app.use(
         'http://localhost:5174',
       ].filter(Boolean);
       if (!origin || allowed.includes(origin)) return callback(null, true);
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, false);
     },
     credentials: true,
   })
