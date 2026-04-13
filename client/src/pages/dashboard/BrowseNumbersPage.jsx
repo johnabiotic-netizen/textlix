@@ -28,7 +28,7 @@ export default function BrowseNumbersPage() {
         <p className="text-gray-500">Select a country to see available services</p>
       </div>
 
-      <Input type="search" placeholder="Search countries..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+      <Input type="search" placeholder="Search countries (e.g. Nigeria, United States...)" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-md" />
 
       {isLoading ? (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

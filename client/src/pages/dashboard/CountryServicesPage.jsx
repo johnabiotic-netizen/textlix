@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiArrowLeft, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiCheckCircle, FiSearch } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { getServices, orderNumber } from '../../api/numbers';
 import useAuthStore from '../../store/authStore';
@@ -9,6 +9,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
+import Input from '../../components/common/Input';
 
 export default function CountryServicesPage() {
   const { countryId } = useParams();
@@ -18,6 +19,7 @@ export default function CountryServicesPage() {
 
   const [selected, setSelected] = useState(null);
   const [ordering, setOrdering] = useState(false);
+  const [search, setSearch] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['services', countryId],
@@ -42,6 +44,10 @@ export default function CountryServicesPage() {
   };
 
   const country = data?.country;
+  const filteredServices = (data?.services || []).filter((s) =>
+    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.slug.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -56,11 +62,24 @@ export default function CountryServicesPage() {
         </div>
       </div>
 
+      <Input
+        type="search"
+        placeholder="Search services (e.g. WhatsApp, Netflix...)"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
+
       {isLoading ? (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+      ) : filteredServices.length === 0 ? (
+        <div className="text-center py-12 text-gray-400">
+          <FiSearch size={32} className="mx-auto mb-3 opacity-40" />
+          <p className="font-medium">No services found for "{search}"</p>
+        </div>
       ) : (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {data?.services?.map((service) => (
+          {filteredServices.map((service) => (
             <Card key={service.id} hover={service.available} onClick={() => service.available && setSelected(service)}
               className={`p-5 ${!service.available ? 'opacity-50 cursor-not-allowed' : ''}`}>
               <div className="flex items-start justify-between mb-3">
