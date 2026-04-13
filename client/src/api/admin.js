@@ -1,0 +1,20 @@
+import api from './axios';
+
+export const getDashboard = () => api.get('/admin/dashboard');
+export const getUsers = (params) => api.get('/admin/users', { params });
+export const getUser = (id) => api.get(`/admin/users/${id}`);
+export const updateUser = (id, data) => api.patch(`/admin/users/${id}`, data);
+export const adjustCredits = (id, data) => api.post(`/admin/users/${id}/adjust-credits`, data);
+export const getTransactions = (params) => api.get('/admin/transactions', { params });
+export const getPayments = (params) => api.get('/admin/payments', { params });
+export const getOrders = (params) => api.get('/admin/orders', { params });
+export const getCountries = () => api.get('/admin/countries');
+export const updateCountry = (id, data) => api.patch(`/admin/countries/${id}`, data);
+export const getServices = () => api.get('/admin/services');
+export const updateService = (id, data) => api.patch(`/admin/services/${id}`, data);
+export const getPricing = (params) => api.get('/admin/pricing', { params });
+export const updatePricing = (id, data) => api.patch(`/admin/pricing/${id}`, data);
+export const getSettings = () => api.get('/admin/settings');
+export const updateSettings = (data) => api.patch('/admin/settings', data);
+export const getRevenueReport = (params) => api.get('/admin/revenue-report', { params });
+export const exportTransactions = () => api.get('/admin/transactions/export', { responseType: 'blob' });
