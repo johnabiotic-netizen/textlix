@@ -80,7 +80,7 @@ export default function App() {
           setAuth({
             _id: 'dev-user',
             name: 'Dev Admin',
-            email: 'admin@verifynow.com',
+            email: 'admin@textlix.com',
             role: 'ADMIN',
             creditBalance: 1250,
             provider: 'LOCAL',

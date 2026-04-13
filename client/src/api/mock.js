@@ -92,5 +92,5 @@ export const MOCK_USERS = [
   { _id: 'u1', name: 'Alice Johnson', email: 'alice@example.com', role: 'USER', creditBalance: 450, isBanned: false, provider: 'LOCAL', createdAt: new Date(Date.now() - 30 * 86400000).toISOString() },
   { _id: 'u2', name: 'Bob Smith', email: 'bob@example.com', role: 'USER', creditBalance: 1200, isBanned: false, provider: 'GOOGLE', createdAt: new Date(Date.now() - 15 * 86400000).toISOString() },
   { _id: 'u3', name: 'Carol White', email: 'carol@example.com', role: 'USER', creditBalance: 0, isBanned: true, provider: 'LOCAL', createdAt: new Date(Date.now() - 60 * 86400000).toISOString() },
-  { _id: 'u4', name: 'Dev Admin', email: 'admin@verifynow.com', role: 'ADMIN', creditBalance: 9999, isBanned: false, provider: 'LOCAL', createdAt: new Date(Date.now() - 90 * 86400000).toISOString() },
+  { _id: 'u4', name: 'Dev Admin', email: 'admin@textlix.com', role: 'ADMIN', creditBalance: 9999, isBanned: false, provider: 'LOCAL', createdAt: new Date(Date.now() - 90 * 86400000).toISOString() },
 ];

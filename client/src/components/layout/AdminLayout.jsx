@@ -33,7 +33,7 @@ export default function AdminLayout() {
   const Sidebar = () => (
     <div className="flex flex-col h-full bg-gray-900 text-white">
       <div className="p-6 border-b border-gray-800">
-        <div className="font-display font-bold text-lg">✓ VerifyNow</div>
+        <div className="font-display font-bold text-lg">✓ TextLix</div>
         <div className="text-xs text-gray-400 mt-1">Admin Panel</div>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

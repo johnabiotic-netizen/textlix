@@ -4,7 +4,7 @@ const logger = require('./logger');
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      dbName: 'verifynow',
+      dbName: 'textlix',
     });
     logger.info('MongoDB connected');
   } catch (err) {

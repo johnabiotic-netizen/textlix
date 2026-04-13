@@ -27,7 +27,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link to="/dashboard" className="flex items-center gap-2">
             <span className="text-2xl">✓</span>
-            <span className="font-display font-bold text-gray-900 text-lg">VerifyNow</span>
+            <span className="font-display font-bold text-gray-900 text-lg">TextLix</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-6">

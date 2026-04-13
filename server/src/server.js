@@ -35,7 +35,7 @@ const start = async () => {
   cleanupJob.start();
 
   server.listen(PORT, () => {
-    logger.info(`VerifyNow server running on port ${PORT}`);
+    logger.info(`TextLix server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 };

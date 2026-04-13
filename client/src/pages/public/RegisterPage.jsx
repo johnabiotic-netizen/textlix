@@ -44,7 +44,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl text-gray-900 mb-2"><span>✓</span> VerifyNow</Link>
+          <Link to="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl text-gray-900 mb-2"><span>✓</span> TextLix</Link>
           <h1 className="text-xl font-semibold text-gray-900">Create your account</h1>
         </div>
 

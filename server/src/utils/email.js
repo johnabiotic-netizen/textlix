@@ -24,7 +24,7 @@ const sendEmail = async ({ to, subject, html }) => {
     return;
   }
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM || 'noreply@verifynow.com',
+    from: process.env.EMAIL_FROM || 'noreply@textlix.com',
     to,
     subject,
     html,
@@ -35,7 +35,7 @@ const sendVerificationEmail = async (email, token) => {
   const url = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
   await sendEmail({
     to: email,
-    subject: 'Verify your VerifyNow email',
+    subject: 'Verify your TextLix email',
     html: `<p>Click the link to verify your email: <a href="${url}">${url}</a></p><p>Link expires in 24 hours.</p>`,
   });
 };
@@ -44,7 +44,7 @@ const sendPasswordResetEmail = async (email, token) => {
   const url = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
   await sendEmail({
     to: email,
-    subject: 'Reset your VerifyNow password',
+    subject: 'Reset your TextLix password',
     html: `<p>Click the link to reset your password: <a href="${url}">${url}</a></p><p>Link expires in 1 hour.</p>`,
   });
 };

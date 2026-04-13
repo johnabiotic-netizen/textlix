@@ -38,7 +38,7 @@ export function getMockResponse(url = '', method = 'get') {
   if (path === '/payments/history') return ok({ payments: [], pages: 1, total: 0 });
 
   // User
-  if (path === '/user/me') return ok({ user: { _id: 'dev-user', name: 'Dev Admin', email: 'admin@verifynow.com', role: 'ADMIN', creditBalance: 1250, provider: 'LOCAL', isEmailVerified: true, createdAt: new Date().toISOString() } });
+  if (path === '/user/me') return ok({ user: { _id: 'dev-user', name: 'Dev Admin', email: 'admin@textlix.com', role: 'ADMIN', creditBalance: 1250, provider: 'LOCAL', isEmailVerified: true, createdAt: new Date().toISOString() } });
   if (path === '/user/me/stats') return ok({ totalPurchased: 3500, totalSpent: 2250, numbersUsed: 14 });
 
   // Admin

@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="font-display font-bold text-2xl text-gray-900">✓ VerifyNow</Link>
+          <Link to="/" className="font-display font-bold text-2xl text-gray-900">✓ TextLix</Link>
           <h1 className="text-xl font-semibold text-gray-900 mt-2">Reset your password</h1>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">

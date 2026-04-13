@@ -18,7 +18,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
-            <span>✓</span> VerifyNow
+            <span>✓</span> TextLix
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
@@ -84,7 +84,7 @@ export default function LandingPage() {
       {/* Features */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-12">Why VerifyNow?</h2>
+          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-12">Why TextLix?</h2>
           <div className="grid md:grid-cols-2 gap-6">
             {[
               { icon: <FiZap className="text-brand-600" size={24} />, title: 'Instant SMS Delivery', desc: 'SMS codes appear on your screen within seconds of being sent.' },
@@ -131,7 +131,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-gray-200 py-10 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">© 2024 VerifyNow. All rights reserved.</p>
+          <p className="text-sm text-gray-500">© 2024 TextLix. All rights reserved.</p>
           <div className="flex gap-6 text-sm text-gray-500">
             <a href="#" className="hover:text-gray-700">Terms</a>
             <a href="#" className="hover:text-gray-700">Privacy</a>

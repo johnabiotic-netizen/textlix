@@ -36,7 +36,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl text-gray-900 mb-2">
-            <span>✓</span> VerifyNow
+            <span>✓</span> TextLix
           </Link>
           <h1 className="text-xl font-semibold text-gray-900">Sign in to your account</h1>
         </div>

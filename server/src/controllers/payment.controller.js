@@ -144,7 +144,7 @@ exports.cryptoCreate = async (req, res, next) => {
       orderId: payment._id.toString(),
       priceAmount: finalAmount,
       priceCurrency: 'USD',
-      title: 'VerifyNow Credits',
+      title: 'TextLix Credits',
       description: `Purchase of ${credits} credits`,
       callbackUrl: `${process.env.SERVER_URL}/api/v1/payments/crypto/webhook`,
       successUrl: `${process.env.FRONTEND_URL}/payments/success`,

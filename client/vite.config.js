@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png'],
       manifest: {
-        name: 'VerifyNow',
-        short_name: 'VerifyNow',
+        name: 'TextLix',
+        short_name: 'TextLix',
         description: 'Get virtual phone numbers from 50+ countries. Receive SMS verification codes instantly.',
         theme_color: '#6366F1',
         background_color: '#ffffff',
