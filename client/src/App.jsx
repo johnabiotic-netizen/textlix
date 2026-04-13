@@ -68,7 +68,8 @@ export default function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const { data } = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
+        const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
+        const { data } = await axios.post(`${apiBase}/auth/refresh`, {}, { withCredentials: true });
         const token = data.data.accessToken;
         useAuthStore.getState().setAccessToken(token);
         const userRes = await api.get('/user/me');

@@ -57,10 +57,10 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <a href="/api/v1/auth/google" className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google`} className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               <FcGoogle size={18} /> Google
             </a>
-            <a href="/api/v1/auth/github" className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/github`} className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               <FiGithub size={18} /> GitHub
             </a>
           </div>
