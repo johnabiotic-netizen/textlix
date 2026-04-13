@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
-import { FiGithub } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { register } from '../../api/auth';
 import useAuthStore from '../../store/authStore';
@@ -62,12 +61,9 @@ export default function RegisterPage() {
             <div className="relative flex justify-center text-sm"><span className="bg-white px-3 text-gray-400">or continue with</span></div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google`} className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <FcGoogle size={18} /> Google
-            </a>
-            <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/github`} className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <FiGithub size={18} /> GitHub
+          <div className="flex">
+            <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google`} className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <FcGoogle size={18} /> Continue with Google
             </a>
           </div>
         </div>
