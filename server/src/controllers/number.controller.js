@@ -15,6 +15,24 @@ const logger = require('../config/logger');
 // fivesimSlug is now stored on each Country document (set by sync-from-5sim.js seed).
 // No hardcoded map needed — we look it up from the DB at order time.
 
+// Simple in-memory cache for real-time 5sim prices (per country, 10 min TTL)
+const priceCache = new Map(); // key: fivesimSlug, value: { data, expiresAt }
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const MARGIN = 0.60;
+
+async function getLiveProducts(fivesimSlug) {
+  const cached = priceCache.get(fivesimSlug);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+  try {
+    const data = await fivesim.getProducts(fivesimSlug, 'any');
+    priceCache.set(fivesimSlug, { data, expiresAt: Date.now() + CACHE_TTL });
+    return data;
+  } catch (err) {
+    logger.warn(`Price cache miss for ${fivesimSlug}:`, err.message);
+    return null;
+  }
+}
+
 exports.getCountries = async (req, res, next) => {
   try {
     const countries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
@@ -53,21 +71,30 @@ exports.getServices = async (req, res, next) => {
     const country = await Country.findById(countryId);
     if (!country || !country.isEnabled) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
-    const pricing = await NumberPricing.find({ countryId, isAvailable: true }).populate('serviceId');
+    const pricing = await NumberPricing.find({ countryId }).populate('serviceId');
+
+    // Fetch real-time prices from 5sim (cached 10 min) so displayed price always matches charge
+    const fivesimSlug = country.fivesimSlug || country.code.toLowerCase();
+    const liveProducts = await getLiveProducts(fivesimSlug);
 
     const services = pricing
       .filter((p) => p.serviceId && p.serviceId.isEnabled)
       .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder)
-      .map((p) => ({
-        id: p.serviceId._id,
-        name: p.serviceId.name,
-        slug: p.serviceId.slug,
-        icon: p.serviceId.icon,
-        price: p.finalPrice,
-        providerCost: p.providerCost,
-        available: p.isAvailable,
-        pricingId: p._id,
-      }));
+      .map((p) => {
+        const live = liveProducts?.[p.serviceId.slug];
+        const available = !!(live && live.Price > 0 && live.Qty > 0);
+        const providerCost = available ? Math.ceil(live.Price * 100) : p.providerCost;
+        const price = available ? Math.ceil(providerCost * (1 + MARGIN)) : p.finalPrice;
+        return {
+          id: p.serviceId._id,
+          name: p.serviceId.name,
+          slug: p.serviceId.slug,
+          icon: p.serviceId.icon,
+          price,
+          available,
+          pricingId: p._id,
+        };
+      });
 
     success(res, { country: { id: country._id, name: country.name, flagEmoji: country.flagEmoji }, services });
   } catch (err) {
@@ -101,22 +128,16 @@ exports.orderNumber = async (req, res, next) => {
       throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${pricing.finalPrice} credits, you have ${user.creditBalance}`);
     }
 
-    // Get real-time price from 5sim BEFORE buying — guest/prices gives historical minimums
-    // but actual buyNumber cost depends on which operator is available. getProducts is accurate.
+    // Get real-time price via cache (same data shown on service listing page)
     const countryName = country.fivesimSlug || country.code.toLowerCase();
-    const MARGIN = 0.60;
     let chargeCredits = pricing.finalPrice; // fallback to DB price
 
-    try {
-      const products = await fivesim.getProducts(countryName, 'any');
-      const product = products[service.slug];
-      if (product && product.Price > 0) {
-        const realCostCredits = Math.ceil(product.Price * 100);
-        chargeCredits = Math.ceil(realCostCredits * (1 + MARGIN));
-        logger.info(`Real-time price — ${countryName}/${service.slug}: $${product.Price} = ${realCostCredits}cr cost → ${chargeCredits}cr charge`);
-      }
-    } catch (err) {
-      logger.warn(`Real-time price check failed for ${countryName}/${service.slug}, using DB price:`, err.message);
+    const liveProducts = await getLiveProducts(countryName);
+    const liveProduct = liveProducts?.[service.slug];
+    if (liveProduct && liveProduct.Price > 0) {
+      const realCostCredits = Math.ceil(liveProduct.Price * 100);
+      chargeCredits = Math.ceil(realCostCredits * (1 + MARGIN));
+      logger.info(`Real-time price — ${countryName}/${service.slug}: $${liveProduct.Price} = ${realCostCredits}cr cost → ${chargeCredits}cr charge`);
     }
 
     // Re-check balance with accurate charge
