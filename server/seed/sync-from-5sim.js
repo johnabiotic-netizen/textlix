@@ -90,6 +90,39 @@ function prettifyName(slug) {
     .join(' ');
 }
 
+// ─── ISO 3166-1 numeric → alpha-2 (5sim returns numeric codes) ───────────────
+const ISO_NUMERIC = {
+  4:'AF',8:'AL',12:'DZ',24:'AO',32:'AR',36:'AU',40:'AT',31:'AZ',50:'BD',
+  56:'BE',204:'BJ',68:'BO',70:'BA',72:'BW',76:'BR',100:'BG',854:'BF',
+  108:'BI',116:'KH',120:'CM',124:'CA',132:'CV',144:'LK',152:'CL',170:'CO',
+  174:'KM',178:'CG',191:'HR',196:'CY',203:'CZ',208:'DK',262:'DJ',214:'DO',
+  218:'EC',818:'EG',222:'SV',231:'ET',233:'EE',246:'FI',250:'FR',266:'GA',
+  276:'DE',288:'GH',300:'GR',320:'GT',324:'GN',624:'GW',328:'GY',332:'HT',
+  340:'HN',348:'HU',356:'IN',360:'ID',372:'IE',376:'IL',380:'IT',388:'JM',
+  400:'JO',398:'KZ',404:'KE',417:'KG',418:'LA',426:'LS',430:'LR',434:'LY',
+  440:'LT',442:'LU',428:'LV',450:'MG',454:'MW',458:'MY',466:'ML',478:'MR',
+  480:'MU',484:'MX',496:'MN',504:'MA',508:'MZ',516:'NA',524:'NP',528:'NL',
+  558:'NI',562:'NE',566:'NG',578:'NO',512:'OM',586:'PK',591:'PA',604:'PE',
+  608:'PH',616:'PL',620:'PT',600:'PY',630:'PR',642:'RO',646:'RW',682:'SA',
+  686:'SN',694:'SL',724:'ES',752:'SE',756:'CH',762:'TJ',764:'TH',768:'TG',
+  795:'TM',788:'TN',780:'TT',158:'TW',834:'TZ',804:'UA',800:'UG',840:'US',
+  858:'UY',860:'UZ',862:'VE',704:'VN',710:'ZA',894:'ZM',826:'GB',643:'RU',
+  191:'HR',52:'BB',48:'BH',112:'BY',8:'AL',807:'MK',70:'BA',499:'ME',
+  705:'SI',196:'CY',442:'LU',818:'EG',504:'MA',788:'TN',12:'DZ',376:'IL',
+  400:'JO',414:'KW',512:'OM',48:'BH',764:'TH',458:'MY',158:'TW',344:'HK',
+  116:'KH',418:'LA',144:'LK',524:'NP',496:'MN',398:'KZ',860:'UZ',31:'AZ',
+  268:'GE',51:'AM',417:'KG',762:'TJ',795:'TM',32:'AR',170:'CO',152:'CL',
+  604:'PE',862:'VE',218:'EC',68:'BO',600:'PY',858:'UY',320:'GT',188:'CR',
+  591:'PA',214:'DO',340:'HN',222:'SV',558:'NI',630:'PR',231:'ET',834:'TZ',
+  800:'UG',120:'CM',384:'CI',686:'SN',646:'RW',508:'MZ',894:'ZM',454:'MW',
+  516:'NA',72:'BW',450:'MG',694:'SL',430:'LR',324:'GN',204:'BJ',768:'TG',
+  854:'BF',466:'ML',562:'NE',148:'TD',24:'AO',266:'GA',178:'CG',180:'CD',
+  108:'BI',262:'DJ',270:'GM',624:'GW',132:'CV',478:'MR',480:'MU',690:'SC',
+  174:'KM',426:'LS',226:'GQ',388:'JM',332:'HT',328:'GY',52:'BB',780:'TT',
+  462:'MV',626:'TL',598:'PG',414:'KW',422:'LB',760:'SY',887:'YE',4:'AF',
+  50:'BD',156:'CN',392:'JP',410:'KR',792:'TR',818:'EG',710:'ZA',288:'GH',
+};
+
 // ─── Flag emoji from 2-letter ISO code ───────────────────────────────────────
 function flagEmoji(iso2) {
   if (!iso2 || iso2.length !== 2) return '🌐';
@@ -144,8 +177,14 @@ async function run() {
   // Build country lookup: isoUpper → { fivesimSlug, name, flag }
   const fivesimCountries = {}; // iso2Upper → { slug, name }
   for (const [slug, info] of countryEntries) {
-    const iso2 = String(info.iso || '').toUpperCase();
-    if (!iso2 || iso2.length !== 2) continue;
+    // 5sim returns numeric ISO codes (e.g. 840 for US) — convert via lookup table
+    let iso2 = '';
+    if (typeof info.iso === 'string' && info.iso.length === 2) {
+      iso2 = info.iso.toUpperCase();
+    } else if (info.iso) {
+      iso2 = ISO_NUMERIC[String(info.iso)] || '';
+    }
+    if (!iso2) continue;
     fivesimCountries[iso2] = {
       slug,
       name: info.text_en || prettifyName(slug),
