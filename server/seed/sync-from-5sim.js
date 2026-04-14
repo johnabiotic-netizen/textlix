@@ -90,37 +90,91 @@ function prettifyName(slug) {
     .join(' ');
 }
 
-// ─── ISO 3166-1 numeric → alpha-2 (5sim returns numeric codes) ───────────────
-const ISO_NUMERIC = {
-  4:'AF',8:'AL',12:'DZ',24:'AO',32:'AR',36:'AU',40:'AT',31:'AZ',50:'BD',
-  56:'BE',204:'BJ',68:'BO',70:'BA',72:'BW',76:'BR',100:'BG',854:'BF',
-  108:'BI',116:'KH',120:'CM',124:'CA',132:'CV',144:'LK',152:'CL',170:'CO',
-  174:'KM',178:'CG',191:'HR',196:'CY',203:'CZ',208:'DK',262:'DJ',214:'DO',
-  218:'EC',818:'EG',222:'SV',231:'ET',233:'EE',246:'FI',250:'FR',266:'GA',
-  276:'DE',288:'GH',300:'GR',320:'GT',324:'GN',624:'GW',328:'GY',332:'HT',
-  340:'HN',348:'HU',356:'IN',360:'ID',372:'IE',376:'IL',380:'IT',388:'JM',
-  400:'JO',398:'KZ',404:'KE',417:'KG',418:'LA',426:'LS',430:'LR',434:'LY',
-  440:'LT',442:'LU',428:'LV',450:'MG',454:'MW',458:'MY',466:'ML',478:'MR',
-  480:'MU',484:'MX',496:'MN',504:'MA',508:'MZ',516:'NA',524:'NP',528:'NL',
-  558:'NI',562:'NE',566:'NG',578:'NO',512:'OM',586:'PK',591:'PA',604:'PE',
-  608:'PH',616:'PL',620:'PT',600:'PY',630:'PR',642:'RO',646:'RW',682:'SA',
-  686:'SN',694:'SL',724:'ES',752:'SE',756:'CH',762:'TJ',764:'TH',768:'TG',
-  795:'TM',788:'TN',780:'TT',158:'TW',834:'TZ',804:'UA',800:'UG',840:'US',
-  858:'UY',860:'UZ',862:'VE',704:'VN',710:'ZA',894:'ZM',826:'GB',643:'RU',
-  191:'HR',52:'BB',48:'BH',112:'BY',8:'AL',807:'MK',70:'BA',499:'ME',
-  705:'SI',196:'CY',442:'LU',818:'EG',504:'MA',788:'TN',12:'DZ',376:'IL',
-  400:'JO',414:'KW',512:'OM',48:'BH',764:'TH',458:'MY',158:'TW',344:'HK',
-  116:'KH',418:'LA',144:'LK',524:'NP',496:'MN',398:'KZ',860:'UZ',31:'AZ',
-  268:'GE',51:'AM',417:'KG',762:'TJ',795:'TM',32:'AR',170:'CO',152:'CL',
-  604:'PE',862:'VE',218:'EC',68:'BO',600:'PY',858:'UY',320:'GT',188:'CR',
-  591:'PA',214:'DO',340:'HN',222:'SV',558:'NI',630:'PR',231:'ET',834:'TZ',
-  800:'UG',120:'CM',384:'CI',686:'SN',646:'RW',508:'MZ',894:'ZM',454:'MW',
-  516:'NA',72:'BW',450:'MG',694:'SL',430:'LR',324:'GN',204:'BJ',768:'TG',
-  854:'BF',466:'ML',562:'NE',148:'TD',24:'AO',266:'GA',178:'CG',180:'CD',
-  108:'BI',262:'DJ',270:'GM',624:'GW',132:'CV',478:'MR',480:'MU',690:'SC',
-  174:'KM',426:'LS',226:'GQ',388:'JM',332:'HT',328:'GY',52:'BB',780:'TT',
-  462:'MV',626:'TL',598:'PG',414:'KW',422:'LB',760:'SY',887:'YE',4:'AF',
-  50:'BD',156:'CN',392:'JP',410:'KR',792:'TR',818:'EG',710:'ZA',288:'GH',
+// ─── 5sim slug → { code, name } ──────────────────────────────────────────────
+// The /guest/countries endpoint returns { slug: {operators} } with no metadata,
+// so we map slugs to ISO codes and English names ourselves.
+const SLUG_MAP = {
+  usa:{code:'US',name:'United States'}, england:{code:'GB',name:'United Kingdom'},
+  india:{code:'IN',name:'India'}, nigeria:{code:'NG',name:'Nigeria'},
+  russia:{code:'RU',name:'Russia'}, brazil:{code:'BR',name:'Brazil'},
+  germany:{code:'DE',name:'Germany'}, france:{code:'FR',name:'France'},
+  canada:{code:'CA',name:'Canada'}, australia:{code:'AU',name:'Australia'},
+  indonesia:{code:'ID',name:'Indonesia'}, philippines:{code:'PH',name:'Philippines'},
+  vietnam:{code:'VN',name:'Vietnam'}, mexico:{code:'MX',name:'Mexico'},
+  pakistan:{code:'PK',name:'Pakistan'}, bangladesh:{code:'BD',name:'Bangladesh'},
+  kenya:{code:'KE',name:'Kenya'}, ghana:{code:'GH',name:'Ghana'},
+  southafrica:{code:'ZA',name:'South Africa'}, ukraine:{code:'UA',name:'Ukraine'},
+  spain:{code:'ES',name:'Spain'}, italy:{code:'IT',name:'Italy'},
+  netherlands:{code:'NL',name:'Netherlands'}, poland:{code:'PL',name:'Poland'},
+  sweden:{code:'SE',name:'Sweden'}, norway:{code:'NO',name:'Norway'},
+  denmark:{code:'DK',name:'Denmark'}, finland:{code:'FI',name:'Finland'},
+  portugal:{code:'PT',name:'Portugal'}, belgium:{code:'BE',name:'Belgium'},
+  austria:{code:'AT',name:'Austria'}, switzerland:{code:'CH',name:'Switzerland'},
+  greece:{code:'GR',name:'Greece'}, romania:{code:'RO',name:'Romania'},
+  czech:{code:'CZ',name:'Czech Republic'}, hungary:{code:'HU',name:'Hungary'},
+  slovakia:{code:'SK',name:'Slovakia'}, croatia:{code:'HR',name:'Croatia'},
+  bulgaria:{code:'BG',name:'Bulgaria'}, serbia:{code:'RS',name:'Serbia'},
+  ireland:{code:'IE',name:'Ireland'}, lithuania:{code:'LT',name:'Lithuania'},
+  latvia:{code:'LV',name:'Latvia'}, estonia:{code:'EE',name:'Estonia'},
+  moldova:{code:'MD',name:'Moldova'}, belarus:{code:'BY',name:'Belarus'},
+  albania:{code:'AL',name:'Albania'}, northmacedonia:{code:'MK',name:'North Macedonia'},
+  bih:{code:'BA',name:'Bosnia and Herzegovina'}, montenegro:{code:'ME',name:'Montenegro'},
+  slovenia:{code:'SI',name:'Slovenia'}, cyprus:{code:'CY',name:'Cyprus'},
+  luxembourg:{code:'LU',name:'Luxembourg'},
+  saudiarabia:{code:'SA',name:'Saudi Arabia'}, egypt:{code:'EG',name:'Egypt'},
+  morocco:{code:'MA',name:'Morocco'}, tunisia:{code:'TN',name:'Tunisia'},
+  algeria:{code:'DZ',name:'Algeria'}, israel:{code:'IL',name:'Israel'},
+  jordan:{code:'JO',name:'Jordan'}, kuwait:{code:'KW',name:'Kuwait'},
+  oman:{code:'OM',name:'Oman'}, bahrain:{code:'BH',name:'Bahrain'},
+  lebanon:{code:'LB',name:'Lebanon'}, iraq:{code:'IQ',name:'Iraq'},
+  yemen:{code:'YE',name:'Yemen'}, libya:{code:'LY',name:'Libya'},
+  thailand:{code:'TH',name:'Thailand'}, malaysia:{code:'MY',name:'Malaysia'},
+  taiwan:{code:'TW',name:'Taiwan'}, hongkong:{code:'HK',name:'Hong Kong'},
+  cambodia:{code:'KH',name:'Cambodia'}, laos:{code:'LA',name:'Laos'},
+  srilanka:{code:'LK',name:'Sri Lanka'}, nepal:{code:'NP',name:'Nepal'},
+  mongolia:{code:'MN',name:'Mongolia'}, myanmar:{code:'MM',name:'Myanmar'},
+  afghanistan:{code:'AF',name:'Afghanistan'}, china:{code:'CN',name:'China'},
+  japan:{code:'JP',name:'Japan'}, southkorea:{code:'KR',name:'South Korea'},
+  turkey:{code:'TR',name:'Turkey'},
+  kazakhstan:{code:'KZ',name:'Kazakhstan'}, uzbekistan:{code:'UZ',name:'Uzbekistan'},
+  azerbaijan:{code:'AZ',name:'Azerbaijan'}, georgia:{code:'GE',name:'Georgia'},
+  armenia:{code:'AM',name:'Armenia'}, kyrgyzstan:{code:'KG',name:'Kyrgyzstan'},
+  tajikistan:{code:'TJ',name:'Tajikistan'}, turkmenistan:{code:'TM',name:'Turkmenistan'},
+  argentina:{code:'AR',name:'Argentina'}, colombia:{code:'CO',name:'Colombia'},
+  chile:{code:'CL',name:'Chile'}, peru:{code:'PE',name:'Peru'},
+  venezuela:{code:'VE',name:'Venezuela'}, ecuador:{code:'EC',name:'Ecuador'},
+  bolivia:{code:'BO',name:'Bolivia'}, paraguay:{code:'PY',name:'Paraguay'},
+  uruguay:{code:'UY',name:'Uruguay'}, guatemala:{code:'GT',name:'Guatemala'},
+  costarica:{code:'CR',name:'Costa Rica'}, panama:{code:'PA',name:'Panama'},
+  dominicana:{code:'DO',name:'Dominican Republic'}, honduras:{code:'HN',name:'Honduras'},
+  salvador:{code:'SV',name:'El Salvador'}, nicaragua:{code:'NI',name:'Nicaragua'},
+  puertorico:{code:'PR',name:'Puerto Rico'}, jamaica:{code:'JM',name:'Jamaica'},
+  haiti:{code:'HT',name:'Haiti'}, guyana:{code:'GY',name:'Guyana'},
+  barbados:{code:'BB',name:'Barbados'}, trinidad:{code:'TT',name:'Trinidad and Tobago'},
+  ethiopia:{code:'ET',name:'Ethiopia'}, tanzania:{code:'TZ',name:'Tanzania'},
+  uganda:{code:'UG',name:'Uganda'}, cameroon:{code:'CM',name:'Cameroon'},
+  ivorycoast:{code:'CI',name:'Ivory Coast'}, senegal:{code:'SN',name:'Senegal'},
+  rwanda:{code:'RW',name:'Rwanda'}, mozambique:{code:'MZ',name:'Mozambique'},
+  zambia:{code:'ZM',name:'Zambia'}, malawi:{code:'MW',name:'Malawi'},
+  namibia:{code:'NA',name:'Namibia'}, botswana:{code:'BW',name:'Botswana'},
+  madagascar:{code:'MG',name:'Madagascar'}, sierraleone:{code:'SL',name:'Sierra Leone'},
+  liberia:{code:'LR',name:'Liberia'}, guinea:{code:'GN',name:'Guinea'},
+  benin:{code:'BJ',name:'Benin'}, togo:{code:'TG',name:'Togo'},
+  burkinafaso:{code:'BF',name:'Burkina Faso'}, mali:{code:'ML',name:'Mali'},
+  niger:{code:'NE',name:'Niger'}, chad:{code:'TD',name:'Chad'},
+  angola:{code:'AO',name:'Angola'}, gabon:{code:'GA',name:'Gabon'},
+  congo:{code:'CG',name:'Congo'}, drc:{code:'CD',name:'DR Congo'},
+  burundi:{code:'BI',name:'Burundi'}, djibouti:{code:'DJ',name:'Djibouti'},
+  gambia:{code:'GM',name:'Gambia'}, guineabissau:{code:'GW',name:'Guinea-Bissau'},
+  capeverde:{code:'CV',name:'Cape Verde'}, mauritania:{code:'MR',name:'Mauritania'},
+  mauritius:{code:'MU',name:'Mauritius'}, seychelles:{code:'SC',name:'Seychelles'},
+  comoros:{code:'KM',name:'Comoros'}, lesotho:{code:'LS',name:'Lesotho'},
+  equatorialguinea:{code:'GQ',name:'Equatorial Guinea'},
+  zimbabwe:{code:'ZW',name:'Zimbabwe'}, sudan:{code:'SD',name:'Sudan'},
+  somalia:{code:'SO',name:'Somalia'}, eritrea:{code:'ER',name:'Eritrea'},
+  maldives:{code:'MV',name:'Maldives'}, easttimor:{code:'TL',name:'Timor-Leste'},
+  papuanewguinea:{code:'PG',name:'Papua New Guinea'},
+  newzealand:{code:'NZ',name:'New Zealand'},
 };
 
 // ─── Flag emoji from 2-letter ISO code ───────────────────────────────────────
@@ -167,10 +221,7 @@ async function run() {
   console.log('Fetching countries from 5sim...');
   const countriesRaw = await get('/v1/guest/countries');
   const countryEntries = Object.entries(countriesRaw);
-  console.log(`  5sim has ${countryEntries.length} countries`);
-  // Debug: show first 3 entries to inspect structure
-  console.log('  Sample raw entries:', JSON.stringify(countryEntries.slice(0, 3), null, 2));
-  console.log();
+  console.log(`  5sim has ${countryEntries.length} country/operator entries\n`);
 
   if (countryEntries.length === 0) {
     console.error('ERROR: Got 0 countries from 5sim — check API key or network');
@@ -179,19 +230,15 @@ async function run() {
 
   // Build country lookup: isoUpper → { fivesimSlug, name, flag }
   const fivesimCountries = {}; // iso2Upper → { slug, name }
-  for (const [slug, info] of countryEntries) {
-    // 5sim returns numeric ISO codes (e.g. 840 for US) — convert via lookup table
-    let iso2 = '';
-    if (typeof info.iso === 'string' && info.iso.length === 2) {
-      iso2 = info.iso.toUpperCase();
-    } else if (info.iso) {
-      iso2 = ISO_NUMERIC[String(info.iso)] || '';
-    }
-    if (!iso2) continue;
-    fivesimCountries[iso2] = {
+  // /guest/countries returns { slug: { operators } } — no metadata.
+  // We map slugs to ISO codes and names via SLUG_MAP.
+  for (const [slug] of countryEntries) {
+    const meta = SLUG_MAP[slug];
+    if (!meta) continue; // virtual/unknown slug — skip
+    fivesimCountries[meta.code] = {
       slug,
-      name: info.text_en || prettifyName(slug),
-      flag: flagEmoji(iso2),
+      name: meta.name,
+      flag: flagEmoji(meta.code),
     };
   }
 
