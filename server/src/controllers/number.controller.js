@@ -12,8 +12,38 @@ const { success } = require('../utils/response');
 const { getSettingNum } = require('../utils/settings');
 const logger = require('../config/logger');
 
-// fivesimSlug is now stored on each Country document (set by sync-from-5sim.js seed).
-// No hardcoded map needed — we look it up from the DB at order time.
+// Fallback ISO → 5sim slug map for countries where fivesimSlug isn't set in DB yet
+const ISO_TO_SLUG = {
+  US:'usa',GB:'england',IN:'india',NG:'nigeria',RU:'russia',BR:'brazil',
+  DE:'germany',FR:'france',CA:'canada',AU:'australia',ID:'indonesia',
+  PH:'philippines',VN:'vietnam',MX:'mexico',PK:'pakistan',BD:'bangladesh',
+  KE:'kenya',GH:'ghana',ZA:'southafrica',UA:'ukraine',ES:'spain',IT:'italy',
+  NL:'netherlands',PL:'poland',SE:'sweden',NO:'norway',DK:'denmark',
+  FI:'finland',PT:'portugal',BE:'belgium',AT:'austria',CH:'switzerland',
+  GR:'greece',RO:'romania',CZ:'czech',HU:'hungary',SK:'slovakia',HR:'croatia',
+  BG:'bulgaria',RS:'serbia',IE:'ireland',LT:'lithuania',LV:'latvia',EE:'estonia',
+  MD:'moldova',BY:'belarus',AL:'albania',MK:'northmacedonia',BA:'bih',
+  ME:'montenegro',SI:'slovenia',CY:'cyprus',LU:'luxembourg',SA:'saudiarabia',
+  EG:'egypt',MA:'morocco',TN:'tunisia',DZ:'algeria',IL:'israel',JO:'jordan',
+  KW:'kuwait',OM:'oman',BH:'bahrain',LB:'lebanon',IQ:'iraq',LY:'libya',
+  TH:'thailand',MY:'malaysia',TW:'taiwan',HK:'hongkong',KH:'cambodia',
+  LA:'laos',LK:'srilanka',NP:'nepal',MN:'mongolia',MM:'myanmar',
+  KZ:'kazakhstan',UZ:'uzbekistan',AZ:'azerbaijan',GE:'georgia',AM:'armenia',
+  KG:'kyrgyzstan',TJ:'tajikistan',TM:'turkmenistan',AR:'argentina',
+  CO:'colombia',CL:'chile',PE:'peru',VE:'venezuela',EC:'ecuador',BO:'bolivia',
+  PY:'paraguay',UY:'uruguay',GT:'guatemala',CR:'costarica',PA:'panama',
+  DO:'dominicana',HN:'honduras',SV:'salvador',NI:'nicaragua',PR:'puertorico',
+  JM:'jamaica',HT:'haiti',GY:'guyana',BB:'barbados',TT:'trinidad',
+  ET:'ethiopia',TZ:'tanzania',UG:'uganda',CM:'cameroon',CI:'ivorycoast',
+  SN:'senegal',RW:'rwanda',MZ:'mozambique',ZM:'zambia',MW:'malawi',
+  NA:'namibia',BW:'botswana',MG:'madagascar',SL:'sierraleone',LR:'liberia',
+  GN:'guinea',BJ:'benin',TG:'togo',BF:'burkinafaso',ML:'mali',NE:'niger',
+  TD:'chad',AO:'angola',GA:'gabon',CG:'congo',CD:'drc',BI:'burundi',
+  DJ:'djibouti',GM:'gambia',GW:'guineabissau',CV:'capeverde',MR:'mauritania',
+  MU:'mauritius',SC:'seychelles',KM:'comoros',LS:'lesotho',GQ:'equatorialguinea',
+  ZW:'zimbabwe',SD:'sudan',MV:'maldives',TL:'easttimor',PG:'papuanewguinea',
+  NZ:'newzealand',TR:'turkey',CN:'china',JP:'japan',KR:'southkorea',
+};
 
 // Simple in-memory cache for real-time 5sim prices (per country, 10 min TTL)
 const priceCache = new Map(); // key: fivesimSlug, value: { data, expiresAt }
@@ -74,7 +104,7 @@ exports.getServices = async (req, res, next) => {
     const pricing = await NumberPricing.find({ countryId }).populate('serviceId');
 
     // Fetch real-time prices from 5sim (cached 10 min) so displayed price always matches charge
-    const fivesimSlug = country.fivesimSlug || country.code.toLowerCase();
+    const fivesimSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
     const liveProducts = await getLiveProducts(fivesimSlug);
 
     const services = pricing
@@ -129,7 +159,7 @@ exports.orderNumber = async (req, res, next) => {
     }
 
     // Get real-time price via cache (same data shown on service listing page)
-    const countryName = country.fivesimSlug || country.code.toLowerCase();
+    const countryName = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
     let chargeCredits = pricing.finalPrice; // fallback to DB price
 
     const liveProducts = await getLiveProducts(countryName);
