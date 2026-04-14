@@ -17,6 +17,9 @@ const errorMiddleware = require('./middleware/error.middleware');
 
 const app = express();
 
+// Trust Railway's reverse proxy so express-rate-limit reads the real client IP
+app.set('trust proxy', 1);
+
 // Security
 app.use(helmet());
 app.use(
