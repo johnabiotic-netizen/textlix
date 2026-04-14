@@ -144,7 +144,7 @@ async function run() {
   // Build country lookup: isoUpper → { fivesimSlug, name, flag }
   const fivesimCountries = {}; // iso2Upper → { slug, name }
   for (const [slug, info] of countryEntries) {
-    const iso2 = (info.iso || '').toUpperCase();
+    const iso2 = String(info.iso || '').toUpperCase();
     if (!iso2 || iso2.length !== 2) continue;
     fivesimCountries[iso2] = {
       slug,
