@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { FiDownload, FiPrinter, FiChevronDown, FiChevronUp } from 'react-icons/fi';
@@ -146,9 +146,8 @@ export default function OrderHistoryPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {data.orders.map((order) => (
-                  <>
+                  <Fragment key={order._id}>
                     <tr
-                      key={order._id}
                       className={`hover:bg-gray-50 ${order.smsContent ? 'cursor-pointer' : ''}`}
                       onClick={() => order.smsContent && setExpanded(expanded === order._id ? null : order._id)}
                     >
@@ -185,7 +184,7 @@ export default function OrderHistoryPage() {
                       </td>
                     </tr>
                     {expanded === order._id && order.smsContent && (
-                      <tr key={`${order._id}-detail`} className="bg-indigo-50">
+                      <tr className="bg-indigo-50">
                         <td colSpan="8" className="px-4 py-4">
                           <div className="space-y-2">
                             {order.smsCode && (
@@ -208,7 +207,7 @@ export default function OrderHistoryPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

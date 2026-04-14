@@ -19,9 +19,12 @@ const runExpiryCheck = async () => {
     });
 
     for (const order of expired) {
-      try {
-        await fivesim.cancelOrder(order.providerOrderId);
-      } catch (_) {}
+      // Only cancel on provider if no SMS was received yet (COMPLETED orders are already finished on 5sim)
+      if (!order.smsContent) {
+        try {
+          await fivesim.cancelOrder(order.providerOrderId);
+        } catch (_) {}
+      }
 
       await NumberOrder.findByIdAndUpdate(order._id, {
         status: order.smsContent ? 'COMPLETED' : 'EXPIRED',

@@ -124,7 +124,12 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
         <Button variant="outline" size="sm" loading={cancelling} onClick={handleCancel} className="w-full">
           <FiX size={14} /> Cancel & Refund
         </Button>
-      ) : null}
+      ) : (
+        // Timer hit zero — dismiss the card (expiry cron refunds automatically)
+        <Button variant="outline" size="sm" onClick={() => onCancel?.()} className="w-full text-gray-500">
+          Dismiss
+        </Button>
+      )}
     </div>
   );
 }

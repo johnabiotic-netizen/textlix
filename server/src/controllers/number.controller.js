@@ -165,23 +165,31 @@ exports.getServices = async (req, res, next) => {
 
     const fivesimSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
-    // Fetch max-operator prices for each service in parallel (cached 1h per service)
-    const enabledPricing = pricing.filter((p) => p.serviceId && p.serviceId.isEnabled);
-    const priceResults = await Promise.all(
-      enabledPricing.map((p) => getChargeCredits(fivesimSlug, p.serviceId.slug, p.finalPrice))
-    );
+    // Sort first so indices stay stable when we zip with price results
+    const enabledPricing = pricing
+      .filter((p) => p.serviceId && p.serviceId.isEnabled)
+      .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder);
 
-    const services = enabledPricing
-      .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder)
-      .map((p, i) => ({
+    // Fetch live prices and raw max-price maps in parallel (both cached 1h per service)
+    const [priceResults, liveMaxMaps] = await Promise.all([
+      Promise.all(enabledPricing.map((p) => getChargeCredits(fivesimSlug, p.serviceId.slug, p.finalPrice))),
+      Promise.all(enabledPricing.map((p) => getMaxPrices(p.serviceId.slug))),
+    ]);
+
+    const services = enabledPricing.map((p, i) => {
+      const liveCountryPrice = liveMaxMaps[i]?.[fivesimSlug];
+      // A service is available if live data confirms stock; fall back to DB flag when offline
+      const available = liveMaxMaps[i] != null ? liveCountryPrice > 0 : p.isAvailable;
+      return {
         id: p.serviceId._id,
         name: p.serviceId.name,
         slug: p.serviceId.slug,
         icon: p.serviceId.icon,
         price: priceResults[i],
-        available: priceResults[i] > 0,
+        available,
         pricingId: p._id,
-      }));
+      };
+    });
 
     success(res, { country: { id: country._id, name: country.name, flagEmoji: country.flagEmoji }, services });
   } catch (err) {

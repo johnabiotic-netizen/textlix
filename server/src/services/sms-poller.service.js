@@ -86,12 +86,14 @@ class SMSPollerService {
   // Restart polling for orders that were active when server restarted
   async resumeActive() {
     const activeOrders = await NumberOrder.find({ status: 'ACTIVE' });
+    const resumed = [];
     for (const order of activeOrders) {
       if (new Date() < order.expiresAt) {
         this.startPolling(order);
+        resumed.push(order._id);
       }
     }
-    logger.info(`Resumed polling for ${activeOrders.length} active orders`);
+    logger.info(`Resumed polling for ${resumed.length} active orders (${activeOrders.length - resumed.length} already expired, will be caught by cron)`);
   }
 }
 
