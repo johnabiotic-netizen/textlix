@@ -194,7 +194,7 @@ function get(path, auth = false) {
         'Accept': 'application/json',
         ...(auth ? { 'Authorization': `Bearer ${API_KEY}` } : {}),
       },
-      timeout: 20000,
+      timeout: 6000,
     };
     const req = https.request(options, (r) => {
       let d = '';
@@ -271,26 +271,26 @@ async function run() {
   const realPrices = {};
   const countryCodes = Object.keys(countryDocs);
 
+  // Process countries in batches of 8 in parallel for speed
+  const BATCH = 8;
   let done = 0;
-  for (const iso2 of countryCodes) {
-    const info = fivesimCountries[iso2];
-    if (!info) continue;
-
-    process.stdout.write(`  [${++done}/${countryCodes.length}] ${iso2} (${info.slug})... `);
-    const products = await get(`/v1/guest/products/${info.slug}/any`, true);
-    await sleep(250);
-
-    const entries = Object.entries(products);
-    let found = 0;
-    realPrices[iso2] = {};
-
-    for (const [slug, data] of entries) {
-      if (!data || !data.Price || data.Price <= 0) continue;
-      serviceSlugs.add(slug);
-      realPrices[iso2][slug] = data.Price;
-      found++;
-    }
-    console.log(`${found} services`);
+  for (let i = 0; i < countryCodes.length; i += BATCH) {
+    const batch = countryCodes.slice(i, i + BATCH);
+    await Promise.all(batch.map(async (iso2) => {
+      const info = fivesimCountries[iso2];
+      if (!info) return;
+      const products = await get(`/v1/guest/products/${info.slug}/any`, true);
+      realPrices[iso2] = {};
+      let found = 0;
+      for (const [slug, data] of Object.entries(products)) {
+        if (!data || !data.Price || data.Price <= 0) continue;
+        serviceSlugs.add(slug);
+        realPrices[iso2][slug] = data.Price;
+        found++;
+      }
+      console.log(`  [${++done}/${countryCodes.length}] ${iso2} (${info.slug}): ${found} services`);
+    }));
+    await sleep(300); // brief pause between batches
   }
 
   console.log(`\n  Total unique services discovered: ${serviceSlugs.size}\n`);
