@@ -22,6 +22,13 @@ const getProducts = async (country, operator = 'any') => {
   return res.data;
 };
 
+// Returns all operator prices for a product across all countries
+// Shape: { [product]: { [country]: { [operator]: { cost, count } } } }
+const getPrices = async (product) => {
+  const res = await api.get(`/guest/prices?product=${product}`);
+  return res.data;
+};
+
 const buyNumber = async (country, operator, product) => {
   const res = await api.get(`/user/buy/activation/${country}/${operator}/${product}`);
   return res.data;
@@ -55,4 +62,4 @@ const getProfile = async () => {
   return res.data;
 };
 
-module.exports = { getCountries, getProducts, buyNumber, checkOrder, cancelOrder, finishOrder, getProfile };
+module.exports = { getCountries, getProducts, getPrices, buyNumber, checkOrder, cancelOrder, finishOrder, getProfile };

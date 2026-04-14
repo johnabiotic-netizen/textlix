@@ -45,22 +45,49 @@ const ISO_TO_SLUG = {
   NZ:'newzealand',TR:'turkey',CN:'china',JP:'japan',KR:'southkorea',
 };
 
-// Simple in-memory cache for real-time 5sim prices (per country, 10 min TTL)
-const priceCache = new Map(); // key: fivesimSlug, value: { data, expiresAt }
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 const MARGIN = 0.60;
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour — prices don't change minute to minute
 
-async function getLiveProducts(fivesimSlug) {
-  const cached = priceCache.get(fivesimSlug);
+// Cache: serviceSlug → { countrySlug → maxPriceUSD }
+const serviceMaxPriceCache = new Map();
+
+/**
+ * Returns the MAXIMUM operator price for a given service slug across all operators,
+ * keyed by country 5sim slug. We charge based on the max so we're always profitable
+ * regardless of which operator 5sim selects when buying.
+ */
+async function getMaxPrices(serviceSlug) {
+  const cached = serviceMaxPriceCache.get(serviceSlug);
   if (cached && cached.expiresAt > Date.now()) return cached.data;
+
   try {
-    const data = await fivesim.getProducts(fivesimSlug, 'any');
-    priceCache.set(fivesimSlug, { data, expiresAt: Date.now() + CACHE_TTL });
-    return data;
+    const raw = await fivesim.getPrices(serviceSlug); // guest/prices?product={slug}
+    // raw shape: { [serviceSlug]: { [country5simSlug]: { [operator]: { cost, count } } } }
+    const byCountry = raw[serviceSlug] || {};
+    const maxPrices = {}; // country5simSlug → max USD price across all operators
+
+    for (const [countrySlug, operators] of Object.entries(byCountry)) {
+      let max = 0;
+      for (const opData of Object.values(operators)) {
+        if (opData.cost > max) max = opData.cost;
+      }
+      if (max > 0) maxPrices[countrySlug] = max;
+    }
+
+    serviceMaxPriceCache.set(serviceSlug, { data: maxPrices, expiresAt: Date.now() + CACHE_TTL });
+    return maxPrices;
   } catch (err) {
-    logger.warn(`Price cache miss for ${fivesimSlug}:`, err.message);
+    logger.warn(`getMaxPrices failed for ${serviceSlug}:`, err.message);
     return null;
   }
+}
+
+/** Returns max-operator charge in credits for a country+service combo */
+async function getChargeCredits(country5simSlug, serviceSlug, fallbackCredits) {
+  const maxPrices = await getMaxPrices(serviceSlug);
+  const maxUSD = maxPrices?.[country5simSlug];
+  if (!maxUSD) return fallbackCredits;
+  return Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
 }
 
 exports.getCountries = async (req, res, next) => {
@@ -103,28 +130,25 @@ exports.getServices = async (req, res, next) => {
 
     const pricing = await NumberPricing.find({ countryId }).populate('serviceId');
 
-    // Fetch real-time prices from 5sim (cached 10 min) so displayed price always matches charge
     const fivesimSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
-    const liveProducts = await getLiveProducts(fivesimSlug);
 
-    const services = pricing
-      .filter((p) => p.serviceId && p.serviceId.isEnabled)
+    // Fetch max-operator prices for each service in parallel (cached 1h per service)
+    const enabledPricing = pricing.filter((p) => p.serviceId && p.serviceId.isEnabled);
+    const priceResults = await Promise.all(
+      enabledPricing.map((p) => getChargeCredits(fivesimSlug, p.serviceId.slug, p.finalPrice))
+    );
+
+    const services = enabledPricing
       .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder)
-      .map((p) => {
-        const live = liveProducts?.[p.serviceId.slug];
-        const available = !!(live && live.Price > 0 && live.Qty > 0);
-        const providerCost = available ? Math.ceil(live.Price * 100) : p.providerCost;
-        const price = available ? Math.ceil(providerCost * (1 + MARGIN)) : p.finalPrice;
-        return {
-          id: p.serviceId._id,
-          name: p.serviceId.name,
-          slug: p.serviceId.slug,
-          icon: p.serviceId.icon,
-          price,
-          available,
-          pricingId: p._id,
-        };
-      });
+      .map((p, i) => ({
+        id: p.serviceId._id,
+        name: p.serviceId.name,
+        slug: p.serviceId.slug,
+        icon: p.serviceId.icon,
+        price: priceResults[i],
+        available: priceResults[i] > 0,
+        pricingId: p._id,
+      }));
 
     success(res, { country: { id: country._id, name: country.name, flagEmoji: country.flagEmoji }, services });
   } catch (err) {
@@ -157,19 +181,14 @@ exports.orderNumber = async (req, res, next) => {
 
     const countryName = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
-    // Use cached estimate to verify user has roughly enough before buying
-    const liveProducts = await getLiveProducts(countryName);
-    const liveProduct = liveProducts?.[service.slug];
-    const estimatedCost = liveProduct?.Price > 0
-      ? Math.ceil(Math.ceil(liveProduct.Price * 100) * (1 + MARGIN))
-      : pricing.finalPrice;
+    // Charge based on MAX operator price — covers worst case, any cheaper operator = profit
+    const chargeCredits = await getChargeCredits(countryName, service.slug, pricing.finalPrice);
 
-    if (user.creditBalance < estimatedCost) {
-      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ~${estimatedCost} credits, you have ${user.creditBalance}`);
+    if (user.creditBalance < chargeCredits) {
+      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
     }
 
-    // Buy number first — providerResponse.price is the ACTUAL amount 5sim charged
-    // (operator prices vary; 'any' picks the available operator which may cost more/less)
+    // Buy number
     let providerResponse;
     try {
       providerResponse = await fivesim.buyNumber(countryName, 'any', service.slug);
@@ -179,18 +198,7 @@ exports.orderNumber = async (req, res, next) => {
       throw new AppError('PROVIDER_ERROR', 502, `Could not get a number: ${JSON.stringify(detail)}`);
     }
 
-    // Calculate charge from the REAL price 5sim actually used
-    const actualCostUSD = providerResponse.price || liveProduct?.Price || (pricing.providerCost / 100);
-    const actualCostCredits = Math.ceil(actualCostUSD * 100);
-    const chargeCredits = Math.ceil(actualCostCredits * (1 + MARGIN));
-
-    logger.info(`Order ${countryName}/${service.slug}: actual 5sim price $${actualCostUSD} → ${actualCostCredits}cr cost → ${chargeCredits}cr charge`);
-
-    // Final balance check with real price — cancel order if not enough
-    if (user.creditBalance < chargeCredits) {
-      try { await fivesim.cancelOrder(providerResponse.id.toString()); } catch (_) {}
-      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
-    }
+    logger.info(`Order ${countryName}/${service.slug}: charged ${chargeCredits}cr, 5sim used $${providerResponse.price}`);
 
     const timeoutMinutes = await getSettingNum('number_timeout_minutes', 20);
 
