@@ -154,28 +154,22 @@ exports.orderNumber = async (req, res, next) => {
     const service = await Service.findById(serviceId);
 
     if (!country || !service) throw new AppError('NOT_FOUND', 404, 'Country or service not found');
-    if (user.creditBalance < pricing.finalPrice) {
-      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${pricing.finalPrice} credits, you have ${user.creditBalance}`);
-    }
 
-    // Get real-time price via cache (same data shown on service listing page)
     const countryName = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
-    let chargeCredits = pricing.finalPrice; // fallback to DB price
 
+    // Use cached estimate to verify user has roughly enough before buying
     const liveProducts = await getLiveProducts(countryName);
     const liveProduct = liveProducts?.[service.slug];
-    if (liveProduct && liveProduct.Price > 0) {
-      const realCostCredits = Math.ceil(liveProduct.Price * 100);
-      chargeCredits = Math.ceil(realCostCredits * (1 + MARGIN));
-      logger.info(`Real-time price — ${countryName}/${service.slug}: $${liveProduct.Price} = ${realCostCredits}cr cost → ${chargeCredits}cr charge`);
+    const estimatedCost = liveProduct?.Price > 0
+      ? Math.ceil(Math.ceil(liveProduct.Price * 100) * (1 + MARGIN))
+      : pricing.finalPrice;
+
+    if (user.creditBalance < estimatedCost) {
+      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ~${estimatedCost} credits, you have ${user.creditBalance}`);
     }
 
-    // Re-check balance with accurate charge
-    if (user.creditBalance < chargeCredits) {
-      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
-    }
-
-    // Buy number from provider
+    // Buy number first — providerResponse.price is the ACTUAL amount 5sim charged
+    // (operator prices vary; 'any' picks the available operator which may cost more/less)
     let providerResponse;
     try {
       providerResponse = await fivesim.buyNumber(countryName, 'any', service.slug);
@@ -185,9 +179,22 @@ exports.orderNumber = async (req, res, next) => {
       throw new AppError('PROVIDER_ERROR', 502, `Could not get a number: ${JSON.stringify(detail)}`);
     }
 
+    // Calculate charge from the REAL price 5sim actually used
+    const actualCostUSD = providerResponse.price || liveProduct?.Price || (pricing.providerCost / 100);
+    const actualCostCredits = Math.ceil(actualCostUSD * 100);
+    const chargeCredits = Math.ceil(actualCostCredits * (1 + MARGIN));
+
+    logger.info(`Order ${countryName}/${service.slug}: actual 5sim price $${actualCostUSD} → ${actualCostCredits}cr cost → ${chargeCredits}cr charge`);
+
+    // Final balance check with real price — cancel order if not enough
+    if (user.creditBalance < chargeCredits) {
+      try { await fivesim.cancelOrder(providerResponse.id.toString()); } catch (_) {}
+      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
+    }
+
     const timeoutMinutes = await getSettingNum('number_timeout_minutes', 20);
 
-    // Deduct credits at real-time price
+    // Deduct exact amount based on real 5sim price
     await spendCredits(userId, chargeCredits, `Number rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
 
     // Create order
