@@ -141,8 +141,30 @@ exports.orderNumber = async (req, res, next) => {
       throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${pricing.finalPrice} credits, you have ${user.creditBalance}`);
     }
 
-    // Buy number from provider
+    // Get real-time price from 5sim BEFORE buying — guest/prices gives historical minimums
+    // but actual buyNumber cost depends on which operator is available. getProducts is accurate.
     const countryName = countryCodeTo5sim[country.code] || country.code.toLowerCase();
+    const MARGIN = 0.60;
+    let chargeCredits = pricing.finalPrice; // fallback to DB price
+
+    try {
+      const products = await fivesim.getProducts(countryName, 'any');
+      const product = products[service.slug];
+      if (product && product.Price > 0) {
+        const realCostCredits = Math.ceil(product.Price * 100);
+        chargeCredits = Math.ceil(realCostCredits * (1 + MARGIN));
+        logger.info(`Real-time price — ${countryName}/${service.slug}: $${product.Price} = ${realCostCredits}cr cost → ${chargeCredits}cr charge`);
+      }
+    } catch (err) {
+      logger.warn(`Real-time price check failed for ${countryName}/${service.slug}, using DB price:`, err.message);
+    }
+
+    // Re-check balance with accurate charge
+    if (user.creditBalance < chargeCredits) {
+      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
+    }
+
+    // Buy number from provider
     let providerResponse;
     try {
       providerResponse = await fivesim.buyNumber(countryName, 'any', service.slug);
@@ -154,8 +176,8 @@ exports.orderNumber = async (req, res, next) => {
 
     const timeoutMinutes = await getSettingNum('number_timeout_minutes', 20);
 
-    // Deduct credits
-    await spendCredits(userId, pricing.finalPrice, `Number rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
+    // Deduct credits at real-time price
+    await spendCredits(userId, chargeCredits, `Number rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
 
     // Create order
     const order = await NumberOrder.create({
@@ -165,7 +187,7 @@ exports.orderNumber = async (req, res, next) => {
       phoneNumber: providerResponse.phone,
       providerOrderId: providerResponse.id.toString(),
       provider: '5sim',
-      creditsCharged: pricing.finalPrice,
+      creditsCharged: chargeCredits,
       status: 'ACTIVE',
       expiresAt: new Date(Date.now() + timeoutMinutes * 60 * 1000),
     });
@@ -180,7 +202,7 @@ exports.orderNumber = async (req, res, next) => {
         country: { name: country.name, flagEmoji: country.flagEmoji },
         service: { name: service.name, icon: service.icon },
         expiresAt: order.expiresAt,
-        creditsCharged: order.creditsCharged,
+        creditsCharged: chargeCredits,
         status: order.status,
       },
     }, 201);

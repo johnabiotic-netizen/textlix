@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiMenu, FiX, FiLogOut, FiUser, FiSettings } from 'react-icons/fi';
 import { RiCoinLine } from 'react-icons/ri';
 import useAuthStore from '../../store/authStore';
@@ -9,6 +9,8 @@ import toast from 'react-hot-toast';
 export default function Navbar() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const navLink = (path) => `text-sm font-medium transition-colors ${location.pathname === path ? 'text-brand-600' : 'text-gray-600 hover:text-gray-900'}`;
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -31,9 +33,11 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/dashboard" className="text-sm font-medium text-gray-600 hover:text-gray-900">Dashboard</Link>
-            <Link to="/numbers" className="text-sm font-medium text-gray-600 hover:text-gray-900">Get Number</Link>
-            <Link to="/credits" className="text-sm font-medium text-gray-600 hover:text-gray-900">Buy Credits</Link>
+            <Link to="/dashboard" className={navLink('/dashboard')}>Dashboard</Link>
+            <Link to="/numbers" className={navLink('/numbers')}>Get Number</Link>
+            <Link to="/numbers/active" className={navLink('/numbers/active')}>Active</Link>
+            <Link to="/orders" className={navLink('/orders')}>History</Link>
+            <Link to="/credits" className={navLink('/credits')}>Buy Credits</Link>
           </div>
 
           <div className="flex items-center gap-3">
@@ -87,8 +91,9 @@ export default function Navbar() {
         <div className="md:hidden border-t border-gray-200 px-4 py-3 space-y-2 bg-white">
           <Link to="/dashboard" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Dashboard</Link>
           <Link to="/numbers" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Get Number</Link>
+          <Link to="/numbers/active" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Active Numbers</Link>
+          <Link to="/orders" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Order History</Link>
           <Link to="/credits" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Buy Credits</Link>
-          <Link to="/transactions" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>History</Link>
         </div>
       )}
     </nav>

@@ -30,10 +30,11 @@ export default function CountryServicesPage() {
     setOrdering(true);
     try {
       const { data: res } = await orderNumber({ countryId, serviceId: selected.id });
-      toast.success(`Got number: ${res.data.order.phoneNumber}`);
+      const actualCharge = res.data.order.creditsCharged;
+      toast.success(`Got number: ${res.data.order.phoneNumber} — ${actualCharge} credits charged`);
       qc.invalidateQueries(['activeOrders']);
-      // Update balance locally
-      useAuthStore.setState((s) => ({ user: { ...s.user, creditBalance: s.user.creditBalance - selected.price } }));
+      // Deduct actual amount charged (may differ from displayed price due to real-time 5sim pricing)
+      useAuthStore.setState((s) => ({ user: { ...s.user, creditBalance: s.user.creditBalance - actualCharge } }));
       setSelected(null);
       navigate('/numbers/active');
     } catch (err) {
@@ -112,8 +113,8 @@ export default function CountryServicesPage() {
                 <span className="font-medium">{selected.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Cost</span>
-                <span className="font-mono-num font-bold text-brand-600">{selected.price} credits</span>
+                <span className="text-gray-500">Estimated cost</span>
+                <span className="font-mono-num font-bold text-brand-600">~{selected.price} credits</span>
               </div>
               <div className="flex justify-between text-sm border-t border-gray-200 pt-3">
                 <span className="text-gray-500">Balance after</span>
@@ -128,6 +129,7 @@ export default function CountryServicesPage() {
                 <FiCheckCircle size={16} /> Confirm & Get Number
               </Button>
             </div>
+            <p className="text-xs text-gray-400 text-center">Final price is confirmed at order time and may vary slightly from the estimate shown.</p>
             {(user?.creditBalance || 0) < selected.price && (
               <p className="text-xs text-red-600 text-center">Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link></p>
             )}

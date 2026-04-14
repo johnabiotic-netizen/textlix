@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiCopy, FiCheck, FiX } from 'react-icons/fi';
+import { FiCopy, FiCheck, FiX, FiCheckCircle } from 'react-icons/fi';
 import { useSocket } from '../../hooks/useSocket';
 import { cancelOrder } from '../../api/numbers';
 import Button from '../common/Button';
@@ -43,8 +43,10 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
   useSocket(
     (data) => {
       if (data.orderId === order._id || data.orderId?.toString() === order._id?.toString()) {
+        // Update card in place — do NOT call onSmsReceived here because getActiveOrders
+        // only returns ACTIVE orders, so a refetch would wipe the card before the user
+        // can read/copy the code. The user dismisses it manually with the Done button.
         setOrder((o) => ({ ...o, smsContent: data.smsContent, smsCode: data.smsCode, status: 'COMPLETED' }));
-        onSmsReceived?.();
         toast.success('SMS received!');
       }
     },
@@ -113,11 +115,16 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
         </div>
       )}
 
-      {!order.smsContent && !expired && (
+      {order.smsContent ? (
+        // SMS received — let user copy code then dismiss
+        <Button variant="outline" size="sm" onClick={() => onCancel?.()} className="w-full border-green-200 text-green-700 hover:bg-green-50">
+          <FiCheckCircle size={14} /> Done — Dismiss
+        </Button>
+      ) : !expired ? (
         <Button variant="outline" size="sm" loading={cancelling} onClick={handleCancel} className="w-full">
           <FiX size={14} /> Cancel & Refund
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }
