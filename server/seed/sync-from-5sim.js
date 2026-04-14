@@ -167,7 +167,10 @@ async function run() {
   console.log('Fetching countries from 5sim...');
   const countriesRaw = await get('/v1/guest/countries');
   const countryEntries = Object.entries(countriesRaw);
-  console.log(`  5sim has ${countryEntries.length} countries\n`);
+  console.log(`  5sim has ${countryEntries.length} countries`);
+  // Debug: show first 3 entries to inspect structure
+  console.log('  Sample raw entries:', JSON.stringify(countryEntries.slice(0, 3), null, 2));
+  console.log();
 
   if (countryEntries.length === 0) {
     console.error('ERROR: Got 0 countries from 5sim — check API key or network');
