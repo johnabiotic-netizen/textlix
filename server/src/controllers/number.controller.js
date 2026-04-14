@@ -61,8 +61,7 @@ async function getMaxPrices(serviceSlug) {
   if (cached && cached.expiresAt > Date.now()) return cached.data;
 
   try {
-    const raw = await fivesim.getPrices(serviceSlug); // guest/prices?product={slug}
-    // raw shape: { [serviceSlug]: { [country5simSlug]: { [operator]: { cost, count } } } }
+    const raw = await fivesim.getPrices(serviceSlug);
     const byCountry = raw[serviceSlug] || {};
     const maxPrices = {}; // country5simSlug → max USD price across all operators
 
@@ -75,11 +74,45 @@ async function getMaxPrices(serviceSlug) {
     }
 
     serviceMaxPriceCache.set(serviceSlug, { data: maxPrices, expiresAt: Date.now() + CACHE_TTL });
+
+    // Write correct prices back to DB in the background so fallback is always accurate
+    setImmediate(() => syncPricesToDB(serviceSlug, maxPrices).catch(() => {}));
+
     return maxPrices;
   } catch (err) {
     logger.warn(`getMaxPrices failed for ${serviceSlug}:`, err.message);
     return null;
   }
+}
+
+/** Writes max-operator prices back to NumberPricing so the DB stays in sync */
+async function syncPricesToDB(serviceSlug, maxPrices) {
+  const svc = await Service.findOne({ slug: serviceSlug });
+  if (!svc) return;
+
+  // Build a map of fivesimSlug → countryDoc for fast lookup
+  const countries = await Country.find({});
+  const slugToCountry = {};
+  for (const c of countries) {
+    const slug = c.fivesimSlug || ISO_TO_SLUG[c.code];
+    if (slug) slugToCountry[slug] = c;
+  }
+
+  const ops = [];
+  for (const [countrySlug, maxUSD] of Object.entries(maxPrices)) {
+    const country = slugToCountry[countrySlug];
+    if (!country) continue;
+    const providerCost = Math.ceil(maxUSD * 100);
+    const finalPrice   = Math.ceil(providerCost * (1 + MARGIN));
+    ops.push({
+      updateOne: {
+        filter: { countryId: country._id, serviceId: svc._id },
+        update: { $set: { providerCost, finalPrice, marginPercent: 60, isAvailable: true } },
+        upsert: true,
+      },
+    });
+  }
+  if (ops.length) await NumberPricing.bulkWrite(ops);
 }
 
 /** Returns max-operator charge in credits for a country+service combo */
