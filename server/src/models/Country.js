@@ -5,6 +5,7 @@ const countrySchema = new mongoose.Schema(
     name: { type: String, required: true },
     code: { type: String, required: true, unique: true, uppercase: true },
     flagEmoji: { type: String, required: true },
+    fivesimSlug: { type: String, default: null }, // 5sim internal name e.g. "england"
     isEnabled: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
   },
