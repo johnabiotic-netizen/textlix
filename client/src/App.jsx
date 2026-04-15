@@ -1,66 +1,72 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import axios from 'axios';
 import api from './api/axios';
 import useAuthStore from './store/authStore';
 import { getMe } from './api/user';
 
-// Layouts
+// Layouts (small, load eagerly)
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 
-// Public pages
-import LandingPage from './pages/public/LandingPage';
-import LoginPage from './pages/public/LoginPage';
-import RegisterPage from './pages/public/RegisterPage';
-import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
-import ResetPasswordPage from './pages/public/ResetPasswordPage';
-import OAuthCallbackPage from './pages/public/OAuthCallbackPage';
-import FaqPage from './pages/public/FaqPage';
-import SupportPage from './pages/public/SupportPage';
-import TermsPage from './pages/public/TermsPage';
-import PrivacyPage from './pages/public/PrivacyPage';
-import PricingPage from './pages/public/PricingPage';
-import AboutPage from './pages/public/AboutPage';
-import DocsPage from './pages/public/DocsPage';
-import BlogPage from './pages/public/BlogPage';
-import BlogPostPage from './pages/public/BlogPostPage';
+// Public pages — lazy
+const LandingPage = lazy(() => import('./pages/public/LandingPage'));
+const LoginPage = lazy(() => import('./pages/public/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/public/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/public/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/public/ResetPasswordPage'));
+const OAuthCallbackPage = lazy(() => import('./pages/public/OAuthCallbackPage'));
+const FaqPage = lazy(() => import('./pages/public/FaqPage'));
+const SupportPage = lazy(() => import('./pages/public/SupportPage'));
+const TermsPage = lazy(() => import('./pages/public/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/public/PrivacyPage'));
+const PricingPage = lazy(() => import('./pages/public/PricingPage'));
+const AboutPage = lazy(() => import('./pages/public/AboutPage'));
+const DocsPage = lazy(() => import('./pages/public/DocsPage'));
+const BlogPage = lazy(() => import('./pages/public/BlogPage'));
+const BlogPostPage = lazy(() => import('./pages/public/BlogPostPage'));
 
-// Dashboard pages
-import DashboardPage from './pages/dashboard/DashboardPage';
-import BrowseNumbersPage from './pages/dashboard/BrowseNumbersPage';
-import BrowseByModePage from './pages/dashboard/BrowseByModePage';
-import ServiceCountriesPage from './pages/dashboard/ServiceCountriesPage';
-import CountryServicesPage from './pages/dashboard/CountryServicesPage';
-import ActiveNumbersPage from './pages/dashboard/ActiveNumbersPage';
-import BuyCreditsPage from './pages/dashboard/BuyCreditsPage';
-import TransactionHistoryPage from './pages/dashboard/TransactionHistoryPage';
-import OrderHistoryPage from './pages/dashboard/OrderHistoryPage';
-import SettingsPage from './pages/dashboard/SettingsPage';
-import PaymentVerifyPage from './pages/dashboard/PaymentVerifyPage';
+// Dashboard pages — lazy
+const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+const BrowseNumbersPage = lazy(() => import('./pages/dashboard/BrowseNumbersPage'));
+const BrowseByModePage = lazy(() => import('./pages/dashboard/BrowseByModePage'));
+const ServiceCountriesPage = lazy(() => import('./pages/dashboard/ServiceCountriesPage'));
+const CountryServicesPage = lazy(() => import('./pages/dashboard/CountryServicesPage'));
+const ActiveNumbersPage = lazy(() => import('./pages/dashboard/ActiveNumbersPage'));
+const BuyCreditsPage = lazy(() => import('./pages/dashboard/BuyCreditsPage'));
+const TransactionHistoryPage = lazy(() => import('./pages/dashboard/TransactionHistoryPage'));
+const OrderHistoryPage = lazy(() => import('./pages/dashboard/OrderHistoryPage'));
+const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
+const PaymentVerifyPage = lazy(() => import('./pages/dashboard/PaymentVerifyPage'));
 
-// Admin pages
-import AdminOverviewPage from './pages/admin/AdminOverviewPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminUserDetailPage from './pages/admin/AdminUserDetailPage';
-import AdminTransactionsPage from './pages/admin/AdminTransactionsPage';
-import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
-import AdminOrdersPage from './pages/admin/AdminOrdersPage';
-import AdminCatalogPage from './pages/admin/AdminCatalogPage';
-import AdminPricingPage from './pages/admin/AdminPricingPage';
-import AdminSettingsPage from './pages/admin/AdminSettingsPage';
-import AdminReportsPage from './pages/admin/AdminReportsPage';
+// Admin pages — lazy (recharts lives here, never hits regular users)
+const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage'));
+const AdminTransactionsPage = lazy(() => import('./pages/admin/AdminTransactionsPage'));
+const AdminPaymentsPage = lazy(() => import('./pages/admin/AdminPaymentsPage'));
+const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'));
+const AdminCatalogPage = lazy(() => import('./pages/admin/AdminCatalogPage'));
+const AdminPricingPage = lazy(() => import('./pages/admin/AdminPricingPage'));
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
+
+const PageSpinner = () => (
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
+  </div>
+);
 
 function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuthStore();
-  if (isLoading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" /></div>;
+  if (isLoading) return <PageSpinner />;
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
 function AdminRoute({ children }) {
   const { user, isLoading } = useAuthStore();
-  if (isLoading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" /></div>;
+  if (isLoading) return <PageSpinner />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'ADMIN') return <Navigate to="/dashboard" replace />;
   return children;
@@ -150,61 +156,63 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/auth/callback" element={<OAuthCallbackPage />} />
-        <Route path="/faq" element={<FaqPage />} />
-        <Route path="/support" element={<SupportPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/docs" element={<DocsPage />} />
-        <Route path="/blog" element={<BlogPage />} />
-        <Route path="/blog/:slug" element={<BlogPostPage />} />
+      <Suspense fallback={<PageSpinner />}>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/docs" element={<DocsPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
 
-        {/* User dashboard */}
-        <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/numbers" element={<BrowseNumbersPage />} />
-          <Route path="/numbers/active" element={<ActiveNumbersPage />} />
-          {/* OTP routes */}
-          <Route path="/numbers/otp" element={<BrowseByModePage mode="otp" />} />
-          <Route path="/numbers/otp/service/:serviceSlug" element={<ServiceCountriesPage mode="otp" />} />
-          <Route path="/numbers/otp/:countryId" element={<CountryServicesPage mode="otp" />} />
-          {/* Rental routes */}
-          <Route path="/numbers/rental" element={<BrowseByModePage mode="rental" />} />
-          <Route path="/numbers/rental/service/:serviceSlug" element={<ServiceCountriesPage mode="rental" />} />
-          <Route path="/numbers/rental/:countryId" element={<CountryServicesPage mode="rental" />} />
-          <Route path="/credits" element={<BuyCreditsPage />} />
-          <Route path="/transactions" element={<TransactionHistoryPage />} />
-          <Route path="/orders" element={<OrderHistoryPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/payments/verify" element={<PaymentVerifyPage />} />
-          <Route path="/payments/success" element={<PaymentVerifyPage />} />
-        </Route>
+          {/* User dashboard */}
+          <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/numbers" element={<BrowseNumbersPage />} />
+            <Route path="/numbers/active" element={<ActiveNumbersPage />} />
+            {/* OTP routes */}
+            <Route path="/numbers/otp" element={<BrowseByModePage mode="otp" />} />
+            <Route path="/numbers/otp/service/:serviceSlug" element={<ServiceCountriesPage mode="otp" />} />
+            <Route path="/numbers/otp/:countryId" element={<CountryServicesPage mode="otp" />} />
+            {/* Rental routes */}
+            <Route path="/numbers/rental" element={<BrowseByModePage mode="rental" />} />
+            <Route path="/numbers/rental/service/:serviceSlug" element={<ServiceCountriesPage mode="rental" />} />
+            <Route path="/numbers/rental/:countryId" element={<CountryServicesPage mode="rental" />} />
+            <Route path="/credits" element={<BuyCreditsPage />} />
+            <Route path="/transactions" element={<TransactionHistoryPage />} />
+            <Route path="/orders" element={<OrderHistoryPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/payments/verify" element={<PaymentVerifyPage />} />
+            <Route path="/payments/success" element={<PaymentVerifyPage />} />
+          </Route>
 
-        {/* Admin */}
-        <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-          <Route index element={<AdminOverviewPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="users/:id" element={<AdminUserDetailPage />} />
-          <Route path="transactions" element={<AdminTransactionsPage />} />
-          <Route path="payments" element={<AdminPaymentsPage />} />
-          <Route path="orders" element={<AdminOrdersPage />} />
-          <Route path="catalog" element={<AdminCatalogPage />} />
-          <Route path="pricing" element={<AdminPricingPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
-          <Route path="reports" element={<AdminReportsPage />} />
-        </Route>
+          {/* Admin */}
+          <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+            <Route index element={<AdminOverviewPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="users/:id" element={<AdminUserDetailPage />} />
+            <Route path="transactions" element={<AdminTransactionsPage />} />
+            <Route path="payments" element={<AdminPaymentsPage />} />
+            <Route path="orders" element={<AdminOrdersPage />} />
+            <Route path="catalog" element={<AdminCatalogPage />} />
+            <Route path="pricing" element={<AdminPricingPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
+          </Route>
 
-        <Route path="*" element={<div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4"><h1 className="text-3xl font-bold text-gray-900">404 — Page not found</h1><a href="/dashboard" className="text-brand-600 hover:underline">Go to Dashboard</a></div>} />
-      </Routes>
+          <Route path="*" element={<div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4"><h1 className="text-3xl font-bold text-gray-900">404 — Page not found</h1><a href="/dashboard" className="text-brand-600 hover:underline">Go to Dashboard</a></div>} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

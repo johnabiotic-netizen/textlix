@@ -39,6 +39,24 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core — changes rarely, long cache life
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Data fetching / state
+          'vendor-query': ['@tanstack/react-query', 'axios', 'zustand'],
+          // Charts — only used in admin, isolated so regular users never download it
+          'vendor-charts': ['recharts'],
+          // Real-time
+          'vendor-socket': ['socket.io-client'],
+          // UI utilities
+          'vendor-ui': ['react-hot-toast', 'react-icons', 'dayjs', 'react-helmet-async'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     host: true,
