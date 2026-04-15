@@ -219,10 +219,14 @@ async function getHostingMaxPrices(serviceSlug) {
 
     for (const [countrySlug, operators] of Object.entries(byCountry)) {
       let max = 0;
+      let bestRate = 0;
       for (const opData of Object.values(operators)) {
         if (opData.cost > max) max = opData.cost;
+        const rawRate = opData.rate || 0;
+        const normRate = rawRate > 1 ? rawRate / 100 : rawRate;
+        if (normRate > bestRate) bestRate = normRate;
       }
-      if (max > 0) maxPrices[countrySlug] = max;
+      if (max > 0) maxPrices[countrySlug] = { cost: max, bestRate };
     }
 
     hostingMaxPriceCache.set(serviceSlug, { data: maxPrices, expiresAt: Date.now() + CACHE_TTL });
@@ -239,9 +243,9 @@ const HOSTING_SERVICES = ['whatsapp', 'telegram', 'google', 'instagram', 'facebo
 /** Rental price per day in credits for a country+service combo */
 async function getRentalDailyCredits(country5simSlug, serviceSlug) {
   const maxPrices = await getHostingMaxPrices(serviceSlug);
-  const maxUSD = maxPrices?.[country5simSlug];
-  if (!maxUSD) return null;
-  return Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
+  const entry = maxPrices?.[country5simSlug];
+  if (!entry) return null;
+  return Math.ceil(Math.ceil(entry.cost * 100) * (1 + MARGIN));
 }
 
 const RENTAL_DURATION_OPTIONS = [1, 7, 30];
@@ -275,10 +279,10 @@ exports.getServiceList = async (req, res, next) => {
         let minPriceUSD = Infinity;
         for (const country of allCountries) {
           const csSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
-          const maxUSD = data[csSlug];
-          if (!maxUSD) continue;
+          const entry = data[csSlug];
+          if (!entry) continue;
           countryCount++;
-          if (maxUSD < minPriceUSD) minPriceUSD = maxUSD;
+          if (entry.cost < minPriceUSD) minPriceUSD = entry.cost;
         }
         if (countryCount === 0) continue;
         const minPrice = Math.ceil(Math.ceil(minPriceUSD * 100) * (1 + MARGIN));
@@ -371,16 +375,18 @@ exports.getCountriesForService = async (req, res, next) => {
       const result = [];
       for (const country of allCountries) {
         const slug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
-        const maxUSD = maxPrices[slug];
-        if (!maxUSD) continue;
-        const pricePerDay = Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
+        const entry = maxPrices[slug];
+        if (!entry) continue;
+        const pricePerDay = Math.ceil(Math.ceil(entry.cost * 100) * (1 + MARGIN));
+        const successRate = entry.bestRate > 0 ? Math.min(100, Math.round(entry.bestRate * 1000) / 10) : null;
         result.push({
           id: country._id,
           name: country.name,
           code: country.code,
           flagEmoji: country.flagEmoji,
           pricePerDay,
-          minPrice: pricePerDay, // 1-day price shown in grid
+          minPrice: pricePerDay,
+          successRate,
         });
       }
       result.sort((a, b) => a.name.localeCompare(b.name));
@@ -435,13 +441,15 @@ exports.getCountries = async (req, res, next) => {
         const csSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
         let minPricePerDay = Infinity;
         let serviceCount = 0;
+        let bestRate = 0;
         for (const priceMap of allPriceMaps) {
           if (!priceMap) continue;
-          const maxUSD = priceMap[csSlug];
-          if (!maxUSD) continue;
+          const entry = priceMap[csSlug];
+          if (!entry) continue;
           serviceCount++;
-          const pricePerDay = Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
+          const pricePerDay = Math.ceil(Math.ceil(entry.cost * 100) * (1 + MARGIN));
           if (pricePerDay < minPricePerDay) minPricePerDay = pricePerDay;
+          if (entry.bestRate > bestRate) bestRate = entry.bestRate;
         }
         if (serviceCount === 0) continue;
         result.push({
@@ -451,6 +459,7 @@ exports.getCountries = async (req, res, next) => {
           flagEmoji: country.flagEmoji,
           serviceCount,
           minPrice: minPricePerDay,
+          successRate: bestRate > 0 ? Math.min(100, Math.round(bestRate * 1000) / 10) : null,
         });
       }
       return success(res, { countries: result });

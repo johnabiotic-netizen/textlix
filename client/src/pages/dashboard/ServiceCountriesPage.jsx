@@ -85,7 +85,14 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {countries.map((country) => (
             <Card key={country.id} hover onClick={() => handleCountryClick(country.id)} className="p-5">
-              <div className="text-3xl mb-3">{country.flagEmoji}</div>
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-3xl">{country.flagEmoji}</span>
+                {country.successRate != null && (
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${country.successRate >= 90 ? 'bg-green-50 text-green-700' : country.successRate >= 75 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
+                    {country.successRate}%
+                  </span>
+                )}
+              </div>
               <h3 className="font-semibold text-gray-900 mb-1">{country.name}</h3>
               <p className={`text-xs font-medium mt-1 ${mode === 'otp' ? 'text-brand-600' : 'text-purple-600'}`}>
                 {mode === 'rental'
