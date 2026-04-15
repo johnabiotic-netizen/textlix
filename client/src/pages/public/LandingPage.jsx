@@ -284,7 +284,7 @@ export default function LandingPage() {
               { icon: <FiStar className="text-brand-600" size={22} />, title: 'Smart Recommendations', desc: 'AI-ranked country suggestions based on live success rates and stock availability per service.' },
               { icon: <FiShield className="text-brand-600" size={22} />, title: 'Card & Crypto Payments', desc: 'Pay by card via Paystack or with crypto — USDT, BTC, or ETH. No bank required.' },
               { icon: <FiClock className="text-brand-600" size={22} />, title: '24/7 Availability', desc: 'Platform runs around the clock with automated number expiry and SMS cleanup jobs.' },
-              { icon: <FiShield className="text-brand-600" size={22} />, title: 'Private by Design', desc: 'SMS content auto-deleted after 24 hours. Credits never expire. No hidden fees.' },
+              { icon: <FiShield className="text-brand-600" size={22} />, title: 'Your Data, Your Control', desc: 'We never sell or share your data with third parties. Your order history is yours to view and export anytime.' },
             ].map((f, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-6 flex gap-4">
                 <div className="flex-shrink-0 w-10 h-10 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm">{f.icon}</div>

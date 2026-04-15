@@ -33,7 +33,7 @@ const FAQS = [
   {
     category: 'Account & Security',
     items: [
-      { q: 'Is my data safe?', a: 'Yes. SMS content is automatically deleted after 24 hours. We use industry-standard encryption for all data.' },
+      { q: 'Is my data safe?', a: 'Yes. We never sell or share your data with third parties. Your order history stays on your account and is yours to view and export anytime.' },
       { q: 'Can I sign in with Google?', a: 'Yes. You can sign in with your Google account for a faster login experience.' },
       { q: 'How do I reset my password?', a: 'Click "Forgot password?" on the login page and we\'ll send a reset link to your email.' },
     ],
