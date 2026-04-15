@@ -70,7 +70,10 @@ async function getMaxPrices(serviceSlug) {
       let totalCount = 0;
       for (const opData of Object.values(operators)) {
         if (opData.cost > maxPrice) maxPrice = opData.cost;
-        if ((opData.rate || 0) > bestRate) bestRate = opData.rate || 0;
+        // 5sim rate can come back as 0-1 decimal or 0-100 percentage; normalise to 0-1
+        const rawRate = opData.rate || 0;
+        const normRate = rawRate > 1 ? rawRate / 100 : rawRate;
+        if (normRate > bestRate) bestRate = normRate;
         totalCount += opData.count || 0;
       }
       if (maxPrice > 0) result[countrySlug] = { maxPrice, bestRate, totalCount };
@@ -339,7 +342,7 @@ exports.getRecommendations = async (req, res, next) => {
         flagEmoji: country.flagEmoji,
         code: country.code,
         price: Math.ceil(Math.ceil(data.maxPrice * 100) * (1 + MARGIN)),
-        successRate: Math.round(data.bestRate * 1000) / 10,
+        successRate: Math.min(100, Math.round(data.bestRate * 1000) / 10),
         availableCount: data.totalCount,
         score,
       });
@@ -508,7 +511,7 @@ exports.getServices = async (req, res, next) => {
       const liveData = liveMaxMaps[i]?.[fivesimSlug];
       const available = liveMaxMaps[i] != null ? (liveData?.maxPrice > 0) : p.isAvailable;
       // Use 5sim's live rate as primary success signal; fall back to our own order history
-      const fivesimRate = liveData?.bestRate != null ? Math.round(liveData.bestRate * 1000) / 10 : null;
+      const fivesimRate = liveData?.bestRate != null ? Math.min(100, Math.round(liveData.bestRate * 1000) / 10) : null;
       const successRate = fivesimRate ?? serviceRates[p.serviceId._id.toString()] ?? null;
       return {
         id: p.serviceId._id,
