@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useQuery } from '@tanstack/react-query';
 import { FiZap, FiGlobe, FiShield, FiClock } from 'react-icons/fi';
+import { getPublicStats } from '../../api/numbers';
 
 const PACKAGES = [
   { label: 'Starter', usd: '$2', credits: '200 credits' },
@@ -11,6 +13,47 @@ const PACKAGES = [
 ];
 
 const COUNTRIES = ['🇺🇸', '🇬🇧', '🇮🇳', '🇳🇬', '🇷🇺', '🇧🇷', '🇩🇪', '🇫🇷', '🇨🇦', '🇦🇺', '🇮🇩', '🇵🇭', '🇻🇳', '🇲🇽', '🇵🇰', '🇰🇪', '🇿🇦', '🇺🇦'];
+
+function LiveStatsBanner() {
+  const { data } = useQuery({
+    queryKey: ['publicStats'],
+    queryFn: () => getPublicStats().then((r) => r.data.data),
+    refetchInterval: 60000,
+    staleTime: 60000,
+  });
+
+  const stats = data || { successRate: 98.5, totalCompletions: null, avgDeliverySeconds: 4.2, activeNow: null };
+
+  return (
+    <div className="bg-gray-950 text-white py-2.5 px-4 text-center text-xs font-medium overflow-hidden">
+      <div className="flex items-center justify-center gap-6 flex-wrap">
+        <span className="flex items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          </span>
+          <span className="text-green-400 font-semibold">Live</span>
+        </span>
+        <span className="text-gray-300">
+          <span className="text-white font-semibold">{stats.successRate}%</span> success rate (24h)
+        </span>
+        {stats.totalCompletions > 0 && (
+          <span className="text-gray-300">
+            <span className="text-white font-semibold">{stats.totalCompletions.toLocaleString()}</span> codes delivered
+          </span>
+        )}
+        <span className="text-gray-300">
+          <span className="text-white font-semibold">{stats.avgDeliverySeconds}s</span> avg delivery
+        </span>
+        {stats.activeNow > 0 && (
+          <span className="text-gray-300">
+            <span className="text-white font-semibold">{stats.activeNow}</span> active now
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   return (
@@ -45,6 +88,9 @@ export default function LandingPage() {
           </div>
         </div>
       </header>
+
+      {/* Live stats banner */}
+      <LiveStatsBanner />
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-24 px-4">

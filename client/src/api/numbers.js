@@ -1,4 +1,11 @@
+import axios from 'axios';
 import api from './axios';
+
+const PUBLIC_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api/v1`
+  : '/api/v1';
+
+export const getPublicStats = () => axios.get(`${PUBLIC_BASE}/stats`);
 
 export const getCountries = () => api.get('/numbers/countries');
 export const getServices = (countryId) => api.get(`/numbers/countries/${countryId}/services`);

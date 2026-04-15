@@ -13,6 +13,7 @@ import Badge from '../../components/common/Badge';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import NumberCard from '../../components/numbers/NumberCard';
 import useDismissedOrders from '../../hooks/useDismissedOrders';
+import { getPublicStats } from '../../api/numbers';
 
 dayjs.extend(relativeTime);
 
@@ -25,6 +26,13 @@ export default function DashboardPage() {
     queryKey: ['activeOrders'],
     queryFn: () => getActiveOrders().then((r) => r.data.data),
     refetchInterval: 10000,
+  });
+
+  const { data: statsData } = useQuery({
+    queryKey: ['publicStats'],
+    queryFn: () => getPublicStats().then((r) => r.data.data),
+    refetchInterval: 60000,
+    staleTime: 60000,
   });
 
   useEffect(() => {
@@ -51,10 +59,32 @@ export default function DashboardPage() {
       <div className="bg-gradient-to-r from-brand-600 to-purple-600 rounded-2xl p-6 md:p-8 text-white">
         <p className="text-brand-100 text-sm mb-1">Welcome back</p>
         <h1 className="font-display font-bold text-3xl mb-4">{user?.name} 👋</h1>
-        <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-3 w-fit">
-          <RiCoinLine size={20} className="text-yellow-300" />
-          <span className="font-mono-num font-semibold text-xl">{user?.creditBalance?.toLocaleString()}</span>
-          <span className="text-brand-100 text-sm">credits</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-3">
+            <RiCoinLine size={20} className="text-yellow-300" />
+            <span className="font-mono-num font-semibold text-xl">{user?.creditBalance?.toLocaleString()}</span>
+            <span className="text-brand-100 text-sm">credits</span>
+          </div>
+          {statsData && (
+            <div className="flex items-center gap-4 bg-white/10 rounded-xl px-4 py-3 text-sm flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                <span className="font-semibold text-green-300">{statsData.successRate}%</span>
+                <span className="text-brand-100">success</span>
+              </span>
+              <span className="text-brand-100">
+                <span className="font-semibold text-white">{statsData.avgDeliverySeconds}s</span> avg delivery
+              </span>
+              {statsData.activeNow > 0 && (
+                <span className="text-brand-100">
+                  <span className="font-semibold text-white">{statsData.activeNow}</span> active now
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

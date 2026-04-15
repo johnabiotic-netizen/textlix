@@ -180,7 +180,14 @@ export default function CountryServicesPage() {
                   )}
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1">{service.name}</h3>
-                <p className="font-mono-num font-bold text-brand-600">{service.price} credits</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-mono-num font-bold text-brand-600">{service.price} credits</p>
+                  {service.successRate != null && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${service.successRate >= 90 ? 'bg-green-50 text-green-700' : service.successRate >= 75 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
+                      {service.successRate}% success
+                    </span>
+                  )}
+                </div>
               </Card>
             ))}
           </div>

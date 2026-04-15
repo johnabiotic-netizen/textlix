@@ -123,6 +123,73 @@ async function getChargeCredits(country5simSlug, serviceSlug, fallbackCredits) {
   return Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
 }
 
+// ─── Public platform stats (cached 5 min) ────────────────────────────────────
+let _statsCache = null;
+let _statsCacheExpiry = 0;
+
+exports.getPublicStats = async (req, res, next) => {
+  try {
+    if (_statsCache && Date.now() < _statsCacheExpiry) {
+      return success(res, _statsCache);
+    }
+
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [completedToday, failedToday, activeNow, allTimeCompleted, deliveryAgg] = await Promise.all([
+      NumberOrder.countDocuments({ status: 'COMPLETED', smsReceivedAt: { $gte: since24h } }),
+      NumberOrder.countDocuments({ status: { $in: ['EXPIRED', 'REFUNDED'] }, createdAt: { $gte: since24h } }),
+      NumberOrder.countDocuments({ status: 'ACTIVE' }),
+      NumberOrder.countDocuments({ status: 'COMPLETED' }),
+      NumberOrder.aggregate([
+        { $match: { status: 'COMPLETED', smsReceivedAt: { $gte: since24h } } },
+        { $project: { ms: { $subtract: ['$smsReceivedAt', '$createdAt'] } } },
+        { $group: { _id: null, avg: { $avg: '$ms' } } },
+      ]),
+    ]);
+
+    const total24h = completedToday + failedToday;
+    const successRate = total24h >= 10
+      ? Math.round((completedToday / total24h) * 1000) / 10
+      : 98.5; // default when not enough data yet
+
+    const avgDeliverySeconds = deliveryAgg[0]?.avg
+      ? Math.round(deliveryAgg[0].avg / 100) / 10
+      : 4.2;
+
+    _statsCache = { successRate, totalCompletions: allTimeCompleted, avgDeliverySeconds, activeNow };
+    _statsCacheExpiry = Date.now() + 5 * 60 * 1000;
+
+    success(res, _statsCache);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── Per-service success rate cache (30 min) ─────────────────────────────────
+let _serviceStatsCache = null;
+let _serviceStatsCacheExpiry = 0;
+
+async function getServiceSuccessRates() {
+  if (_serviceStatsCache && Date.now() < _serviceStatsCacheExpiry) return _serviceStatsCache;
+
+  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const agg = await NumberOrder.aggregate([
+    { $match: { serviceId: { $ne: null }, createdAt: { $gte: since7d }, status: { $in: ['COMPLETED', 'EXPIRED', 'REFUNDED'] } } },
+    { $group: { _id: '$serviceId', completed: { $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] } }, total: { $sum: 1 } } },
+  ]);
+
+  const rates = {};
+  for (const row of agg) {
+    if (row.total >= 5) {
+      rates[row._id.toString()] = Math.round((row.completed / row.total) * 1000) / 10;
+    }
+  }
+
+  _serviceStatsCache = rates;
+  _serviceStatsCacheExpiry = Date.now() + 30 * 60 * 1000;
+  return rates;
+}
+
 // ─── Hosting (rental) price cache ────────────────────────────────────────────
 const hostingMaxPriceCache = new Map();
 
@@ -208,10 +275,11 @@ exports.getServices = async (req, res, next) => {
       .filter((p) => p.serviceId && p.serviceId.isEnabled)
       .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder);
 
-    // Fetch live prices and raw max-price maps in parallel (both cached 1h per service)
-    const [priceResults, liveMaxMaps] = await Promise.all([
+    // Fetch live prices, raw max-price maps, and per-service success rates in parallel
+    const [priceResults, liveMaxMaps, serviceRates] = await Promise.all([
       Promise.all(enabledPricing.map((p) => getChargeCredits(fivesimSlug, p.serviceId.slug, p.finalPrice))),
       Promise.all(enabledPricing.map((p) => getMaxPrices(p.serviceId.slug))),
+      getServiceSuccessRates(),
     ]);
 
     const services = enabledPricing.map((p, i) => {
@@ -225,6 +293,7 @@ exports.getServices = async (req, res, next) => {
         price: priceResults[i],
         available,
         pricingId: p._id,
+        successRate: serviceRates[p.serviceId._id.toString()] ?? null,
       };
     });
 

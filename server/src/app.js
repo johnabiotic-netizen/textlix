@@ -14,6 +14,7 @@ const numberRoutes = require('./routes/number.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const adminRoutes = require('./routes/admin.routes');
 const errorMiddleware = require('./middleware/error.middleware');
+const { getPublicStats } = require('./controllers/number.controller');
 
 const app = express();
 
@@ -58,6 +59,9 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api', generalLimiter);
+
+// Public stats — no auth required
+app.get('/api/v1/stats', getPublicStats);
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
