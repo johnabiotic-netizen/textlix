@@ -12,6 +12,10 @@ const {
   clearRefreshCookie,
 } = require('../utils/tokens');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
+const { audit, getIP, getUA } = require('../utils/audit');
+
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 const formatUser = (user) => ({
   id: user._id,
@@ -62,20 +66,57 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const ip = getIP(req);
+    const ua = getUA(req);
+    const normalEmail = email.toLowerCase();
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: normalEmail });
+
+    // Unknown email — same error message as wrong password (prevents enumeration)
     if (!user || !user.passwordHash) {
+      audit('LOGIN_FAILURE', { email: normalEmail, ip, userAgent: ua, success: false, meta: { reason: 'user_not_found' } });
       throw new AppError('UNAUTHORIZED', 401, 'Invalid credentials');
     }
+
+    // Check account lockout
+    if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockoutUntil - Date.now()) / 60000);
+      audit('LOGIN_LOCKED', { userId: user._id, email: normalEmail, ip, userAgent: ua, success: false, meta: { minutesLeft } });
+      throw new AppError('UNAUTHORIZED', 401, `Account temporarily locked. Try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}.`);
+    }
+
     if (user.isBanned) {
+      audit('LOGIN_FAILURE', { userId: user._id, email: normalEmail, ip, userAgent: ua, success: false, meta: { reason: 'banned' } });
       throw new AppError('UNAUTHORIZED', 401, `Account suspended: ${user.banReason || 'Contact support'}`);
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) throw new AppError('UNAUTHORIZED', 401, 'Invalid credentials');
 
+    if (!valid) {
+      // Increment failed attempt counter
+      const attempts = (user.loginAttempts || 0) + 1;
+      const update = { loginAttempts: attempts };
+
+      if (attempts >= MAX_LOGIN_ATTEMPTS) {
+        update.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+        update.loginAttempts = 0; // reset so next lockout window starts fresh
+        await User.findByIdAndUpdate(user._id, update);
+        audit('LOGIN_LOCKED', { userId: user._id, email: normalEmail, ip, userAgent: ua, success: false, meta: { triggeredAfterAttempts: attempts } });
+        throw new AppError('UNAUTHORIZED', 401, 'Too many failed attempts. Account locked for 15 minutes.');
+      }
+
+      await User.findByIdAndUpdate(user._id, update);
+      audit('LOGIN_FAILURE', { userId: user._id, email: normalEmail, ip, userAgent: ua, success: false, meta: { attempts } });
+      throw new AppError('UNAUTHORIZED', 401, 'Invalid credentials');
+    }
+
+    // Successful login — clear lockout state
+    user.loginAttempts = 0;
+    user.lockoutUntil = null;
     user.lastLoginAt = new Date();
     await user.save();
+
+    audit('LOGIN_SUCCESS', { userId: user._id, email: normalEmail, ip, userAgent: ua });
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
@@ -119,16 +160,18 @@ exports.logout = async (req, res, next) => {
   try {
     await User.findByIdAndUpdate(req.user.userId, { $inc: { tokenVersion: 1 } });
     clearRefreshCookie(res);
+    audit('LOGOUT', { userId: req.user.userId, ip: getIP(req), userAgent: getUA(req) });
     success(res, { message: 'Logged out' });
   } catch (err) {
     next(err);
   }
 };
 
-exports.oauthCallback = (user, res) => {
+exports.oauthCallback = (user, res, req) => {
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
   setRefreshCookie(res, refreshToken);
+  audit('OAUTH_LOGIN', { userId: user._id, email: user.email });
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
   res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}`);
 };
@@ -137,13 +180,14 @@ exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email: email.toLowerCase() });
-    // Always respond 200 for security
+    // Always respond with the same message regardless — prevents email enumeration
     if (user && user.provider === 'LOCAL') {
       const token = generateRandomToken();
       user.resetPasswordToken = token;
       user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
       await user.save();
       sendPasswordResetEmail(user.email, token).catch(() => {});
+      audit('PASSWORD_RESET_REQUEST', { userId: user._id, email: user.email, ip: getIP(req), userAgent: getUA(req) });
     }
     success(res, { message: 'If this email exists, a reset link has been sent' });
   } catch (err) {
@@ -167,6 +211,7 @@ exports.resetPassword = async (req, res, next) => {
     user.tokenVersion += 1;
     await user.save();
 
+    audit('PASSWORD_RESET_COMPLETE', { userId: user._id, email: user.email, ip: getIP(req), userAgent: getUA(req) });
     success(res, { message: 'Password reset successfully' });
   } catch (err) {
     next(err);
@@ -183,6 +228,7 @@ exports.verifyEmail = async (req, res, next) => {
     user.emailVerifyToken = null;
     await user.save();
 
+    audit('EMAIL_VERIFIED', { userId: user._id, email: user.email });
     const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
     res.redirect(`${frontendUrl}/dashboard?verified=true`);
   } catch (err) {

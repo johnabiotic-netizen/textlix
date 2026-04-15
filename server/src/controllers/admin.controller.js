@@ -10,6 +10,7 @@ const PlatformSettings = require('../models/PlatformSettings');
 const { adminAdjustCredits } = require('../services/credit.service');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
+const { audit, getIP, getUA } = require('../utils/audit');
 
 // Escape special regex characters to prevent ReDoS via user-supplied search strings
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -124,6 +125,7 @@ exports.updateUser = async (req, res, next) => {
 
     const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-passwordHash');
     if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
+    audit('ADMIN_UPDATE_USER', { userId: req.user.userId, ip: getIP(req), userAgent: getUA(req), meta: { targetUserId: req.params.id, updates } });
     success(res, { user });
   } catch (err) {
     next(err);
@@ -141,6 +143,7 @@ exports.deleteUser = async (req, res, next) => {
       Payment.deleteMany({ userId: req.params.id }),
       NumberOrder.deleteMany({ userId: req.params.id }),
     ]);
+    audit('ADMIN_DELETE_USER', { userId: req.user.userId, ip: getIP(req), userAgent: getUA(req), meta: { targetUserId: req.params.id, targetEmail: user.email } });
     success(res, { message: 'User deleted' });
   } catch (err) {
     next(err);
@@ -153,6 +156,7 @@ exports.adjustCredits = async (req, res, next) => {
     if (!amount || !reason) throw new AppError('VALIDATION_ERROR', 400, 'Amount and reason required');
 
     const newBalance = await adminAdjustCredits(req.params.id, parseInt(amount), reason, req.user.userId);
+    audit('ADMIN_ADJUST_CREDITS', { userId: req.user.userId, ip: getIP(req), userAgent: getUA(req), meta: { targetUserId: req.params.id, amount: parseInt(amount), reason } });
     success(res, { newBalance });
   } catch (err) {
     next(err);

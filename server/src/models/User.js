@@ -19,6 +19,8 @@ const userSchema = new mongoose.Schema(
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
     emailVerifyToken: { type: String, default: null },
+    loginAttempts: { type: Number, default: 0 },
+    lockoutUntil: { type: Date, default: null },
   },
   { timestamps: true }
 );
