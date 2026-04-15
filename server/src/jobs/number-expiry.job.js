@@ -19,46 +19,62 @@ const runExpiryCheck = async () => {
     });
 
     for (const order of expired) {
-      // Only cancel on provider if no SMS was received yet (COMPLETED orders are already finished on 5sim)
-      if (!order.smsContent) {
-        try {
-          await fivesim.cancelOrder(order.providerOrderId);
-        } catch (_) {}
-      }
-
-      await NumberOrder.findByIdAndUpdate(order._id, {
-        status: order.smsContent ? 'COMPLETED' : 'EXPIRED',
-      });
-
-      if (!order.smsContent) {
-        try {
-          await refundCredits(
-            order.userId,
-            order.creditsCharged,
-            `Refund: number expired without SMS`,
-            order._id.toString()
-          );
-
-          await NumberOrder.findByIdAndUpdate(order._id, { status: 'REFUNDED' });
-
-          if (io) {
-            io.to(`user:${order.userId}`).emit('number:expired', {
-              orderId: order._id,
-              refunded: true,
-              creditsRefunded: order.creditsCharged,
-            });
-          }
-        } catch (err) {
-          logger.error(`Failed to refund order ${order._id}:`, err.message);
-        }
-      } else if (io) {
-        io.to(`user:${order.userId}`).emit('number:expired', {
-          orderId: order._id,
-          refunded: false,
-        });
-      }
-
       smsPoller.stopPolling(order._id.toString());
+
+      if (order.orderType === 'RENTAL') {
+        // Rentals: no refund — user paid for time, not SMS count
+        await NumberOrder.findByIdAndUpdate(order._id, { status: 'RENTAL_EXPIRED' });
+
+        try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
+
+        if (io) {
+          io.to(`user:${order.userId}`).emit('number:expired', {
+            orderId: order._id,
+            orderType: 'RENTAL',
+            refunded: false,
+          });
+        }
+      } else {
+        // OTP: refund if no SMS received
+        if (!order.smsContent) {
+          try {
+            await fivesim.cancelOrder(order.providerOrderId);
+          } catch (_) {}
+        }
+
+        await NumberOrder.findByIdAndUpdate(order._id, {
+          status: order.smsContent ? 'COMPLETED' : 'EXPIRED',
+        });
+
+        if (!order.smsContent) {
+          try {
+            await refundCredits(
+              order.userId,
+              order.creditsCharged,
+              `Refund: number expired without SMS`,
+              order._id.toString()
+            );
+            await NumberOrder.findByIdAndUpdate(order._id, { status: 'REFUNDED' });
+
+            if (io) {
+              io.to(`user:${order.userId}`).emit('number:expired', {
+                orderId: order._id,
+                orderType: 'OTP',
+                refunded: true,
+                creditsRefunded: order.creditsCharged,
+              });
+            }
+          } catch (err) {
+            logger.error(`Failed to refund order ${order._id}:`, err.message);
+          }
+        } else if (io) {
+          io.to(`user:${order.userId}`).emit('number:expired', {
+            orderId: order._id,
+            orderType: 'OTP',
+            refunded: false,
+          });
+        }
+      }
     }
 
     if (expired.length > 0) {

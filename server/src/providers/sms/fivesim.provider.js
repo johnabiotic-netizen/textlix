@@ -34,6 +34,18 @@ const buyNumber = async (country, operator, product) => {
   return res.data;
 };
 
+// Long-term rental (hosting) — same response shape as buyNumber
+const buyHostingNumber = async (country, operator, product) => {
+  const res = await api.get(`/user/buy/hosting/${country}/${operator}/${product}`);
+  return res.data;
+};
+
+// Hosting prices — shape: { [product]: { [country]: { [operator]: { cost, count } } } }
+const getHostingPrices = async (product) => {
+  const res = await api.get(`/guest/prices?product=${product}&type=hosting`);
+  return res.data;
+};
+
 const checkOrder = async (orderId) => {
   const res = await api.get(`/user/check/${orderId}`);
   return res.data;
@@ -62,4 +74,4 @@ const getProfile = async () => {
   return res.data;
 };
 
-module.exports = { getCountries, getProducts, getPrices, buyNumber, checkOrder, cancelOrder, finishOrder, getProfile };
+module.exports = { getCountries, getProducts, getPrices, buyNumber, buyHostingNumber, getHostingPrices, checkOrder, cancelOrder, finishOrder, getProfile };

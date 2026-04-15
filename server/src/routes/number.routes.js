@@ -8,6 +8,7 @@ router.use(authenticate);
 router.get('/countries', numberController.getCountries);
 router.get('/countries/:countryId/services', numberController.getServices);
 router.post('/order', numberController.orderNumber);
+router.post('/order/rental', numberController.orderRental);
 router.get('/active', numberController.getActiveOrders);
 router.get('/history', numberController.getOrderHistory);
 router.post('/:orderId/cancel', numberController.cancelOrder);

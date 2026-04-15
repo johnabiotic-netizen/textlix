@@ -30,39 +30,75 @@ class SMSPollerService {
   async _poll(order) {
     const result = await fivesim.checkOrder(order.providerOrderId);
 
-    if (result.status === 'RECEIVED' && result.sms && result.sms.length > 0) {
-      const sms = result.sms[0];
-
-      const updated = await NumberOrder.findByIdAndUpdate(
-        order._id,
-        {
-          smsContent: sms.text,
-          smsCode: sms.code || extractCode(sms.text),
-          smsReceivedAt: new Date(),
-          status: 'COMPLETED',
-        },
-        { new: true }
-      );
-
-      if (this.io) {
-        this.io.to(`user:${order.userId}`).emit('sms:received', {
-          orderId: order._id,
-          phoneNumber: order.phoneNumber,
-          smsContent: sms.text,
-          smsCode: sms.code || extractCode(sms.text),
-        });
+    if (result.sms && result.sms.length > 0) {
+      if (order.orderType === 'RENTAL') {
+        await this._handleRentalSms(order, result.sms);
+      } else {
+        await this._handleOtpSms(order, result.sms[0]);
       }
+    }
 
-      this.stopPolling(order._id.toString());
-
-      try {
-        await fivesim.finishOrder(order.providerOrderId);
-      } catch (_) {}
-
-      logger.info(`SMS received for order ${order._id}`);
-    } else if (result.status === 'TIMEOUT' || result.status === 'CANCELED') {
+    // Stop polling on terminal provider statuses (OTP only — rental uses expiry cron)
+    if (order.orderType !== 'RENTAL' && (result.status === 'TIMEOUT' || result.status === 'CANCELED')) {
       this.stopPolling(order._id.toString());
     }
+  }
+
+  async _handleOtpSms(order, sms) {
+    await NumberOrder.findByIdAndUpdate(order._id, {
+      smsContent: sms.text,
+      smsCode: sms.code || extractCode(sms.text),
+      smsReceivedAt: new Date(),
+      status: 'COMPLETED',
+    });
+
+    if (this.io) {
+      this.io.to(`user:${order.userId}`).emit('sms:received', {
+        orderId: order._id,
+        phoneNumber: order.phoneNumber,
+        smsContent: sms.text,
+        smsCode: sms.code || extractCode(sms.text),
+        orderType: 'OTP',
+      });
+    }
+
+    this.stopPolling(order._id.toString());
+
+    try { await fivesim.finishOrder(order.providerOrderId); } catch (_) {}
+
+    logger.info(`OTP SMS received for order ${order._id}`);
+  }
+
+  async _handleRentalSms(order, smsList) {
+    // Load existing message IDs to avoid saving duplicates
+    const existing = await NumberOrder.findById(order._id, 'smsMessages');
+    const seenIds = new Set((existing?.smsMessages || []).map((m) => m.fivesimId));
+
+    const newMessages = smsList
+      .filter((sms) => sms.id && !seenIds.has(String(sms.id)))
+      .map((sms) => ({
+        fivesimId: String(sms.id),
+        text: sms.text,
+        code: sms.code || extractCode(sms.text),
+        receivedAt: new Date(),
+      }));
+
+    if (newMessages.length === 0) return;
+
+    await NumberOrder.findByIdAndUpdate(order._id, {
+      $push: { smsMessages: { $each: newMessages } },
+    });
+
+    if (this.io) {
+      this.io.to(`user:${order.userId}`).emit('sms:received', {
+        orderId: order._id,
+        phoneNumber: order.phoneNumber,
+        newMessages,
+        orderType: 'RENTAL',
+      });
+    }
+
+    logger.info(`${newMessages.length} rental SMS(es) received for order ${order._id}`);
   }
 
   stopPolling(orderId) {

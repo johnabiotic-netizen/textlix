@@ -123,6 +123,44 @@ async function getChargeCredits(country5simSlug, serviceSlug, fallbackCredits) {
   return Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
 }
 
+// ─── Hosting (rental) price cache ────────────────────────────────────────────
+const hostingMaxPriceCache = new Map();
+
+async function getHostingMaxPrices(serviceSlug) {
+  const cached = hostingMaxPriceCache.get(serviceSlug);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  try {
+    const raw = await fivesim.getHostingPrices(serviceSlug);
+    const byCountry = raw[serviceSlug] || {};
+    const maxPrices = {};
+
+    for (const [countrySlug, operators] of Object.entries(byCountry)) {
+      let max = 0;
+      for (const opData of Object.values(operators)) {
+        if (opData.cost > max) max = opData.cost;
+      }
+      if (max > 0) maxPrices[countrySlug] = max;
+    }
+
+    hostingMaxPriceCache.set(serviceSlug, { data: maxPrices, expiresAt: Date.now() + CACHE_TTL });
+    return maxPrices;
+  } catch (err) {
+    logger.warn(`getHostingMaxPrices failed for ${serviceSlug}:`, err.message);
+    return null;
+  }
+}
+
+/** Rental price per day in credits */
+async function getRentalDailyCredits(country5simSlug, serviceSlug) {
+  const maxPrices = await getHostingMaxPrices(serviceSlug);
+  const maxUSD = maxPrices?.[country5simSlug];
+  if (!maxUSD) return null;
+  return Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
+}
+
+const RENTAL_DURATION_OPTIONS = [1, 7, 30];
+
 exports.getCountries = async (req, res, next) => {
   try {
     const countries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
@@ -176,10 +214,15 @@ exports.getServices = async (req, res, next) => {
       Promise.all(enabledPricing.map((p) => getMaxPrices(p.serviceId.slug))),
     ]);
 
+    // Rental daily prices (best-effort — null means rental not available for this service/country)
+    const rentalDailyResults = await Promise.all(
+      enabledPricing.map((p) => getRentalDailyCredits(fivesimSlug, p.serviceId.slug))
+    );
+
     const services = enabledPricing.map((p, i) => {
       const liveCountryPrice = liveMaxMaps[i]?.[fivesimSlug];
-      // A service is available if live data confirms stock; fall back to DB flag when offline
       const available = liveMaxMaps[i] != null ? liveCountryPrice > 0 : p.isAvailable;
+      const dailyRentalPrice = rentalDailyResults[i];
       return {
         id: p.serviceId._id,
         name: p.serviceId.name,
@@ -188,6 +231,16 @@ exports.getServices = async (req, res, next) => {
         price: priceResults[i],
         available,
         pricingId: p._id,
+        rental: dailyRentalPrice
+          ? {
+              available: true,
+              pricePerDay: dailyRentalPrice,
+              options: RENTAL_DURATION_OPTIONS.map((days) => ({
+                days,
+                price: dailyRentalPrice * days,
+              })),
+            }
+          : { available: false },
       };
     });
 
@@ -327,15 +380,20 @@ exports.cancelOrder = async (req, res, next) => {
 
     smsPoller.stopPolling(order._id.toString());
 
-    const refund = !order.smsContent;
-    if (refund) {
-      await refundCredits(order.userId, order.creditsCharged, `Refund: cancelled number ${order.phoneNumber}`);
-      await NumberOrder.findByIdAndUpdate(order._id, { status: 'REFUNDED' });
-    } else {
+    if (order.orderType === 'RENTAL') {
+      // Rentals: no refund — user paid for time
       await NumberOrder.findByIdAndUpdate(order._id, { status: 'CANCELLED' });
+      success(res, { refunded: false, creditsRefunded: 0 });
+    } else {
+      const refund = !order.smsContent;
+      if (refund) {
+        await refundCredits(order.userId, order.creditsCharged, `Refund: cancelled number ${order.phoneNumber}`);
+        await NumberOrder.findByIdAndUpdate(order._id, { status: 'REFUNDED' });
+      } else {
+        await NumberOrder.findByIdAndUpdate(order._id, { status: 'CANCELLED' });
+      }
+      success(res, { refunded: refund, creditsRefunded: refund ? order.creditsCharged : 0 });
     }
-
-    success(res, { refunded: refund, creditsRefunded: refund ? order.creditsCharged : 0 });
   } catch (err) {
     next(err);
   }
@@ -349,6 +407,88 @@ exports.resendSMS = async (req, res, next) => {
     // Re-start polling if stopped
     smsPoller.startPolling(order);
     success(res, { message: 'Waiting for SMS...' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.orderRental = async (req, res, next) => {
+  try {
+    const { countryId, serviceId, days } = req.body;
+    const userId = req.user.userId;
+
+    if (!RENTAL_DURATION_OPTIONS.includes(Number(days))) {
+      throw new AppError('VALIDATION_ERROR', 400, `days must be one of: ${RENTAL_DURATION_OPTIONS.join(', ')}`);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
+
+    const activeCount = await NumberOrder.countDocuments({ userId, status: 'ACTIVE' });
+    if (activeCount >= user.maxActiveNumbers) {
+      throw new AppError('MAX_NUMBERS_REACHED', 429, `Maximum ${user.maxActiveNumbers} active numbers allowed`);
+    }
+
+    const country = await Country.findById(countryId);
+    const service = await Service.findById(serviceId);
+    if (!country || !service) throw new AppError('NOT_FOUND', 404, 'Country or service not found');
+
+    const countrySlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
+
+    const dailyCredits = await getRentalDailyCredits(countrySlug, service.slug);
+    if (!dailyCredits) {
+      throw new AppError('NOT_FOUND', 404, 'Rental not available for this country/service');
+    }
+
+    const chargeCredits = dailyCredits * Number(days);
+
+    if (user.creditBalance < chargeCredits) {
+      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
+    }
+
+    // Buy hosting number from 5sim
+    let providerResponse;
+    try {
+      providerResponse = await fivesim.buyHostingNumber(countrySlug, 'any', service.slug);
+    } catch (err) {
+      const detail = err.response?.data || err.message;
+      logger.error(`5sim buyHostingNumber failed — ${countrySlug}/${service.slug}:`, detail);
+      throw new AppError('PROVIDER_ERROR', 502, `Could not get a rental number: ${JSON.stringify(detail)}`);
+    }
+
+    logger.info(`Rental order ${countrySlug}/${service.slug}: ${days}d, charged ${chargeCredits}cr`);
+
+    await spendCredits(userId, chargeCredits, `${days}-day rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
+
+    const order = await NumberOrder.create({
+      userId,
+      countryId,
+      serviceId,
+      phoneNumber: providerResponse.phone,
+      providerOrderId: providerResponse.id.toString(),
+      provider: '5sim',
+      creditsCharged: chargeCredits,
+      orderType: 'RENTAL',
+      rentalDays: Number(days),
+      status: 'ACTIVE',
+      expiresAt: new Date(Date.now() + Number(days) * 24 * 60 * 60 * 1000),
+    });
+
+    smsPoller.startPolling(order);
+
+    success(res, {
+      order: {
+        id: order._id,
+        phoneNumber: order.phoneNumber,
+        country: { name: country.name, flagEmoji: country.flagEmoji },
+        service: { name: service.name, icon: service.icon },
+        expiresAt: order.expiresAt,
+        creditsCharged: chargeCredits,
+        rentalDays: order.rentalDays,
+        orderType: 'RENTAL',
+        status: order.status,
+      },
+    }, 201);
   } catch (err) {
     next(err);
   }
