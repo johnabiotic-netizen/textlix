@@ -30,6 +30,13 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
             <span>✓</span> TextLix
           </div>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link to="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pricing</Link>
+            <Link to="/docs" className="text-sm font-medium text-gray-600 hover:text-gray-900">Docs</Link>
+            <Link to="/blog" className="text-sm font-medium text-gray-600 hover:text-gray-900">Blog</Link>
+            <Link to="/about" className="text-sm font-medium text-gray-600 hover:text-gray-900">About</Link>
+            <Link to="/faq" className="text-sm font-medium text-gray-600 hover:text-gray-900">FAQ</Link>
+          </nav>
           <div className="flex items-center gap-3">
             <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
             <Link to="/register" className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
