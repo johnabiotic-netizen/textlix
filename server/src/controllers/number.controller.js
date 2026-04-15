@@ -317,7 +317,19 @@ exports.orderNumber = async (req, res, next) => {
 
 exports.getActiveOrders = async (req, res, next) => {
   try {
-    const orders = await NumberOrder.find({ userId: req.user.userId, status: 'ACTIVE' })
+    const userId = req.user.userId;
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+    // Return ACTIVE orders + COMPLETED orders from the last 30 min
+    // The 30-min window ensures the user can always see their code even if the
+    // socket event was missed — they just need to return to this page within 30 min
+    const orders = await NumberOrder.find({
+      userId,
+      $or: [
+        { status: 'ACTIVE' },
+        { status: 'COMPLETED', smsReceivedAt: { $gte: thirtyMinutesAgo } },
+      ],
+    })
       .populate('countryId', 'name code flagEmoji')
       .populate('serviceId', 'name slug icon')
       .sort({ createdAt: -1 });

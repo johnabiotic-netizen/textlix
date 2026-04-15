@@ -7,33 +7,33 @@ import EmptyState from '../../components/common/EmptyState';
 import { SkeletonCard } from '../../components/common/Skeleton';
 
 export default function ActiveNumbersPage() {
-  // Stable local list — survives React Query refetches
   const [displayOrders, setDisplayOrders] = useState(null);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['activeOrders'],
     queryFn: () => getActiveOrders().then((r) => r.data.data),
+    // Poll every 15s as a socket fallback — backend now returns recently
+    // COMPLETED orders too, so if socket missed the event the card reappears
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 
-  // Merge server data into local list.
-  // Rule: never remove a card that has already received its SMS (_pinned flag).
-  // Those cards stay until the user clicks Done/Dismiss.
+  // Merge server data — never remove a card mid-display if it just received SMS
   useEffect(() => {
     if (!data?.orders) return;
     setDisplayOrders((prev) => {
-      if (!prev) return data.orders; // first load — use server data as-is
+      if (!prev) return data.orders;
 
-      // Keep pinned (SMS received) cards intact
-      const pinned = prev.filter((o) => o._pinned);
-      const pinnedIds = new Set(pinned.map((o) => o._id?.toString()));
+      const serverIds = new Set(data.orders.map((o) => o._id?.toString()));
 
-      // Add/refresh any active orders not already pinned
-      const fresh = data.orders.filter((o) => !pinnedIds.has(o._id?.toString()));
-      return [...pinned, ...fresh];
+      // Keep pinned cards (SMS arrived, user hasn't dismissed yet) even if
+      // the server no longer returns them (>30 min window edge case)
+      const pinned = prev.filter((o) => o._pinned && !serverIds.has(o._id?.toString()));
+
+      return [...pinned, ...data.orders];
     });
   }, [data]);
 
-  // Called by NumberCard the moment SMS arrives — pins the card so refetches won't remove it
   const handleSmsReceived = useCallback((orderId) => {
     setDisplayOrders((prev) =>
       prev?.map((o) =>
@@ -42,10 +42,11 @@ export default function ActiveNumbersPage() {
     );
   }, []);
 
-  // Called on Cancel, Done-Dismiss, or expired-Dismiss — removes card and refreshes list
   const handleCancel = useCallback(
     (orderId) => {
-      setDisplayOrders((prev) => prev?.filter((o) => o._id?.toString() !== orderId?.toString()));
+      setDisplayOrders((prev) =>
+        prev?.filter((o) => o._id?.toString() !== orderId?.toString())
+      );
       refetch();
     },
     [refetch]
@@ -60,11 +61,15 @@ export default function ActiveNumbersPage() {
           <h1 className="font-display font-bold text-2xl text-gray-900">Active Numbers</h1>
           <p className="text-gray-500 text-sm mt-1">SMS arrives here in real-time</p>
         </div>
-        <Link to="/numbers" className="text-sm text-brand-600 hover:underline font-medium">+ Get Another</Link>
+        <Link to="/numbers" className="text-sm text-brand-600 hover:underline font-medium">
+          + Get Another
+        </Link>
       </div>
 
       {isLoading ? (
-        <div className="grid md:grid-cols-2 gap-4">{Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+        <div className="grid md:grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       ) : orders.length === 0 ? (
         <EmptyState
           icon="📱"

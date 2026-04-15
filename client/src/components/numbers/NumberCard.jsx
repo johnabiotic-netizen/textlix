@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiCopy, FiCheck, FiX, FiCheckCircle, FiCalendar } from 'react-icons/fi';
 import { useSocket } from '../../hooks/useSocket';
+import { playNotificationSound } from '../../hooks/useNotificationSound';
 import { cancelOrder } from '../../api/numbers';
 import Button from '../common/Button';
 import toast from 'react-hot-toast';
@@ -43,22 +44,31 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
   const { days, hrs, mins, secs, expired } = useCountdown(order.expiresAt);
   const isRental = order.orderType === 'RENTAL';
 
+  // If the card mounts already completed (socket was missed, fallback refetch
+  // found it), play the sound once so the user knows their code is here
+  useEffect(() => {
+    if (initialOrder.status === 'COMPLETED' && initialOrder.smsContent) {
+      playNotificationSound();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useSocket(
     (data) => {
       if (data.orderId?.toString() !== order._id?.toString()) return;
 
       if (data.orderType === 'RENTAL' && data.newMessages) {
-        // Append new messages to rental card
         setOrder((o) => ({
           ...o,
           smsMessages: [...(o.smsMessages || []), ...data.newMessages],
         }));
+        playNotificationSound();
         toast.success(`${data.newMessages.length} new SMS received!`);
         onSmsReceived?.();
       } else if (data.orderType !== 'RENTAL') {
-        // OTP: single SMS
         setOrder((o) => ({ ...o, smsContent: data.smsContent, smsCode: data.smsCode, status: 'COMPLETED' }));
-        toast.success('SMS received!');
+        playNotificationSound();
+        toast.success('SMS received! Your code is ready.');
         onSmsReceived?.();
       }
     },
