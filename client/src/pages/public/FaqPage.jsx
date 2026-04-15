@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 const FAQS = [
@@ -61,6 +62,12 @@ function FaqItem({ q, a }) {
 
 export default function FaqPage() {
   return (
+    <>
+    <Helmet>
+      <title>FAQ — TextLix Virtual Phone Numbers</title>
+      <meta name="description" content="Frequently asked questions about TextLix virtual phone numbers. Learn how to receive SMS verification codes, top up credits, and more." />
+      <link rel="canonical" href="https://www.textlix.com/faq" />
+    </Helmet>
     <div className="min-h-screen bg-white font-body">
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
@@ -116,5 +123,6 @@ export default function FaqPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

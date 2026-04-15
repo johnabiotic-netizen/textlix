@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /numbers/
+Disallow: /credits/
+Disallow: /orders/
+Disallow: /transactions/
+Disallow: /settings/
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://www.textlix.com/sitemap.xml

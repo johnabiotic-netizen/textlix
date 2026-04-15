@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { FiZap, FiGlobe, FiShield, FiClock } from 'react-icons/fi';
 
 const PACKAGES = [
@@ -13,6 +14,15 @@ const COUNTRIES = ['🇺🇸', '🇬🇧', '🇮🇳', '🇳🇬', '🇷🇺', '
 
 export default function LandingPage() {
   return (
+    <>
+    <Helmet>
+      <title>TextLix — Virtual Phone Numbers for SMS Verification</title>
+      <meta name="description" content="Get virtual phone numbers from 50+ countries instantly. Receive SMS verification codes in real-time for WhatsApp, Telegram, Google, and more. Starting from $0.50." />
+      <link rel="canonical" href="https://www.textlix.com/" />
+      <meta property="og:title" content="TextLix — Virtual Phone Numbers for SMS Verification" />
+      <meta property="og:description" content="Get virtual phone numbers from 50+ countries instantly. Receive SMS verification codes in real-time." />
+      <meta property="og:url" content="https://www.textlix.com/" />
+    </Helmet>
     <div className="min-h-screen bg-white font-body">
       {/* Navbar */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
@@ -203,5 +213,6 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
