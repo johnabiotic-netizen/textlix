@@ -65,10 +65,10 @@ export default function LandingPage() {
     <>
     <Helmet>
       <title>TextLix — Virtual Phone Numbers for SMS Verification</title>
-      <meta name="description" content="Get virtual phone numbers from 50+ countries instantly. Receive SMS verification codes in real-time for WhatsApp, Telegram, Google, and more. Starting from $0.50." />
+      <meta name="description" content="Get virtual phone numbers from 150+ countries instantly. Receive SMS verification codes in real-time for WhatsApp, Telegram, Google, and more. Starting from $0.50." />
       <link rel="canonical" href="https://www.textlix.com/" />
       <meta property="og:title" content="TextLix — Virtual Phone Numbers for SMS Verification" />
-      <meta property="og:description" content="Get virtual phone numbers from 50+ countries instantly. Receive SMS verification codes in real-time." />
+      <meta property="og:description" content="Get virtual phone numbers from 150+ countries instantly. Receive SMS verification codes in real-time." />
       <meta property="og:url" content="https://www.textlix.com/" />
     </Helmet>
     <div className="min-h-screen bg-white font-body">
@@ -104,7 +104,7 @@ export default function LandingPage() {
             Get Verified Anywhere, Instantly
           </h1>
           <p className="text-lg md:text-xl text-brand-100 mb-10 max-w-2xl mx-auto">
-            Buy virtual phone numbers from 50+ countries and receive SMS verification codes in real-time. No SIM card needed.
+            Buy virtual phone numbers from 150+ countries and receive SMS verification codes in real-time. No SIM card needed.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/register" className="bg-white text-brand-600 font-semibold text-lg px-8 py-4 rounded-xl hover:bg-brand-50 transition-colors shadow-lg">
@@ -141,7 +141,7 @@ export default function LandingPage() {
       {/* Countries */}
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto text-center">
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-3">50+ Countries Available</h2>
+          <h2 className="font-display font-bold text-2xl text-gray-900 mb-3">150+ Countries Available</h2>
           <p className="text-gray-500 mb-8">We cover all major markets worldwide</p>
           <div className="flex flex-wrap gap-3 justify-center text-3xl">
             {COUNTRIES.map((flag, i) => <span key={i} className="hover:scale-110 transition-transform cursor-default">{flag}</span>)}
@@ -156,7 +156,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-6">
             {[
               { icon: <FiZap className="text-brand-600" size={24} />, title: 'Instant SMS Delivery', desc: 'SMS codes appear on your screen within seconds of being sent.' },
-              { icon: <FiGlobe className="text-brand-600" size={24} />, title: '50+ Countries', desc: 'Numbers from USA, UK, India, Nigeria, Russia, and dozens more.' },
+              { icon: <FiGlobe className="text-brand-600" size={24} />, title: '150+ Countries', desc: 'Numbers from USA, UK, India, Nigeria, Russia, and dozens more.' },
               { icon: <FiShield className="text-brand-600" size={24} />, title: 'Secure & Private', desc: 'SMS content auto-deleted after 24 hours. No data retention.' },
               { icon: <FiClock className="text-brand-600" size={24} />, title: '24/7 Availability', desc: 'Platform runs around the clock. Numbers available anytime.' },
             ].map((f, i) => (
@@ -239,7 +239,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 mb-2">
                 <span>✓</span> TextLix
               </div>
-              <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 50+ countries.</p>
+              <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 150+ countries.</p>
             </div>
             <div className="flex gap-16">
               <div>

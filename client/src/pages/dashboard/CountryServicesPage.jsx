@@ -19,6 +19,7 @@ export default function CountryServicesPage() {
 
   const [selectedService, setSelectedService] = useState(null); // for OTP modal
   const [rentalDays, setRentalDays] = useState(1);
+  const [rentalServiceSlug, setRentalServiceSlug] = useState(null); // selected hosting service
   const [rentalModalOpen, setRentalModalOpen] = useState(false);
   const [ordering, setOrdering] = useState(false);
   const [search, setSearch] = useState('');
@@ -31,6 +32,12 @@ export default function CountryServicesPage() {
   const { data: rentalData, isLoading: rentalLoading } = useQuery({
     queryKey: ['rentalPrice', countryId],
     queryFn: () => getRentalPrice(countryId).then((r) => r.data.data),
+    onSuccess: (data) => {
+      // Auto-select first available service
+      if (data?.services?.length > 0 && !rentalServiceSlug) {
+        setRentalServiceSlug(data.services[0].slug);
+      }
+    },
   });
 
   const country = servicesData?.country;
@@ -55,7 +62,7 @@ export default function CountryServicesPage() {
   const handleRentalOrder = async () => {
     setOrdering(true);
     try {
-      const { data: res } = await orderRental({ countryId, days: rentalDays });
+      const { data: res } = await orderRental({ countryId, days: rentalDays, serviceSlug: rentalServiceSlug });
       const actualCharge = res.data.order.creditsCharged;
       toast.success(`Rental number: ${res.data.order.phoneNumber} — ${actualCharge} credits charged`);
       useAuthStore.setState((s) => ({ user: { ...s.user, creditBalance: s.user.creditBalance - actualCharge } }));
@@ -75,7 +82,9 @@ export default function CountryServicesPage() {
       s.slug.toLowerCase().includes(search.toLowerCase())
   );
 
-  const rentalPrice = rentalData?.options?.find((o) => o.days === rentalDays)?.price || 0;
+  // Active rental service object
+  const activeRentalService = rentalData?.services?.find((s) => s.slug === rentalServiceSlug) || rentalData?.services?.[0] || null;
+  const rentalPrice = activeRentalService?.options?.find((o) => o.days === rentalDays)?.price || 0;
 
   return (
     <div className="space-y-6">
@@ -92,34 +101,53 @@ export default function CountryServicesPage() {
       </div>
 
       {/* Rental box */}
-      {!rentalLoading && rentalData?.available && (
+      {!rentalLoading && rentalData?.available && rentalData.services?.length > 0 && (
         <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-5">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <FiCalendar size={16} className="text-purple-600" />
-                <span className="font-semibold text-gray-900">Rent this number</span>
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">Any platform</span>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">
-                Receive SMS from WhatsApp, Telegram, Google, or any other service — all on one number.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {rentalData.options.map((opt) => (
-                  <button
-                    key={opt.days}
-                    onClick={() => setRentalDays(opt.days)}
-                    className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                      rentalDays === opt.days
-                        ? 'bg-purple-600 border-purple-600 text-white shadow-sm'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-purple-300'
-                    }`}
-                  >
-                    {opt.label}
-                    <span className="ml-2 font-mono-num">{opt.price} cr</span>
-                  </button>
-                ))}
-              </div>
+          <div className="flex items-center gap-2 mb-1">
+            <FiCalendar size={16} className="text-purple-600" />
+            <span className="font-semibold text-gray-900">Rent a number</span>
+            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">Long-term</span>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Keep the number active for days. Receive multiple SMS codes on the same number.
+          </p>
+
+          {/* Service selector */}
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Platform</p>
+          <div className="flex gap-2 flex-wrap mb-4">
+            {rentalData.services.map((svc) => (
+              <button
+                key={svc.slug}
+                onClick={() => setRentalServiceSlug(svc.slug)}
+                className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                  (rentalServiceSlug || rentalData.services[0]?.slug) === svc.slug
+                    ? 'bg-purple-600 border-purple-600 text-white'
+                    : 'bg-white border-gray-200 text-gray-700 hover:border-purple-300'
+                }`}
+              >
+                {svc.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Duration selector */}
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Duration</p>
+          <div className="flex items-end justify-between gap-4 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
+              {(activeRentalService?.options || []).map((opt) => (
+                <button
+                  key={opt.days}
+                  onClick={() => setRentalDays(opt.days)}
+                  className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                    rentalDays === opt.days
+                      ? 'bg-purple-600 border-purple-600 text-white shadow-sm'
+                      : 'bg-white border-gray-200 text-gray-700 hover:border-purple-300'
+                  }`}
+                >
+                  {opt.label}
+                  <span className="ml-2 font-mono-num">{opt.price} cr</span>
+                </button>
+              ))}
             </div>
             <Button
               onClick={() => setRentalModalOpen(true)}
@@ -131,7 +159,7 @@ export default function CountryServicesPage() {
           </div>
           {(user?.creditBalance || 0) < rentalPrice && (
             <p className="text-xs text-red-600 mt-3">
-              Insufficient credits for this duration. <Link to="/credits" className="underline">Buy more →</Link>
+              Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link>
             </p>
           )}
         </div>
@@ -242,8 +270,8 @@ export default function CountryServicesPage() {
                 <span className="font-medium">{country?.flagEmoji} {country?.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Receives from</span>
-                <span className="font-medium text-purple-700">Any platform</span>
+                <span className="text-gray-500">Platform</span>
+                <span className="font-medium text-purple-700">{activeRentalService?.name}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Duration</span>

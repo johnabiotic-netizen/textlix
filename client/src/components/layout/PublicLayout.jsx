@@ -79,7 +79,7 @@ export default function PublicLayout({ children }) {
               <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 mb-2">
                 <span>✓</span> TextLix
               </div>
-              <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 50+ countries.</p>
+              <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 1150+ countries.</p>
             </div>
             <div className="flex flex-wrap gap-12">
               <div>

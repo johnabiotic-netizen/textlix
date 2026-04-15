@@ -218,9 +218,12 @@ async function getHostingMaxPrices(serviceSlug) {
   }
 }
 
-/** Rental price per day in credits for a country — uses 'any' product (receives from any platform) */
-async function getRentalDailyCredits(country5simSlug) {
-  const maxPrices = await getHostingMaxPrices('any');
+// Hosting services 5sim actually supports — ordered by popularity
+const HOSTING_SERVICES = ['whatsapp', 'telegram', 'google', 'instagram', 'facebook', 'tiktok', 'twitter', 'discord', 'snapchat', 'amazon'];
+
+/** Rental price per day in credits for a country+service combo */
+async function getRentalDailyCredits(country5simSlug, serviceSlug) {
+  const maxPrices = await getHostingMaxPrices(serviceSlug);
   const maxUSD = maxPrices?.[country5simSlug];
   if (!maxUSD) return null;
   return Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
@@ -484,19 +487,35 @@ exports.getRentalPrice = async (req, res, next) => {
     if (!country || !country.isEnabled) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
     const countrySlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
-    const dailyCredits = await getRentalDailyCredits(countrySlug);
 
-    if (!dailyCredits) {
+    // Fetch prices for all hosting services in parallel
+    const priceResults = await Promise.all(
+      HOSTING_SERVICES.map((svc) => getRentalDailyCredits(countrySlug, svc).then((p) => ({ slug: svc, pricePerDay: p })))
+    );
+
+    const availableServices = priceResults.filter((s) => s.pricePerDay != null);
+
+    if (availableServices.length === 0) {
       return success(res, { available: false });
     }
 
+    const serviceLabels = {
+      whatsapp: 'WhatsApp', telegram: 'Telegram', google: 'Google', instagram: 'Instagram',
+      facebook: 'Facebook', tiktok: 'TikTok', twitter: 'Twitter / X', discord: 'Discord',
+      snapchat: 'Snapchat', amazon: 'Amazon',
+    };
+
     success(res, {
       available: true,
-      pricePerDay: dailyCredits,
-      options: RENTAL_DURATION_OPTIONS.map((days) => ({
-        days,
-        price: dailyCredits * days,
-        label: days === 1 ? '1 Day' : days === 7 ? '7 Days' : '30 Days',
+      services: availableServices.map((s) => ({
+        slug: s.slug,
+        name: serviceLabels[s.slug] || s.slug,
+        pricePerDay: s.pricePerDay,
+        options: RENTAL_DURATION_OPTIONS.map((days) => ({
+          days,
+          price: s.pricePerDay * days,
+          label: days === 1 ? '1 Day' : days === 7 ? '7 Days' : '30 Days',
+        })),
       })),
     });
   } catch (err) {
@@ -506,11 +525,14 @@ exports.getRentalPrice = async (req, res, next) => {
 
 exports.orderRental = async (req, res, next) => {
   try {
-    const { countryId, days } = req.body;
+    const { countryId, days, serviceSlug } = req.body;
     const userId = req.user.userId;
 
     if (!RENTAL_DURATION_OPTIONS.includes(Number(days))) {
       throw new AppError('VALIDATION_ERROR', 400, `days must be one of: ${RENTAL_DURATION_OPTIONS.join(', ')}`);
+    }
+    if (!serviceSlug || !HOSTING_SERVICES.includes(serviceSlug)) {
+      throw new AppError('VALIDATION_ERROR', 400, `serviceSlug must be one of: ${HOSTING_SERVICES.join(', ')}`);
     }
 
     const user = await User.findById(userId);
@@ -526,9 +548,9 @@ exports.orderRental = async (req, res, next) => {
 
     const countrySlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
-    const dailyCredits = await getRentalDailyCredits(countrySlug);
+    const dailyCredits = await getRentalDailyCredits(countrySlug, serviceSlug);
     if (!dailyCredits) {
-      throw new AppError('NOT_FOUND', 404, 'Rental not available for this country');
+      throw new AppError('NOT_FOUND', 404, `Rental not available for ${serviceSlug} in this country`);
     }
 
     const chargeCredits = dailyCredits * Number(days);
@@ -537,21 +559,26 @@ exports.orderRental = async (req, res, next) => {
       throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
     }
 
-    // Buy 'any' hosting number — receives SMS from any platform
+    // Buy hosting number for the specific service
     let providerResponse;
     try {
-      providerResponse = await fivesim.buyHostingNumber(countrySlug, 'any', 'any');
+      providerResponse = await fivesim.buyHostingNumber(countrySlug, 'any', serviceSlug);
     } catch (err) {
       const detail = err.response?.data || err.message;
-      logger.error(`5sim buyHostingNumber failed — ${countrySlug}:`, detail);
+      logger.error(`5sim buyHostingNumber failed — ${countrySlug}/${serviceSlug}:`, detail);
       throw new AppError('PROVIDER_ERROR', 502, `Could not get a rental number: ${JSON.stringify(detail)}`);
     }
 
-    logger.info(`Rental order ${countrySlug}: ${days}d, charged ${chargeCredits}cr`);
+    const serviceLabels = {
+      whatsapp: 'WhatsApp', telegram: 'Telegram', google: 'Google', instagram: 'Instagram',
+      facebook: 'Facebook', tiktok: 'TikTok', twitter: 'Twitter / X', discord: 'Discord',
+      snapchat: 'Snapchat', amazon: 'Amazon',
+    };
 
-    await spendCredits(userId, chargeCredits, `${days}-day rental: ${country.flagEmoji} ${country.name}`);
+    logger.info(`Rental order ${countrySlug}/${serviceSlug}: ${days}d, charged ${chargeCredits}cr`);
 
-    // Rental orders have no specific service — use a sentinel serviceId or store null
+    await spendCredits(userId, chargeCredits, `${days}-day rental: ${country.flagEmoji} ${country.name} - ${serviceLabels[serviceSlug] || serviceSlug}`);
+
     const order = await NumberOrder.create({
       userId,
       countryId,
@@ -573,6 +600,7 @@ exports.orderRental = async (req, res, next) => {
         id: order._id,
         phoneNumber: order.phoneNumber,
         country: { name: country.name, flagEmoji: country.flagEmoji },
+        service: { name: serviceLabels[serviceSlug] || serviceSlug, slug: serviceSlug },
         expiresAt: order.expiresAt,
         creditsCharged: chargeCredits,
         rentalDays: order.rentalDays,
