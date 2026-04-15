@@ -43,11 +43,10 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
   useSocket(
     (data) => {
       if (data.orderId === order._id || data.orderId?.toString() === order._id?.toString()) {
-        // Update card in place — do NOT call onSmsReceived here because getActiveOrders
-        // only returns ACTIVE orders, so a refetch would wipe the card before the user
-        // can read/copy the code. The user dismisses it manually with the Done button.
         setOrder((o) => ({ ...o, smsContent: data.smsContent, smsCode: data.smsCode, status: 'COMPLETED' }));
         toast.success('SMS received!');
+        // Tell parent to pin this card so refetches don't remove it before the user reads the code
+        onSmsReceived?.();
       }
     },
     (data) => {
