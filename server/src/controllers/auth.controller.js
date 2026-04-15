@@ -30,7 +30,11 @@ exports.register = async (req, res, next) => {
     const { email, password, name } = req.body;
 
     const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing) throw new AppError('VALIDATION_ERROR', 400, 'Email already registered');
+    if (existing) {
+      // Don't reveal whether the email is registered — return the same shape
+      // either way so attackers cannot enumerate accounts via register.
+      return success(res, { message: 'If this email is new, your account has been created.' }, 201);
+    }
 
     const passwordHash = await bcrypt.hash(password, 12);
     const emailVerifyToken = generateRandomToken();

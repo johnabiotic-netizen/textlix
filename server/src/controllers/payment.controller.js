@@ -102,24 +102,34 @@ exports.paystackWebhook = async (req, res, next) => {
 
 exports.paystackVerify = async (req, res, next) => {
   try {
+    // Ownership check — users may only verify their own payments (prevents IDOR)
+    const payment = await Payment.findById(req.params.reference);
+    if (!payment) throw new AppError('NOT_FOUND', 404, 'Payment not found');
+    if (payment.userId.toString() !== req.user.userId.toString()) {
+      throw new AppError('FORBIDDEN', 403, 'Access denied');
+    }
+
     const data = await paystackProvider.verifyTransaction(req.params.reference);
     if (data.status === 'success') {
       await processPaystackPayment(req.params.reference);
     }
-    const payment = await Payment.findById(req.params.reference);
-    success(res, { payment });
+
+    const updated = await Payment.findById(req.params.reference);
+    success(res, { payment: updated });
   } catch (err) {
     next(err);
   }
 };
 
 async function processPaystackPayment(reference) {
-  const payment = await Payment.findById(reference);
-  if (!payment || payment.status === 'COMPLETED') return;
-
-  payment.status = 'COMPLETED';
-  payment.completedAt = new Date();
-  await payment.save();
+  // Atomic claim: only transition PENDING → COMPLETED once, even under concurrent calls.
+  // findOneAndUpdate returns null if status was already COMPLETED — safe to ignore.
+  const payment = await Payment.findOneAndUpdate(
+    { _id: reference, status: 'PENDING' },
+    { $set: { status: 'COMPLETED', completedAt: new Date() } },
+    { new: false } // return original so we can read creditsAdded/userId
+  );
+  if (!payment) return; // already processed or doesn't exist
 
   await addCredits(
     payment.userId,
@@ -184,11 +194,13 @@ exports.cryptoWebhook = async (req, res, next) => {
 
     const { status, order_id } = req.body;
     if (status === 'paid') {
-      const payment = await Payment.findById(order_id);
-      if (payment && payment.status !== 'COMPLETED') {
-        payment.status = 'COMPLETED';
-        payment.completedAt = new Date();
-        await payment.save();
+      // Atomic claim — same pattern as Paystack to prevent double-credit on concurrent calls
+      const payment = await Payment.findOneAndUpdate(
+        { _id: order_id, status: 'PENDING' },
+        { $set: { status: 'COMPLETED', completedAt: new Date() } },
+        { new: false }
+      );
+      if (payment) {
         await addCredits(
           payment.userId,
           payment.creditsAdded,

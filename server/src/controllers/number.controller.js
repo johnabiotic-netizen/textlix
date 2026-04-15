@@ -549,9 +549,9 @@ exports.orderNumber = async (req, res, next) => {
     const user = await User.findById(userId);
     if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
 
-    // Check active number limit
-    const activeCount = await NumberOrder.countDocuments({ userId, status: 'ACTIVE' });
-    if (activeCount >= user.maxActiveNumbers) {
+    // Fast pre-check (non-atomic, reduces load before the expensive 5sim call)
+    const preCount = await NumberOrder.countDocuments({ userId, status: 'ACTIVE' });
+    if (preCount >= user.maxActiveNumbers) {
       throw new AppError('MAX_NUMBERS_REACHED', 429, `Maximum ${user.maxActiveNumbers} active numbers allowed`);
     }
 
@@ -566,14 +566,13 @@ exports.orderNumber = async (req, res, next) => {
 
     const countryName = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
-    // Charge based on MAX operator price — covers worst case, any cheaper operator = profit
     const chargeCredits = await getChargeCredits(countryName, service.slug, pricing.finalPrice);
 
     if (user.creditBalance < chargeCredits) {
       throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
     }
 
-    // Buy number
+    // Buy number from provider before touching credits
     let providerResponse;
     try {
       providerResponse = await fivesim.buyNumber(countryName, 'any', service.slug);
@@ -587,21 +586,42 @@ exports.orderNumber = async (req, res, next) => {
 
     const timeoutMinutes = await getSettingNum('number_timeout_minutes', 20);
 
-    // Deduct exact amount based on real 5sim price
+    // Deduct credits
     await spendCredits(userId, chargeCredits, `Number rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
 
-    // Create order
-    const order = await NumberOrder.create({
-      userId,
-      countryId,
-      serviceId,
-      phoneNumber: providerResponse.phone,
-      providerOrderId: providerResponse.id.toString(),
-      provider: '5sim',
-      creditsCharged: chargeCredits,
-      status: 'ACTIVE',
-      expiresAt: new Date(Date.now() + timeoutMinutes * 60 * 1000),
-    });
+    // Atomic order creation with re-check inside a session — prevents concurrent
+    // requests that all passed the pre-check from exceeding the active number cap.
+    let order;
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const activeCount = await NumberOrder.countDocuments({ userId, status: 'ACTIVE' }).session(session);
+        if (activeCount >= user.maxActiveNumbers) {
+          throw new AppError('MAX_NUMBERS_REACHED', 429, `Maximum ${user.maxActiveNumbers} active numbers allowed`);
+        }
+        const [created] = await NumberOrder.create([{
+          userId,
+          countryId,
+          serviceId,
+          phoneNumber: providerResponse.phone,
+          providerOrderId: providerResponse.id.toString(),
+          provider: '5sim',
+          creditsCharged: chargeCredits,
+          status: 'ACTIVE',
+          expiresAt: new Date(Date.now() + timeoutMinutes * 60 * 1000),
+        }], { session });
+        order = created;
+      });
+    } catch (err) {
+      session.endSession();
+      // Concurrent requests exceeded the cap after credits were already spent — refund and cancel
+      if (err.code === 'MAX_NUMBERS_REACHED') {
+        await refundCredits(userId, chargeCredits, `Refund: slot full (concurrent order) ${country.flagEmoji} ${country.name}`);
+        await fivesim.cancelOrder(providerResponse.id.toString()).catch(() => {});
+      }
+      throw err;
+    }
+    session.endSession();
 
     // Start SMS polling
     smsPoller.startPolling(order);
@@ -689,7 +709,29 @@ exports.cancelOrder = async (req, res, next) => {
       await NumberOrder.findByIdAndUpdate(order._id, { status: 'CANCELLED' });
       success(res, { refunded: false, creditsRefunded: 0 });
     } else {
-      const refund = !order.smsContent;
+      // Guard against SMS harvest: DB state may lag the 5-second poll window.
+      // Do a live provider check so a user can't cancel within the polling gap,
+      // get a refund, and keep the SMS code they already saw on their service.
+      let hasSms = !!order.smsContent;
+      if (!hasSms) {
+        try {
+          const live = await fivesim.checkOrder(order.providerOrderId);
+          if (live?.sms?.length > 0) {
+            hasSms = true;
+            // Write the SMS into the order so DB is consistent
+            await NumberOrder.findByIdAndUpdate(order._id, {
+              smsContent: live.sms[0].text,
+              smsReceivedAt: new Date(),
+              status: 'COMPLETED',
+            });
+          }
+        } catch (_) {
+          // Provider check failed — fall back to DB state (conservative: don't refund if uncertain)
+          logger.warn(`Live SMS check failed for order ${order._id} during cancel`);
+        }
+      }
+
+      const refund = !hasSms;
       if (refund) {
         await refundCredits(order.userId, order.creditsCharged, `Refund: cancelled number ${order.phoneNumber}`);
         await NumberOrder.findByIdAndUpdate(order._id, { status: 'REFUNDED' });
