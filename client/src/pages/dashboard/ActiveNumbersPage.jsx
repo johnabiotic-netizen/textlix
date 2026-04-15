@@ -5,9 +5,11 @@ import { getActiveOrders } from '../../api/numbers';
 import NumberCard from '../../components/numbers/NumberCard';
 import EmptyState from '../../components/common/EmptyState';
 import { SkeletonCard } from '../../components/common/Skeleton';
+import useDismissedOrders from '../../hooks/useDismissedOrders';
 
 export default function ActiveNumbersPage() {
   const [displayOrders, setDisplayOrders] = useState(null);
+  const { dismiss, isDismissed } = useDismissedOrders();
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['activeOrders'],
@@ -22,17 +24,20 @@ export default function ActiveNumbersPage() {
   useEffect(() => {
     if (!data?.orders) return;
     setDisplayOrders((prev) => {
-      if (!prev) return data.orders;
+      // Filter out already-dismissed orders from server data
+      const serverOrders = data.orders.filter((o) => !isDismissed(o._id?.toString()));
 
-      const serverIds = new Set(data.orders.map((o) => o._id?.toString()));
+      if (!prev) return serverOrders;
+
+      const serverIds = new Set(serverOrders.map((o) => o._id?.toString()));
 
       // Keep pinned cards (SMS arrived, user hasn't dismissed yet) even if
       // the server no longer returns them (>30 min window edge case)
-      const pinned = prev.filter((o) => o._pinned && !serverIds.has(o._id?.toString()));
+      const pinned = prev.filter((o) => o._pinned && !serverIds.has(o._id?.toString()) && !isDismissed(o._id?.toString()));
 
-      return [...pinned, ...data.orders];
+      return [...pinned, ...serverOrders];
     });
-  }, [data]);
+  }, [data, isDismissed]);
 
   const handleSmsReceived = useCallback((orderId) => {
     setDisplayOrders((prev) =>
@@ -44,12 +49,13 @@ export default function ActiveNumbersPage() {
 
   const handleCancel = useCallback(
     (orderId) => {
+      dismiss(orderId?.toString());
       setDisplayOrders((prev) =>
         prev?.filter((o) => o._id?.toString() !== orderId?.toString())
       );
       refetch();
     },
-    [refetch]
+    [refetch, dismiss]
   );
 
   const orders = displayOrders || [];

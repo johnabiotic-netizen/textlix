@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { RiCoinLine } from 'react-icons/ri';
@@ -11,17 +12,33 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import NumberCard from '../../components/numbers/NumberCard';
+import useDismissedOrders from '../../hooks/useDismissedOrders';
 
 dayjs.extend(relativeTime);
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const [displayOrders, setDisplayOrders] = useState(null);
+  const { dismiss, isDismissed } = useDismissedOrders();
 
   const { data: activeData, isLoading: loadingActive, refetch } = useQuery({
     queryKey: ['activeOrders'],
     queryFn: () => getActiveOrders().then((r) => r.data.data),
     refetchInterval: 10000,
   });
+
+  useEffect(() => {
+    if (!activeData?.orders) return;
+    setDisplayOrders(activeData.orders.filter((o) => !isDismissed(o._id?.toString())));
+  }, [activeData, isDismissed]);
+
+  const handleCancel = useCallback((orderId) => {
+    dismiss(orderId?.toString());
+    setDisplayOrders((prev) => prev?.filter((o) => o._id?.toString() !== orderId?.toString()));
+    refetch();
+  }, [dismiss, refetch]);
+
+  const orders = displayOrders ?? [];
 
   const { data: txData, isLoading: loadingTx } = useQuery({
     queryKey: ['recentTx'],
@@ -70,15 +87,15 @@ export default function DashboardPage() {
       {/* Active numbers */}
       {loadingActive ? (
         <div className="grid md:grid-cols-2 gap-4"><SkeletonCard /><SkeletonCard /></div>
-      ) : activeData?.orders?.length > 0 ? (
+      ) : orders.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold text-lg text-gray-900">Active Numbers</h2>
             <Link to="/numbers/active" className="text-sm text-brand-600 hover:underline">View all →</Link>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
-            {activeData.orders.slice(0, 4).map((order) => (
-              <NumberCard key={order._id} order={order} onCancel={refetch} onSmsReceived={refetch} />
+            {orders.slice(0, 4).map((order) => (
+              <NumberCard key={order._id} order={order} onCancel={() => handleCancel(order._id)} onSmsReceived={refetch} />
             ))}
           </div>
         </div>
