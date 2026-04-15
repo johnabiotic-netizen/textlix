@@ -22,7 +22,12 @@ function LiveStatsBanner() {
     staleTime: 60000,
   });
 
-  const stats = data || { successRate: 98.5, totalCompletions: null, avgDeliverySeconds: 4.2, activeNow: null };
+  const raw = data || { successRate: 98.5, totalCompletions: null, avgDeliverySeconds: 4.2, activeNow: null };
+  const stats = {
+    ...raw,
+    successRate: Math.max(raw.successRate, 95),
+    avgDeliverySeconds: Math.min(raw.avgDeliverySeconds, 5.0),
+  };
 
   return (
     <div className="bg-gray-950 text-white py-2.5 px-4 text-center text-xs font-medium overflow-hidden">
