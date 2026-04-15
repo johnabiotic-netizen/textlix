@@ -11,11 +11,11 @@ import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import Input from '../../components/common/Input';
 
-export default function CountryServicesPage() {
+export default function CountryServicesPage({ mode: modeProp }) {
   const { countryId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const mode = searchParams.get('mode') || 'otp'; // 'otp' | 'rental'
+  const mode = modeProp || 'otp'; // passed via route element prop
   const preselectedService = searchParams.get('service') || null;
   const { user } = useAuthStore();
   const qc = useQueryClient();
@@ -94,7 +94,9 @@ export default function CountryServicesPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link
-          to={preselectedService ? `/numbers/service/${preselectedService}?mode=${mode}` : `/numbers?mode=${mode}`}
+          to={preselectedService
+            ? `/numbers/${mode === 'rental' ? 'rental' : 'otp'}/service/${preselectedService}`
+            : `/numbers/${mode === 'rental' ? 'rental' : 'otp'}`}
           className="text-gray-400 hover:text-gray-600"
         >
           <FiArrowLeft size={20} />
@@ -181,7 +183,7 @@ export default function CountryServicesPage() {
           <p className="text-4xl mb-3">📅</p>
           <p className="font-medium text-gray-600">Rental not available for this country</p>
           <p className="text-sm mt-1">Try a different country or use one-time OTP instead.</p>
-          <Link to={`/numbers?mode=otp`} className="text-brand-600 text-sm hover:underline mt-3 inline-block">Browse OTP numbers →</Link>
+          <Link to="/numbers/otp" className="text-brand-600 text-sm hover:underline mt-3 inline-block">Browse OTP numbers →</Link>
         </div>
       )}
 

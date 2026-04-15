@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { FiArrowLeft } from 'react-icons/fi';
 import { getCountriesForService } from '../../api/numbers';
@@ -14,11 +14,10 @@ const SERVICE_EMOJIS = {
   uber: '🚗', amazon: '📦', netflix: '🎬', spotify: '🎵', paypal: '💳',
 };
 
-export default function ServiceCountriesPage() {
+export default function ServiceCountriesPage({ mode: modeProp }) {
   const { serviceSlug } = useParams();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const mode = searchParams.get('mode') || 'otp';
+  const mode = modeProp || 'otp';
   const [search, setSearch] = useState('');
 
   const { data, isLoading } = useQuery({
@@ -35,14 +34,14 @@ export default function ServiceCountriesPage() {
   const emoji = SERVICE_EMOJIS[serviceSlug] || '📱';
 
   const handleCountryClick = (countryId) => {
-    navigate(`/numbers/${countryId}?mode=${mode}&service=${serviceSlug}`);
+    navigate(`/numbers/${mode === 'rental' ? 'rental' : 'otp'}/${countryId}?service=${serviceSlug}`);
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link to={`/numbers?mode=${mode}&browse=service`} className="text-gray-400 hover:text-gray-600">
+        <Link to={`/numbers/${mode === 'rental' ? 'rental' : 'otp'}?browse=service`} className="text-gray-400 hover:text-gray-600">
           <FiArrowLeft size={20} />
         </Link>
         <div>

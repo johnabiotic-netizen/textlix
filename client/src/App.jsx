@@ -29,6 +29,7 @@ import BlogPostPage from './pages/public/BlogPostPage';
 // Dashboard pages
 import DashboardPage from './pages/dashboard/DashboardPage';
 import BrowseNumbersPage from './pages/dashboard/BrowseNumbersPage';
+import BrowseByModePage from './pages/dashboard/BrowseByModePage';
 import ServiceCountriesPage from './pages/dashboard/ServiceCountriesPage';
 import CountryServicesPage from './pages/dashboard/CountryServicesPage';
 import ActiveNumbersPage from './pages/dashboard/ActiveNumbersPage';
@@ -130,8 +131,14 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/numbers" element={<BrowseNumbersPage />} />
           <Route path="/numbers/active" element={<ActiveNumbersPage />} />
-          <Route path="/numbers/service/:serviceSlug" element={<ServiceCountriesPage />} />
-          <Route path="/numbers/:countryId" element={<CountryServicesPage />} />
+          {/* OTP routes */}
+          <Route path="/numbers/otp" element={<BrowseByModePage mode="otp" />} />
+          <Route path="/numbers/otp/service/:serviceSlug" element={<ServiceCountriesPage mode="otp" />} />
+          <Route path="/numbers/otp/:countryId" element={<CountryServicesPage mode="otp" />} />
+          {/* Rental routes */}
+          <Route path="/numbers/rental" element={<BrowseByModePage mode="rental" />} />
+          <Route path="/numbers/rental/service/:serviceSlug" element={<ServiceCountriesPage mode="rental" />} />
+          <Route path="/numbers/rental/:countryId" element={<CountryServicesPage mode="rental" />} />
           <Route path="/credits" element={<BuyCreditsPage />} />
           <Route path="/transactions" element={<TransactionHistoryPage />} />
           <Route path="/orders" element={<OrderHistoryPage />} />
