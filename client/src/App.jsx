@@ -29,6 +29,7 @@ import BlogPostPage from './pages/public/BlogPostPage';
 // Dashboard pages
 import DashboardPage from './pages/dashboard/DashboardPage';
 import BrowseNumbersPage from './pages/dashboard/BrowseNumbersPage';
+import ServiceCountriesPage from './pages/dashboard/ServiceCountriesPage';
 import CountryServicesPage from './pages/dashboard/CountryServicesPage';
 import ActiveNumbersPage from './pages/dashboard/ActiveNumbersPage';
 import BuyCreditsPage from './pages/dashboard/BuyCreditsPage';
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/numbers" element={<BrowseNumbersPage />} />
           <Route path="/numbers/active" element={<ActiveNumbersPage />} />
+          <Route path="/numbers/service/:serviceSlug" element={<ServiceCountriesPage />} />
           <Route path="/numbers/:countryId" element={<CountryServicesPage />} />
           <Route path="/credits" element={<BuyCreditsPage />} />
           <Route path="/transactions" element={<TransactionHistoryPage />} />

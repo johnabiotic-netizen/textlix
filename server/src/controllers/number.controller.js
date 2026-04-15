@@ -231,6 +231,99 @@ async function getRentalDailyCredits(country5simSlug, serviceSlug) {
 
 const RENTAL_DURATION_OPTIONS = [1, 7, 30];
 
+/** List all enabled services with country counts */
+exports.getServiceList = async (req, res, next) => {
+  try {
+    const services = await Service.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
+    const serviceIds = services.map((s) => s._id);
+
+    const counts = await NumberPricing.aggregate([
+      { $match: { serviceId: { $in: serviceIds }, isAvailable: true } },
+      { $group: { _id: '$serviceId', countryCount: { $sum: 1 }, minPrice: { $min: '$finalPrice' } } },
+    ]);
+    const countMap = {};
+    for (const c of counts) countMap[c._id.toString()] = { countryCount: c.countryCount, minPrice: c.minPrice };
+
+    const result = services
+      .filter((s) => countMap[s._id.toString()]?.countryCount > 0)
+      .map((s) => ({
+        id: s._id,
+        name: s.name,
+        slug: s.slug,
+        icon: s.icon,
+        countryCount: countMap[s._id.toString()]?.countryCount || 0,
+        minPrice: countMap[s._id.toString()]?.minPrice || 0,
+      }));
+
+    success(res, { services: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Countries available for a specific service (OTP or rental) */
+exports.getCountriesForService = async (req, res, next) => {
+  try {
+    const { serviceSlug } = req.params;
+    const { mode = 'otp' } = req.query;
+
+    if (mode === 'rental') {
+      // Fetch hosting prices for this service and return countries that have availability
+      const maxPrices = await getHostingMaxPrices(serviceSlug);
+      if (!maxPrices) return success(res, { countries: [] });
+
+      // Build reverse map: 5sim slug → country doc
+      const allCountries = await Country.find({ isEnabled: true });
+      const result = [];
+      for (const country of allCountries) {
+        const slug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
+        const maxUSD = maxPrices[slug];
+        if (!maxUSD) continue;
+        const pricePerDay = Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
+        result.push({
+          id: country._id,
+          name: country.name,
+          code: country.code,
+          flagEmoji: country.flagEmoji,
+          pricePerDay,
+          minPrice: pricePerDay, // 1-day price shown in grid
+        });
+      }
+      result.sort((a, b) => a.name.localeCompare(b.name));
+      return success(res, { countries: result });
+    }
+
+    // OTP mode — look up from NumberPricing
+    const svc = await Service.findOne({ slug: serviceSlug, isEnabled: true });
+    if (!svc) throw new AppError('NOT_FOUND', 404, 'Service not found');
+
+    const pricing = await NumberPricing.find({ serviceId: svc._id, isAvailable: true }).populate('countryId');
+    const maxPrices = await getMaxPrices(serviceSlug);
+
+    const result = [];
+    for (const p of pricing) {
+      const c = p.countryId;
+      if (!c || !c.isEnabled) continue;
+      const slug = c.fivesimSlug || ISO_TO_SLUG[c.code] || c.code.toLowerCase();
+      const livePrice = maxPrices?.[slug];
+      const price = livePrice != null ? Math.ceil(Math.ceil(livePrice * 100) * (1 + MARGIN)) : p.finalPrice;
+      const available = maxPrices != null ? livePrice > 0 : p.isAvailable;
+      if (!available) continue;
+      result.push({
+        id: c._id,
+        name: c.name,
+        code: c.code,
+        flagEmoji: c.flagEmoji,
+        minPrice: price,
+      });
+    }
+    result.sort((a, b) => a.name.localeCompare(b.name));
+    success(res, { countries: result, service: { id: svc._id, name: svc.name, slug: svc.slug, icon: svc.icon } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getCountries = async (req, res, next) => {
   try {
     const countries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });

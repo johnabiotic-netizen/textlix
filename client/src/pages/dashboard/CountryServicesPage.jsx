@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiCheckCircle, FiSearch, FiCalendar } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -14,6 +14,9 @@ import Input from '../../components/common/Input';
 export default function CountryServicesPage() {
   const { countryId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get('mode') || 'otp'; // 'otp' | 'rental'
+  const preselectedService = searchParams.get('service') || null;
   const { user } = useAuthStore();
   const qc = useQueryClient();
 
@@ -90,18 +93,25 @@ export default function CountryServicesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link to="/numbers" className="text-gray-400 hover:text-gray-600"><FiArrowLeft size={20} /></Link>
+        <Link
+          to={preselectedService ? `/numbers/service/${preselectedService}?mode=${mode}` : `/numbers?mode=${mode}`}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <FiArrowLeft size={20} />
+        </Link>
         <div>
           <div className="flex items-center gap-2">
             {country && <span className="text-2xl">{country.flagEmoji}</span>}
             <h1 className="font-display font-bold text-2xl text-gray-900">{country?.name || 'Loading...'}</h1>
           </div>
-          <p className="text-sm text-gray-500">Get a number for OTP or rent one for days</p>
+          <p className="text-sm text-gray-500">
+            {mode === 'rental' ? 'Rent a number for days' : 'One-time OTP verification'}
+          </p>
         </div>
       </div>
 
       {/* Rental box */}
-      {!rentalLoading && rentalData?.available && rentalData.services?.length > 0 && (
+      {mode !== 'otp' && !rentalLoading && rentalData?.available && rentalData.services?.length > 0 && (
         <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-1">
             <FiCalendar size={16} className="text-purple-600" />
@@ -165,8 +175,18 @@ export default function CountryServicesPage() {
         </div>
       )}
 
+      {/* Rental unavailable message */}
+      {mode === 'rental' && !rentalLoading && (!rentalData?.available || !rentalData?.services?.length) && (
+        <div className="text-center py-12 text-gray-400">
+          <p className="text-4xl mb-3">📅</p>
+          <p className="font-medium text-gray-600">Rental not available for this country</p>
+          <p className="text-sm mt-1">Try a different country or use one-time OTP instead.</p>
+          <Link to={`/numbers?mode=otp`} className="text-brand-600 text-sm hover:underline mt-3 inline-block">Browse OTP numbers →</Link>
+        </div>
+      )}
+
       {/* OTP section */}
-      <div>
+      {mode !== 'rental' && <div>
         <p className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wide">One-time OTP numbers</p>
 
         <Input
@@ -220,7 +240,7 @@ export default function CountryServicesPage() {
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* OTP confirm modal */}
       <Modal isOpen={!!selectedService} onClose={() => !ordering && setSelectedService(null)} title="Confirm Order">
