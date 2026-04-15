@@ -71,17 +71,25 @@ exports.paystackInitialize = async (req, res, next) => {
 
 exports.paystackWebhook = async (req, res, next) => {
   try {
+    // req.body is a raw Buffer (express.raw middleware applied upstream)
     const signature = req.headers['x-paystack-signature'];
+    if (!signature) {
+      logger.warn('Paystack webhook rejected: missing signature header');
+      return res.status(400).json({ error: 'Missing signature' });
+    }
+
     const hash = crypto
       .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY || '')
-      .update(JSON.stringify(req.body))
+      .update(req.body) // raw Buffer — correct input for HMAC
       .digest('hex');
 
-    if (signature && hash !== signature) {
+    if (hash !== signature) {
+      logger.warn('Paystack webhook rejected: signature mismatch');
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    const { event, data } = req.body;
+    const payload = JSON.parse(req.body.toString('utf8'));
+    const { event, data } = payload;
     if (event !== 'charge.success') return res.sendStatus(200);
 
     await processPaystackPayment(data.reference);
@@ -166,6 +174,14 @@ exports.cryptoCreate = async (req, res, next) => {
 
 exports.cryptoWebhook = async (req, res, next) => {
   try {
+    // CoinGate sends: Authorization: Token <your_api_token>
+    const authHeader = req.headers['authorization'];
+    const expectedToken = `Token ${process.env.COINGATE_API_TOKEN}`;
+    if (!authHeader || authHeader !== expectedToken) {
+      logger.warn('CoinGate webhook rejected: invalid or missing Authorization header');
+      return res.status(401).end();
+    }
+
     const { status, order_id } = req.body;
     if (status === 'paid') {
       const payment = await Payment.findById(order_id);
@@ -190,16 +206,17 @@ exports.cryptoWebhook = async (req, res, next) => {
 
 exports.getHistory = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const skip = (page - 1) * limit;
+    const p = Math.max(1, parseInt(req.query.page) || 1);
+    const l = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
+    const skip = (p - 1) * l;
     const filter = { userId: req.user.userId };
 
     const [payments, total] = await Promise.all([
-      Payment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      Payment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(l),
       Payment.countDocuments(filter),
     ]);
 
-    success(res, { payments, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    success(res, { payments, total, page: p, pages: Math.ceil(total / l) });
   } catch (err) {
     next(err);
   }

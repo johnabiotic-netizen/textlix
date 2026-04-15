@@ -8,6 +8,31 @@ const expiryJob = require('./jobs/number-expiry.job');
 const cleanupJob = require('./jobs/sms-cleanup.job');
 const logger = require('./config/logger');
 
+// ── Startup env validation ────────────────────────────────────────────────────
+const REQUIRED_ENV = [
+  'MONGODB_URI',
+  'JWT_ACCESS_SECRET',
+  'JWT_REFRESH_SECRET',
+  'PAYSTACK_SECRET_KEY',
+  'FIVESIM_API_KEY',
+];
+const WEAK_PLACEHOLDERS = ['your-', 'change-this', 'xxxx', 'your_'];
+
+const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
+if (missing.length) {
+  console.error(`[startup] Missing required environment variables: ${missing.join(', ')}`);
+  process.exit(1);
+}
+
+// Warn if JWT secrets look like the example placeholders (weak/default values)
+['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'].forEach((k) => {
+  const val = process.env[k] || '';
+  if (val.length < 32 || WEAK_PLACEHOLDERS.some((p) => val.toLowerCase().includes(p))) {
+    console.error(`[startup] FATAL: ${k} is too short or uses a placeholder value. Set a strong random secret.`);
+    process.exit(1);
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);

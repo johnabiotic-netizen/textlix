@@ -649,10 +649,11 @@ exports.getActiveOrders = async (req, res, next) => {
 
 exports.getOrderHistory = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status } = req.query;
-    const skip = (page - 1) * limit;
+    const p = Math.max(1, parseInt(req.query.page) || 1);
+    const l = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
+    const skip = (p - 1) * l;
     const filter = { userId: req.user.userId, status: { $ne: 'ACTIVE' } };
-    if (status) filter.status = status;
+    if (req.query.status) filter.status = req.query.status;
 
     const [orders, total] = await Promise.all([
       NumberOrder.find(filter)
@@ -660,11 +661,11 @@ exports.getOrderHistory = async (req, res, next) => {
         .populate('serviceId', 'name slug icon')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(l),
       NumberOrder.countDocuments(filter),
     ]);
 
-    success(res, { orders, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    success(res, { orders, total, page: p, pages: Math.ceil(total / l) });
   } catch (err) {
     next(err);
   }

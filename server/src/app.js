@@ -43,9 +43,9 @@ app.use(
 // Webhooks need raw body — register before json parser
 app.use('/api/v1/payments/paystack/webhook', express.raw({ type: 'application/json' }));
 
-// Body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsing — 50kb limit prevents large-payload attacks
+app.use(express.json({ limit: '50kb' }));
+app.use(express.urlencoded({ extended: true, limit: '50kb' }));
 app.use(cookieParser());
 
 // Passport

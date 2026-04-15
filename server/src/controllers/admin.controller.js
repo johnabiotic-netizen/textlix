@@ -11,6 +11,13 @@ const { adminAdjustCredits } = require('../services/credit.service');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 
+// Escape special regex characters to prevent ReDoS via user-supplied search strings
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Safe pagination helper — prevents NaN and runaway queries
+const safePage = (p) => Math.max(1, parseInt(p) || 1);
+const safeLimit = (l, max = 100) => Math.min(Math.max(1, parseInt(l) || 20), max);
+
 exports.getDashboard = async (req, res, next) => {
   try {
     const now = new Date();
@@ -63,19 +70,24 @@ exports.getDashboard = async (req, res, next) => {
 
 exports.getUsers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, status } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, search, status } = req.query;
+    const p = safePage(page);
+    const l = safeLimit(limit);
+    const skip = (p - 1) * l;
     const filter = {};
-    if (search) filter.$or = [{ name: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }];
+    if (search) {
+      const safe = escapeRegex(search.trim().slice(0, 100)); // cap length too
+      filter.$or = [{ name: { $regex: safe, $options: 'i' } }, { email: { $regex: safe, $options: 'i' } }];
+    }
     if (status === 'banned') filter.isBanned = true;
     if (status === 'active') filter.isBanned = false;
 
     const [users, total] = await Promise.all([
-      User.find(filter).select('-passwordHash -resetPasswordToken -emailVerifyToken').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      User.find(filter).select('-passwordHash -resetPasswordToken -emailVerifyToken').sort({ createdAt: -1 }).skip(skip).limit(l),
       User.countDocuments(filter),
     ]);
 
-    success(res, { users, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    success(res, { users, total, page: p, pages: Math.ceil(total / l) });
   } catch (err) {
     next(err);
   }
@@ -102,10 +114,13 @@ exports.updateUser = async (req, res, next) => {
   try {
     const { isBanned, banReason, maxActiveNumbers, role } = req.body;
     const updates = {};
-    if (isBanned !== undefined) updates.isBanned = isBanned;
+    if (isBanned !== undefined) updates.isBanned = Boolean(isBanned);
     if (banReason !== undefined) updates.banReason = banReason;
-    if (maxActiveNumbers !== undefined) updates.maxActiveNumbers = parseInt(maxActiveNumbers);
-    if (role !== undefined) updates.role = role;
+    if (maxActiveNumbers !== undefined) updates.maxActiveNumbers = Math.max(1, Math.min(20, parseInt(maxActiveNumbers) || 5));
+    if (role !== undefined) {
+      if (!['USER', 'ADMIN'].includes(role)) throw new AppError('VALIDATION_ERROR', 400, 'Invalid role');
+      updates.role = role;
+    }
 
     const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-passwordHash');
     if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
@@ -146,8 +161,10 @@ exports.adjustCredits = async (req, res, next) => {
 
 exports.getTransactions = async (req, res, next) => {
   try {
-    const { page = 1, limit = 50, type, userId, dateFrom, dateTo } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, type, userId, dateFrom, dateTo } = req.query;
+    const p = safePage(page);
+    const l = safeLimit(limit);
+    const skip = (p - 1) * l;
     const filter = {};
     if (type) filter.type = type;
     if (userId) filter.userId = new mongoose.Types.ObjectId(userId);
@@ -158,11 +175,11 @@ exports.getTransactions = async (req, res, next) => {
     }
 
     const [transactions, total] = await Promise.all([
-      CreditTransaction.find(filter).populate('userId', 'name email').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      CreditTransaction.find(filter).populate('userId', 'name email').sort({ createdAt: -1 }).skip(skip).limit(l),
       CreditTransaction.countDocuments(filter),
     ]);
 
-    success(res, { transactions, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    success(res, { transactions, total, page: p, pages: Math.ceil(total / l) });
   } catch (err) {
     next(err);
   }
@@ -170,8 +187,10 @@ exports.getTransactions = async (req, res, next) => {
 
 exports.getPayments = async (req, res, next) => {
   try {
-    const { page = 1, limit = 50, method, status, dateFrom, dateTo } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, method, status, dateFrom, dateTo } = req.query;
+    const p = safePage(page);
+    const l = safeLimit(limit);
+    const skip = (p - 1) * l;
     const filter = {};
     if (method) filter.method = method;
     if (status) filter.status = status;
@@ -182,11 +201,11 @@ exports.getPayments = async (req, res, next) => {
     }
 
     const [payments, total] = await Promise.all([
-      Payment.find(filter).populate('userId', 'name email').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      Payment.find(filter).populate('userId', 'name email').sort({ createdAt: -1 }).skip(skip).limit(l),
       Payment.countDocuments(filter),
     ]);
 
-    success(res, { payments, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    success(res, { payments, total, page: p, pages: Math.ceil(total / l) });
   } catch (err) {
     next(err);
   }
@@ -194,8 +213,10 @@ exports.getPayments = async (req, res, next) => {
 
 exports.getOrders = async (req, res, next) => {
   try {
-    const { page = 1, limit = 50, status, countryId, serviceId } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, status, countryId, serviceId } = req.query;
+    const p = safePage(page);
+    const l = safeLimit(limit);
+    const skip = (p - 1) * l;
     const filter = {};
     if (status) filter.status = status;
     if (countryId) filter.countryId = new mongoose.Types.ObjectId(countryId);
@@ -208,11 +229,11 @@ exports.getOrders = async (req, res, next) => {
         .populate('serviceId', 'name icon')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(l),
       NumberOrder.countDocuments(filter),
     ]);
 
-    success(res, { orders, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    success(res, { orders, total, page: p, pages: Math.ceil(total / l) });
   } catch (err) {
     next(err);
   }
