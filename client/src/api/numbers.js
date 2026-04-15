@@ -7,8 +7,8 @@ const PUBLIC_BASE = import.meta.env.VITE_API_URL
 
 export const getPublicStats = () => axios.get(`${PUBLIC_BASE}/stats`);
 
-export const getCountries = () => api.get('/numbers/countries');
-export const getServiceList = () => api.get('/numbers/services');
+export const getCountries = (mode = 'otp') => api.get('/numbers/countries', { params: { mode } });
+export const getServiceList = (mode = 'otp') => api.get('/numbers/services', { params: { mode } });
 export const getCountriesForService = (serviceSlug, mode = 'otp') => api.get(`/numbers/services/${serviceSlug}/countries`, { params: { mode } });
 export const getServices = (countryId) => api.get(`/numbers/countries/${countryId}/services`);
 export const orderNumber = (data) => api.post('/numbers/order', data);

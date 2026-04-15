@@ -26,14 +26,14 @@ export default function BrowseNumbersPage() {
   const setBrowse = (b) => { setSearchParams({ mode, browse: b }); setSearch(''); };
 
   const { data: countryData, isLoading: countriesLoading } = useQuery({
-    queryKey: ['countries'],
-    queryFn: () => getCountries().then((r) => r.data.data.countries),
+    queryKey: ['countries', mode],
+    queryFn: () => getCountries(mode).then((r) => r.data.data.countries),
     enabled: browse === 'country',
   });
 
   const { data: serviceData, isLoading: servicesLoading } = useQuery({
-    queryKey: ['serviceList'],
-    queryFn: () => getServiceList().then((r) => r.data.data.services),
+    queryKey: ['serviceList', mode],
+    queryFn: () => getServiceList(mode).then((r) => r.data.data.services),
     enabled: browse === 'service',
   });
 

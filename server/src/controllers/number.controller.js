@@ -231,9 +231,48 @@ async function getRentalDailyCredits(country5simSlug, serviceSlug) {
 
 const RENTAL_DURATION_OPTIONS = [1, 7, 30];
 
+const SERVICE_LABELS = {
+  whatsapp: 'WhatsApp', telegram: 'Telegram', google: 'Google', instagram: 'Instagram',
+  facebook: 'Facebook', tiktok: 'TikTok', twitter: 'Twitter / X', discord: 'Discord',
+  snapchat: 'Snapchat', amazon: 'Amazon',
+};
+
 /** List all enabled services with country counts */
 exports.getServiceList = async (req, res, next) => {
   try {
+    const { mode = 'otp' } = req.query;
+
+    if (mode === 'rental') {
+      // For rental, only return services 5sim supports for hosting
+      // Fetch hosting price data for each in parallel to get country counts
+      const priceResults = await Promise.all(
+        HOSTING_SERVICES.map((slug) =>
+          getHostingMaxPrices(slug).then((data) => ({ slug, data }))
+        )
+      );
+
+      // Count how many countries have availability per service
+      const allCountries = await Country.find({ isEnabled: true });
+      const result = [];
+      for (const { slug, data } of priceResults) {
+        if (!data) continue;
+        let countryCount = 0;
+        let minPriceUSD = Infinity;
+        for (const country of allCountries) {
+          const csSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
+          const maxUSD = data[csSlug];
+          if (!maxUSD) continue;
+          countryCount++;
+          if (maxUSD < minPriceUSD) minPriceUSD = maxUSD;
+        }
+        if (countryCount === 0) continue;
+        const minPrice = Math.ceil(Math.ceil(minPriceUSD * 100) * (1 + MARGIN));
+        result.push({ slug, name: SERVICE_LABELS[slug] || slug, countryCount, minPrice });
+      }
+      return success(res, { services: result });
+    }
+
+    // OTP mode — query from Service + NumberPricing
     const services = await Service.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
     const serviceIds = services.map((s) => s._id);
 
@@ -326,8 +365,43 @@ exports.getCountriesForService = async (req, res, next) => {
 
 exports.getCountries = async (req, res, next) => {
   try {
+    const { mode = 'otp' } = req.query;
     const countries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
 
+    if (mode === 'rental') {
+      // Fetch hosting prices for all supported services in parallel
+      const allPriceMaps = await Promise.all(
+        HOSTING_SERVICES.map((slug) => getHostingMaxPrices(slug))
+      );
+
+      // For each country, find if any hosting service has availability
+      const result = [];
+      for (const country of countries) {
+        const csSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
+        let minPricePerDay = Infinity;
+        let serviceCount = 0;
+        for (const priceMap of allPriceMaps) {
+          if (!priceMap) continue;
+          const maxUSD = priceMap[csSlug];
+          if (!maxUSD) continue;
+          serviceCount++;
+          const pricePerDay = Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
+          if (pricePerDay < minPricePerDay) minPricePerDay = pricePerDay;
+        }
+        if (serviceCount === 0) continue;
+        result.push({
+          id: country._id,
+          name: country.name,
+          code: country.code,
+          flagEmoji: country.flagEmoji,
+          serviceCount,
+          minPrice: minPricePerDay,
+        });
+      }
+      return success(res, { countries: result });
+    }
+
+    // OTP mode
     const countryIds = countries.map((c) => c._id);
     const pricingCounts = await NumberPricing.aggregate([
       { $match: { countryId: { $in: countryIds }, isAvailable: true } },
@@ -592,17 +666,11 @@ exports.getRentalPrice = async (req, res, next) => {
       return success(res, { available: false });
     }
 
-    const serviceLabels = {
-      whatsapp: 'WhatsApp', telegram: 'Telegram', google: 'Google', instagram: 'Instagram',
-      facebook: 'Facebook', tiktok: 'TikTok', twitter: 'Twitter / X', discord: 'Discord',
-      snapchat: 'Snapchat', amazon: 'Amazon',
-    };
-
     success(res, {
       available: true,
       services: availableServices.map((s) => ({
         slug: s.slug,
-        name: serviceLabels[s.slug] || s.slug,
+        name: SERVICE_LABELS[s.slug] || s.slug,
         pricePerDay: s.pricePerDay,
         options: RENTAL_DURATION_OPTIONS.map((days) => ({
           days,
@@ -662,15 +730,9 @@ exports.orderRental = async (req, res, next) => {
       throw new AppError('PROVIDER_ERROR', 502, `Could not get a rental number: ${JSON.stringify(detail)}`);
     }
 
-    const serviceLabels = {
-      whatsapp: 'WhatsApp', telegram: 'Telegram', google: 'Google', instagram: 'Instagram',
-      facebook: 'Facebook', tiktok: 'TikTok', twitter: 'Twitter / X', discord: 'Discord',
-      snapchat: 'Snapchat', amazon: 'Amazon',
-    };
-
     logger.info(`Rental order ${countrySlug}/${serviceSlug}: ${days}d, charged ${chargeCredits}cr`);
 
-    await spendCredits(userId, chargeCredits, `${days}-day rental: ${country.flagEmoji} ${country.name} - ${serviceLabels[serviceSlug] || serviceSlug}`);
+    await spendCredits(userId, chargeCredits, `${days}-day rental: ${country.flagEmoji} ${country.name} - ${SERVICE_LABELS[serviceSlug] || serviceSlug}`);
 
     const order = await NumberOrder.create({
       userId,
@@ -693,7 +755,7 @@ exports.orderRental = async (req, res, next) => {
         id: order._id,
         phoneNumber: order.phoneNumber,
         country: { name: country.name, flagEmoji: country.flagEmoji },
-        service: { name: serviceLabels[serviceSlug] || serviceSlug, slug: serviceSlug },
+        service: { name: SERVICE_LABELS[serviceSlug] || serviceSlug, slug: serviceSlug },
         expiresAt: order.expiresAt,
         creditsCharged: chargeCredits,
         rentalDays: order.rentalDays,
