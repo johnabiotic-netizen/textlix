@@ -11,7 +11,6 @@ export default function ActiveNumbersPage() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['activeOrders'],
     queryFn: () => getActiveOrders().then((r) => r.data.data),
-    refetchInterval: 15000,
   });
 
   const orders = data?.orders || [];
@@ -39,7 +38,7 @@ export default function ActiveNumbersPage() {
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {orders.map((order) => (
-            <NumberCard key={order._id} order={order} onCancel={refetch} onSmsReceived={refetch} />
+            <NumberCard key={order._id} order={order} onCancel={refetch} />
           ))}
         </div>
       )}
