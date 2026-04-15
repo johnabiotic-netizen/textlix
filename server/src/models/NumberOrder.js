@@ -14,7 +14,7 @@ const numberOrderSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     countryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Country', required: true },
-    serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
+    serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', default: null }, // null for rentals (any platform)
     phoneNumber: { type: String, required: true },
     providerOrderId: { type: String, required: true },
     provider: { type: String, required: true },

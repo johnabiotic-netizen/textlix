@@ -7,6 +7,7 @@ router.use(authenticate);
 
 router.get('/countries', numberController.getCountries);
 router.get('/countries/:countryId/services', numberController.getServices);
+router.get('/countries/:countryId/rental-price', numberController.getRentalPrice);
 router.post('/order', numberController.orderNumber);
 router.post('/order/rental', numberController.orderRental);
 router.get('/active', numberController.getActiveOrders);

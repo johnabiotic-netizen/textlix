@@ -151,9 +151,9 @@ async function getHostingMaxPrices(serviceSlug) {
   }
 }
 
-/** Rental price per day in credits */
-async function getRentalDailyCredits(country5simSlug, serviceSlug) {
-  const maxPrices = await getHostingMaxPrices(serviceSlug);
+/** Rental price per day in credits for a country — uses 'any' product (receives from any platform) */
+async function getRentalDailyCredits(country5simSlug) {
+  const maxPrices = await getHostingMaxPrices('any');
   const maxUSD = maxPrices?.[country5simSlug];
   if (!maxUSD) return null;
   return Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
@@ -214,15 +214,9 @@ exports.getServices = async (req, res, next) => {
       Promise.all(enabledPricing.map((p) => getMaxPrices(p.serviceId.slug))),
     ]);
 
-    // Rental daily prices (best-effort — null means rental not available for this service/country)
-    const rentalDailyResults = await Promise.all(
-      enabledPricing.map((p) => getRentalDailyCredits(fivesimSlug, p.serviceId.slug))
-    );
-
     const services = enabledPricing.map((p, i) => {
       const liveCountryPrice = liveMaxMaps[i]?.[fivesimSlug];
       const available = liveMaxMaps[i] != null ? liveCountryPrice > 0 : p.isAvailable;
-      const dailyRentalPrice = rentalDailyResults[i];
       return {
         id: p.serviceId._id,
         name: p.serviceId.name,
@@ -231,16 +225,6 @@ exports.getServices = async (req, res, next) => {
         price: priceResults[i],
         available,
         pricingId: p._id,
-        rental: dailyRentalPrice
-          ? {
-              available: true,
-              pricePerDay: dailyRentalPrice,
-              options: RENTAL_DURATION_OPTIONS.map((days) => ({
-                days,
-                price: dailyRentalPrice * days,
-              })),
-            }
-          : { available: false },
       };
     });
 
@@ -412,9 +396,36 @@ exports.resendSMS = async (req, res, next) => {
   }
 };
 
+exports.getRentalPrice = async (req, res, next) => {
+  try {
+    const { countryId } = req.params;
+    const country = await Country.findById(countryId);
+    if (!country || !country.isEnabled) throw new AppError('NOT_FOUND', 404, 'Country not found');
+
+    const countrySlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
+    const dailyCredits = await getRentalDailyCredits(countrySlug);
+
+    if (!dailyCredits) {
+      return success(res, { available: false });
+    }
+
+    success(res, {
+      available: true,
+      pricePerDay: dailyCredits,
+      options: RENTAL_DURATION_OPTIONS.map((days) => ({
+        days,
+        price: dailyCredits * days,
+        label: days === 1 ? '1 Day' : days === 7 ? '7 Days' : '30 Days',
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.orderRental = async (req, res, next) => {
   try {
-    const { countryId, serviceId, days } = req.body;
+    const { countryId, days } = req.body;
     const userId = req.user.userId;
 
     if (!RENTAL_DURATION_OPTIONS.includes(Number(days))) {
@@ -430,14 +441,13 @@ exports.orderRental = async (req, res, next) => {
     }
 
     const country = await Country.findById(countryId);
-    const service = await Service.findById(serviceId);
-    if (!country || !service) throw new AppError('NOT_FOUND', 404, 'Country or service not found');
+    if (!country) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
     const countrySlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
-    const dailyCredits = await getRentalDailyCredits(countrySlug, service.slug);
+    const dailyCredits = await getRentalDailyCredits(countrySlug);
     if (!dailyCredits) {
-      throw new AppError('NOT_FOUND', 404, 'Rental not available for this country/service');
+      throw new AppError('NOT_FOUND', 404, 'Rental not available for this country');
     }
 
     const chargeCredits = dailyCredits * Number(days);
@@ -446,24 +456,25 @@ exports.orderRental = async (req, res, next) => {
       throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
     }
 
-    // Buy hosting number from 5sim
+    // Buy 'any' hosting number — receives SMS from any platform
     let providerResponse;
     try {
-      providerResponse = await fivesim.buyHostingNumber(countrySlug, 'any', service.slug);
+      providerResponse = await fivesim.buyHostingNumber(countrySlug, 'any', 'any');
     } catch (err) {
       const detail = err.response?.data || err.message;
-      logger.error(`5sim buyHostingNumber failed — ${countrySlug}/${service.slug}:`, detail);
+      logger.error(`5sim buyHostingNumber failed — ${countrySlug}:`, detail);
       throw new AppError('PROVIDER_ERROR', 502, `Could not get a rental number: ${JSON.stringify(detail)}`);
     }
 
-    logger.info(`Rental order ${countrySlug}/${service.slug}: ${days}d, charged ${chargeCredits}cr`);
+    logger.info(`Rental order ${countrySlug}: ${days}d, charged ${chargeCredits}cr`);
 
-    await spendCredits(userId, chargeCredits, `${days}-day rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
+    await spendCredits(userId, chargeCredits, `${days}-day rental: ${country.flagEmoji} ${country.name}`);
 
+    // Rental orders have no specific service — use a sentinel serviceId or store null
     const order = await NumberOrder.create({
       userId,
       countryId,
-      serviceId,
+      serviceId: null,
       phoneNumber: providerResponse.phone,
       providerOrderId: providerResponse.id.toString(),
       provider: '5sim',
@@ -481,7 +492,6 @@ exports.orderRental = async (req, res, next) => {
         id: order._id,
         phoneNumber: order.phoneNumber,
         country: { name: country.name, flagEmoji: country.flagEmoji },
-        service: { name: service.name, icon: service.icon },
         expiresAt: order.expiresAt,
         creditsCharged: chargeCredits,
         rentalDays: order.rentalDays,
