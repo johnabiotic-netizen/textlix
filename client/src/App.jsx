@@ -73,10 +73,50 @@ function PublicRoute({ children }) {
   return children;
 }
 
+// Decode JWT exp without a library (JWT payload is base64url, second segment)
+function getTokenExpiry(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.exp ? payload.exp * 1000 : null; // convert to ms
+  } catch {
+    return null;
+  }
+}
+
+let _refreshTimer = null;
+
+function scheduleProactiveRefresh(token, refreshFn) {
+  if (_refreshTimer) clearTimeout(_refreshTimer);
+  const expiry = getTokenExpiry(token);
+  if (!expiry) return;
+  const delay = expiry - Date.now() - 60_000; // refresh 60s before expiry
+  if (delay > 0) {
+    _refreshTimer = setTimeout(refreshFn, delay);
+  } else {
+    // Token expires in < 60s — refresh immediately
+    refreshFn();
+  }
+}
+
 export default function App() {
   const { setAuth, setLoading, accessToken } = useAuthStore();
 
   useEffect(() => {
+    const doRefresh = async () => {
+      try {
+        const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
+        const { data } = await axios.post(`${apiBase}/auth/refresh`, {}, { withCredentials: true });
+        const token = data.data.accessToken;
+        useAuthStore.getState().setAccessToken(token);
+        const userRes = await api.get('/user/me');
+        const user = userRes.data.data.user;
+        setAuth(user, token);
+        scheduleProactiveRefresh(token, doRefresh);
+      } catch {
+        useAuthStore.getState().setLoading(false);
+      }
+    };
+
     const initAuth = async () => {
       try {
         const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
@@ -85,6 +125,7 @@ export default function App() {
         useAuthStore.getState().setAccessToken(token);
         const userRes = await api.get('/user/me');
         setAuth(userRes.data.data.user, token);
+        scheduleProactiveRefresh(token, doRefresh);
       } catch {
         if (import.meta.env.DEV) {
           // Mock user for UI review — remove before production
@@ -104,6 +145,7 @@ export default function App() {
       }
     };
     initAuth();
+    return () => { if (_refreshTimer) clearTimeout(_refreshTimer); };
   }, []);
 
   return (

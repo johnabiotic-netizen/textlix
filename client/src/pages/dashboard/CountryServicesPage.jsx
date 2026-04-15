@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiArrowLeft, FiCheckCircle, FiSearch, FiCalendar } from 'react-icons/fi';
+import { FiArrowLeft, FiCheckCircle, FiSearch, FiCalendar, FiStar } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { getServices, getRentalPrice, orderNumber, orderRental } from '../../api/numbers';
+import { getServices, getRentalPrice, orderNumber, orderRental, getRecommendations } from '../../api/numbers';
 import useAuthStore from '../../store/authStore';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -30,7 +30,22 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const { data: servicesData, isLoading: servicesLoading } = useQuery({
     queryKey: ['services', countryId],
     queryFn: () => getServices(countryId).then((r) => r.data.data),
+    staleTime: 2 * 60 * 1000,
   });
+
+  // When user arrived via service → country path, fetch recs so we can show
+  // a "Best Match" badge on the service that brought them here
+  const { data: recData } = useQuery({
+    queryKey: ['recommendations', preselectedService],
+    queryFn: () => getRecommendations(preselectedService).then((r) => r.data.data),
+    enabled: mode !== 'rental' && !!preselectedService,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Set of country IDs that are in the top-5 for the pre-selected service
+  const topCountryIds = new Set((recData?.recommendations || []).map((r) => String(r.id)));
+  const isTopCountry = topCountryIds.has(String(countryId));
+  const myRec = (recData?.recommendations || []).find((r) => String(r.id) === String(countryId));
 
   const { data: rentalData, isLoading: rentalLoading } = useQuery({
     queryKey: ['rentalPrice', countryId],
@@ -102,9 +117,15 @@ export default function CountryServicesPage({ mode: modeProp }) {
           <FiArrowLeft size={20} />
         </Link>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {country && <span className="text-2xl">{country.flagEmoji}</span>}
             <h1 className="font-display font-bold text-2xl text-gray-900">{country?.name || 'Loading...'}</h1>
+            {isTopCountry && (
+              <span className="flex items-center gap-1 text-xs bg-brand-600 text-white px-2 py-1 rounded-full font-semibold">
+                <FiStar size={11} /> Best Match
+                {myRec?.successRate > 0 && <span className="opacity-80">· {myRec.successRate}%</span>}
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-500">
             {mode === 'rental' ? 'Rent a number for days' : 'One-time OTP verification'}

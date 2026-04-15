@@ -48,6 +48,18 @@ const start = async () => {
   server.listen(PORT, () => {
     logger.info(`TextLix server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+
+    // Warm the 5sim price cache in the background after startup
+    // so first real users don't pay the cold-start penalty
+    setImmediate(async () => {
+      try {
+        const { warmPriceCache } = require('./controllers/number.controller');
+        await warmPriceCache();
+        logger.info('Price cache warmed successfully');
+      } catch (err) {
+        logger.warn('Price cache warm-up failed (non-fatal):', err.message);
+      }
+    });
   });
 };
 

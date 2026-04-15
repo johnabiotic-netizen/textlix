@@ -23,6 +23,7 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
   const { data, isLoading } = useQuery({
     queryKey: ['countriesForService', serviceSlug, mode],
     queryFn: () => getCountriesForService(serviceSlug, mode).then((r) => r.data.data),
+    staleTime: 5 * 60 * 1000,
   });
 
   const countries = (data?.countries || []).filter((c) =>

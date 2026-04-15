@@ -10,6 +10,7 @@ router.get('/countries/:countryId/services', numberController.getServices);
 router.get('/countries/:countryId/rental-price', numberController.getRentalPrice);
 router.get('/services', numberController.getServiceList);
 router.get('/services/:serviceSlug/countries', numberController.getCountriesForService);
+router.get('/services/:serviceSlug/recommendations', numberController.getRecommendations);
 router.post('/order', numberController.orderNumber);
 router.post('/order/rental', numberController.orderRental);
 router.get('/active', numberController.getActiveOrders);

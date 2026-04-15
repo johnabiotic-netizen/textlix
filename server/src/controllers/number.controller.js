@@ -46,15 +46,14 @@ const ISO_TO_SLUG = {
 };
 
 const MARGIN = 0.60;
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour — prices don't change minute to minute
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
-// Cache: serviceSlug → { countrySlug → maxPriceUSD }
+// Cache: serviceSlug → { countrySlug → { maxPrice, bestRate, totalCount } }
 const serviceMaxPriceCache = new Map();
 
 /**
- * Returns the MAXIMUM operator price for a given service slug across all operators,
- * keyed by country 5sim slug. We charge based on the max so we're always profitable
- * regardless of which operator 5sim selects when buying.
+ * Returns price + rate data for a service across all countries/operators.
+ * Shape: { countrySlug → { maxPrice (USD), bestRate (0-1), totalCount } }
  */
 async function getMaxPrices(serviceSlug) {
   const cached = serviceMaxPriceCache.get(serviceSlug);
@@ -63,27 +62,40 @@ async function getMaxPrices(serviceSlug) {
   try {
     const raw = await fivesim.getPrices(serviceSlug);
     const byCountry = raw[serviceSlug] || {};
-    const maxPrices = {}; // country5simSlug → max USD price across all operators
+    const result = {};
 
     for (const [countrySlug, operators] of Object.entries(byCountry)) {
-      let max = 0;
+      let maxPrice = 0;
+      let bestRate = 0;
+      let totalCount = 0;
       for (const opData of Object.values(operators)) {
-        if (opData.cost > max) max = opData.cost;
+        if (opData.cost > maxPrice) maxPrice = opData.cost;
+        if ((opData.rate || 0) > bestRate) bestRate = opData.rate || 0;
+        totalCount += opData.count || 0;
       }
-      if (max > 0) maxPrices[countrySlug] = max;
+      if (maxPrice > 0) result[countrySlug] = { maxPrice, bestRate, totalCount };
     }
 
-    serviceMaxPriceCache.set(serviceSlug, { data: maxPrices, expiresAt: Date.now() + CACHE_TTL });
+    serviceMaxPriceCache.set(serviceSlug, { data: result, expiresAt: Date.now() + CACHE_TTL });
+    setImmediate(() => syncPricesToDB(serviceSlug, result).catch(() => {}));
 
-    // Write correct prices back to DB in the background so fallback is always accurate
-    setImmediate(() => syncPricesToDB(serviceSlug, maxPrices).catch(() => {}));
-
-    return maxPrices;
+    return result;
   } catch (err) {
     logger.warn(`getMaxPrices failed for ${serviceSlug}:`, err.message);
     return null;
   }
 }
+
+/** Warm price cache for the most popular services on server startup */
+const TOP_SERVICES = ['whatsapp', 'telegram', 'google', 'instagram', 'facebook', 'tiktok', 'twitter'];
+exports.warmPriceCache = async function warmPriceCache() {
+  for (const slug of TOP_SERVICES) {
+    try {
+      await getMaxPrices(slug);
+      await new Promise((r) => setTimeout(r, 300)); // small delay to avoid hammering 5sim
+    } catch (_) {}
+  }
+};
 
 /** Writes max-operator prices back to NumberPricing so the DB stays in sync */
 async function syncPricesToDB(serviceSlug, maxPrices) {
@@ -99,10 +111,10 @@ async function syncPricesToDB(serviceSlug, maxPrices) {
   }
 
   const ops = [];
-  for (const [countrySlug, maxUSD] of Object.entries(maxPrices)) {
+  for (const [countrySlug, data] of Object.entries(maxPrices)) {
     const country = slugToCountry[countrySlug];
     if (!country) continue;
-    const providerCost = Math.ceil(maxUSD * 100);
+    const providerCost = Math.ceil(data.maxPrice * 100);
     const finalPrice   = Math.ceil(providerCost * (1 + MARGIN));
     ops.push({
       updateOne: {
@@ -117,10 +129,10 @@ async function syncPricesToDB(serviceSlug, maxPrices) {
 
 /** Returns max-operator charge in credits for a country+service combo */
 async function getChargeCredits(country5simSlug, serviceSlug, fallbackCredits) {
-  const maxPrices = await getMaxPrices(serviceSlug);
-  const maxUSD = maxPrices?.[country5simSlug];
-  if (!maxUSD) return fallbackCredits;
-  return Math.ceil(Math.ceil(maxUSD * 100) * (1 + MARGIN));
+  const prices = await getMaxPrices(serviceSlug);
+  const data = prices?.[country5simSlug];
+  if (!data) return fallbackCredits;
+  return Math.ceil(Math.ceil(data.maxPrice * 100) * (1 + MARGIN));
 }
 
 // ─── Public platform stats (cached 5 min) ────────────────────────────────────
@@ -300,6 +312,46 @@ exports.getServiceList = async (req, res, next) => {
   }
 };
 
+/** Top recommended countries for a service based on 5sim rate + availability score */
+exports.getRecommendations = async (req, res, next) => {
+  try {
+    const { serviceSlug } = req.params;
+    const prices = await getMaxPrices(serviceSlug);
+    if (!prices) return success(res, { recommendations: [] });
+
+    const allCountries = await Country.find({ isEnabled: true });
+    const slugToCountry = {};
+    for (const c of allCountries) {
+      const slug = c.fivesimSlug || ISO_TO_SLUG[c.code] || c.code.toLowerCase();
+      slugToCountry[slug] = c;
+    }
+
+    const scored = [];
+    for (const [slug, data] of Object.entries(prices)) {
+      const country = slugToCountry[slug];
+      if (!country || data.totalCount < 1) continue;
+      // Score = rate (0-1) * 0.7 + availability_factor * 0.3
+      const availFactor = Math.min(data.totalCount / 20, 1); // caps at 20 numbers
+      const score = (data.bestRate * 0.7) + (availFactor * 0.3);
+      scored.push({
+        id: country._id,
+        name: country.name,
+        flagEmoji: country.flagEmoji,
+        code: country.code,
+        price: Math.ceil(Math.ceil(data.maxPrice * 100) * (1 + MARGIN)),
+        successRate: Math.round(data.bestRate * 1000) / 10,
+        availableCount: data.totalCount,
+        score,
+      });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    success(res, { recommendations: scored.slice(0, 5) });
+  } catch (err) {
+    next(err);
+  }
+};
+
 /** Countries available for a specific service (OTP or rental) */
 exports.getCountriesForService = async (req, res, next) => {
   try {
@@ -453,8 +505,11 @@ exports.getServices = async (req, res, next) => {
     ]);
 
     const services = enabledPricing.map((p, i) => {
-      const liveCountryPrice = liveMaxMaps[i]?.[fivesimSlug];
-      const available = liveMaxMaps[i] != null ? liveCountryPrice > 0 : p.isAvailable;
+      const liveData = liveMaxMaps[i]?.[fivesimSlug];
+      const available = liveMaxMaps[i] != null ? (liveData?.maxPrice > 0) : p.isAvailable;
+      // Use 5sim's live rate as primary success signal; fall back to our own order history
+      const fivesimRate = liveData?.bestRate != null ? Math.round(liveData.bestRate * 1000) / 10 : null;
+      const successRate = fivesimRate ?? serviceRates[p.serviceId._id.toString()] ?? null;
       return {
         id: p.serviceId._id,
         name: p.serviceId.name,
@@ -463,7 +518,8 @@ exports.getServices = async (req, res, next) => {
         price: priceResults[i],
         available,
         pricingId: p._id,
-        successRate: serviceRates[p.serviceId._id.toString()] ?? null,
+        successRate,
+        availableCount: liveData?.totalCount ?? null,
       };
     });
 
