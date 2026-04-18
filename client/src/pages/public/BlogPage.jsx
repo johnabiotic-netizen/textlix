@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import PublicLayout from '../../components/layout/PublicLayout';
+import BlogHeroImage from '../../components/blog/BlogHeroImage';
 
 export const POSTS = [
   // ── NEW POSTS ──────────────────────────────────────────────────────────────
@@ -1132,16 +1133,9 @@ export default function BlogPage() {
               to={`/blog/${post.slug}`}
               className="group block border border-gray-200 rounded-2xl overflow-hidden hover:border-brand-300 hover:shadow-md transition-all"
             >
-              {post.image && (
-                <div className="h-48 overflow-hidden bg-gray-100">
-                  <img
-                    src={post.image}
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                </div>
-              )}
+              <div className="h-48 overflow-hidden">
+                <BlogHeroImage slug={post.slug} className="w-full h-full group-hover:scale-105 transition-transform duration-300" />
+              </div>
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2.5 py-1 rounded-full">{post.category}</span>

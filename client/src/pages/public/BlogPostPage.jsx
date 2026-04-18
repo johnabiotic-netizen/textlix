@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { FiArrowLeft, FiClock, FiCalendar } from 'react-icons/fi';
 import PublicLayout from '../../components/layout/PublicLayout';
 import { POSTS } from './BlogPage';
+import BlogHeroImage from '../../components/blog/BlogHeroImage';
 
 function renderContent(content) {
   const lines = content.trim().split('\n');
@@ -236,14 +237,9 @@ export default function BlogPostPage() {
         </p>
 
         {/* Hero image */}
-        {post.image && (
-          <img
-            src={post.image}
-            alt={post.title}
-            className="w-full rounded-2xl object-cover shadow-sm mb-10"
-            style={{ maxHeight: '420px' }}
-          />
-        )}
+        <div className="rounded-2xl overflow-hidden mb-10 shadow-sm">
+          <BlogHeroImage slug={post.slug} style={{ height: '380px' }} />
+        </div>
 
         <div className="border-b border-gray-100 mb-10" />
 
