@@ -339,6 +339,40 @@ function PhonePrivacyHero() {
   );
 }
 
+// ── 12. Fiverr Verification ──────────────────────────────────────────────────
+function FiverrHero() {
+  return (
+    <Base id="fiverr" category="Guide">
+      {/* Laptop body */}
+      <rect x="320" y="130" rx="12" width="420" height="260" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+      <rect x="338" y="148" rx="6" width="384" height="224" fill="rgba(0,0,0,0.25)" />
+      {/* Laptop base */}
+      <rect x="290" y="390" rx="6" width="480" height="20" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+      {/* Screen content — freelance dashboard */}
+      <rect x="352" y="162" rx="6" width="356" height="28" fill="rgba(255,255,255,0.1)" />
+      <text x="530" y="181" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="12" fontWeight="600" fill="rgba(255,255,255,0.7)">Verify Your Phone Number</text>
+      {/* Input field */}
+      <rect x="352" y="206" rx="6" width="230" height="36" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+      <text x="366" y="229" fontFamily="monospace" fontSize="13" fill="rgba(255,255,255,0.5)">+1 415 555 0182</text>
+      {/* Send button */}
+      <rect x="596" y="206" rx="6" width="112" height="36" fill="rgba(167,139,250,0.5)" />
+      <text x="652" y="229" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="12" fontWeight="600" fill="white">Send Code</text>
+      {/* Code received badge */}
+      <rect x="352" y="260" rx="8" width="356" height="48" fill="rgba(134,239,172,0.12)" stroke="rgba(134,239,172,0.35)" strokeWidth="1" />
+      <text x="530" y="280" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="12" fill="rgba(134,239,172,0.9)">Code received on TextLix</text>
+      <text x="530" y="300" textAnchor="middle" fontFamily="monospace" fontSize="20" fontWeight="700" fill="white">4 8 2 1 9</text>
+      {/* Phone on the side */}
+      <rect x="800" y="150" rx="16" width="110" height="200" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+      <rect x="812" y="166" rx="5" width="86" height="168" fill="rgba(0,0,0,0.2)" />
+      <text x="855" y="250" textAnchor="middle" fontFamily="monospace" fontSize="24" fontWeight="800" fill="white">48219</text>
+      <rect x="820" y="262" rx="5" width="70" height="22" fill="rgba(167,139,250,0.4)" />
+      <text x="855" y="277" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="10" fontWeight="600" fill="white">SMS ✓</text>
+      {/* Headline */}
+      <text x="600" y="445" textAnchor="middle" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="24" fontWeight="700" fill="white">Verify Your Fiverr Account with a Virtual Number</text>
+    </Base>
+  );
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 const HERO_MAP = {
   'how-to-get-virtual-phone-number-whatsapp':          WhatsAppHero,
@@ -352,6 +386,7 @@ const HERO_MAP = {
   'how-to-verify-telegram-without-real-phone-number':  TelegramHero,
   'virtual-phone-numbers-for-business-complete-guide-2026': BusinessGuideHero,
   'why-your-phone-number-is-your-weakest-privacy-link': PhonePrivacyHero,
+  'how-to-verify-fiverr-phone-number':                  FiverrHero,
 };
 
 export default function BlogHeroImage({ slug, className = '', style = {} }) {
