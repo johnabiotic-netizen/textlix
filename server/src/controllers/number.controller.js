@@ -144,6 +144,7 @@ let _statsCacheExpiry = 0;
 
 exports.getPublicStats = async (req, res, next) => {
   try {
+    res.set('Cache-Control', 'public, max-age=300');
     if (_statsCache && Date.now() < _statsCacheExpiry) {
       return success(res, _statsCache);
     }

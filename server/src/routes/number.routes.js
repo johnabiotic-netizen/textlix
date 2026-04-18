@@ -5,12 +5,16 @@ const { authenticate } = require('../middleware/auth.middleware');
 const router = express.Router();
 router.use(authenticate);
 
-router.get('/countries', numberController.getCountries);
-router.get('/countries/:countryId/services', numberController.getServices);
-router.get('/countries/:countryId/rental-price', numberController.getRentalPrice);
-router.get('/services', numberController.getServiceList);
-router.get('/services/:serviceSlug/countries', numberController.getCountriesForService);
-router.get('/services/:serviceSlug/recommendations', numberController.getRecommendations);
+// Browsing endpoints — data changes at most every hour (price cache TTL).
+// private: user-specific session, max-age=300: browser caches for 5 min.
+const browseCache = (req, res, next) => { res.set('Cache-Control', 'private, max-age=300'); next(); };
+
+router.get('/countries', browseCache, numberController.getCountries);
+router.get('/countries/:countryId/services', browseCache, numberController.getServices);
+router.get('/countries/:countryId/rental-price', browseCache, numberController.getRentalPrice);
+router.get('/services', browseCache, numberController.getServiceList);
+router.get('/services/:serviceSlug/countries', browseCache, numberController.getCountriesForService);
+router.get('/services/:serviceSlug/recommendations', browseCache, numberController.getRecommendations);
 router.post('/order', numberController.orderNumber);
 router.post('/order/rental', numberController.orderRental);
 router.get('/active', numberController.getActiveOrders);

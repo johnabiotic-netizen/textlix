@@ -3,6 +3,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const passport = require('./config/passport');
@@ -20,6 +21,9 @@ const app = express();
 
 // Trust Railway's reverse proxy so express-rate-limit reads the real client IP
 app.set('trust proxy', 1);
+
+// Gzip compression — must be before any routes
+app.use(compression());
 
 // Security
 app.use(helmet());
