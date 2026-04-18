@@ -19,6 +19,8 @@ const generateRefreshToken = (user) => {
 
 const generateRandomToken = () => crypto.randomBytes(32).toString('hex');
 
+const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
+
 const setRefreshCookie = (res, refreshToken) => {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
@@ -37,6 +39,7 @@ module.exports = {
   generateAccessToken,
   generateRefreshToken,
   generateRandomToken,
+  generateReferralCode,
   setRefreshCookie,
   clearRefreshCookie,
 };

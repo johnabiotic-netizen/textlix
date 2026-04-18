@@ -110,4 +110,37 @@ const sendPasswordResetEmail = async (email, token) => {
   });
 };
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail };
+const sendSmsNotificationEmail = async (email, { phoneNumber, smsCode, smsContent }) => {
+  const dashboardUrl = `${(process.env.FRONTEND_URL || '').trim()}/numbers/active`;
+  const body = `
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">Your verification code arrived</h1>
+    <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.6;">
+      An SMS was received on <strong style="color:#111827;">${phoneNumber}</strong>.
+    </p>
+
+    ${smsCode ? `
+    <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
+      <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:1px;text-transform:uppercase;">Verification Code</p>
+      <p style="margin:0;font-size:42px;font-weight:800;color:#fff;letter-spacing:8px;">${smsCode}</p>
+    </div>
+    ` : ''}
+
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin:0 0 24px;">
+      <p style="margin:0;font-size:12px;color:#6b7280;font-family:monospace;word-break:break-word;">${smsContent}</p>
+    </div>
+
+    <div style="text-align:center;">
+      <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
+        View in Dashboard
+      </a>
+    </div>
+    <p style="margin:20px 0 0;font-size:12px;color:#d1d5db;text-align:center;">To stop receiving these emails, turn off SMS notifications in your account settings.</p>
+  `;
+  await sendEmail({
+    to: email,
+    subject: smsCode ? `Your code: ${smsCode} — TextLix` : 'SMS received — TextLix',
+    html: baseTemplate('SMS Received — TextLix', body),
+  });
+};
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail };

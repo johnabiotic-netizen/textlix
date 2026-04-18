@@ -1,5 +1,7 @@
 const NumberOrder = require('../models/NumberOrder');
+const User = require('../models/User');
 const fivesim = require('../providers/sms/fivesim.provider');
+const { sendSmsNotificationEmail } = require('../utils/email');
 const logger = require('../config/logger');
 
 class SMSPollerService {
@@ -65,6 +67,17 @@ class SMSPollerService {
     this.stopPolling(order._id.toString());
 
     try { await fivesim.finishOrder(order.providerOrderId); } catch (_) {}
+
+    // Fire-and-forget email notification
+    User.findById(order.userId, 'email emailNotifications').then((user) => {
+      if (user?.emailNotifications) {
+        sendSmsNotificationEmail(user.email, {
+          phoneNumber: order.phoneNumber,
+          smsCode: sms.code || extractCode(sms.text),
+          smsContent: sms.text,
+        }).catch((err) => logger.error('SMS notification email failed:', err.message));
+      }
+    }).catch(() => {});
 
     logger.info(`OTP SMS received for order ${order._id}`);
   }

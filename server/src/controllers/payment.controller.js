@@ -122,14 +122,12 @@ exports.paystackVerify = async (req, res, next) => {
 };
 
 async function processPaystackPayment(reference) {
-  // Atomic claim: only transition PENDING → COMPLETED once, even under concurrent calls.
-  // findOneAndUpdate returns null if status was already COMPLETED — safe to ignore.
   const payment = await Payment.findOneAndUpdate(
     { _id: reference, status: 'PENDING' },
     { $set: { status: 'COMPLETED', completedAt: new Date() } },
-    { new: false } // return original so we can read creditsAdded/userId
+    { new: false }
   );
-  if (!payment) return; // already processed or doesn't exist
+  if (!payment) return;
 
   await addCredits(
     payment.userId,
@@ -138,6 +136,33 @@ async function processPaystackPayment(reference) {
     payment._id.toString()
   );
   logger.info(`Paystack payment completed: ${payment._id}, credits: ${payment.creditsAdded}`);
+
+  await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+}
+
+async function maybeAwardReferralBonus(userId, creditsAdded, referenceId) {
+  try {
+    // Atomic claim: mark referralBonusPaid only if it wasn't already (prevents double-award)
+    const user = await User.findOneAndUpdate(
+      { _id: userId, referredBy: { $ne: null }, referralBonusPaid: false },
+      { $set: { referralBonusPaid: true } },
+      { new: false }
+    );
+    if (!user) return;
+
+    const bonus = Math.floor(creditsAdded * 0.1);
+    if (bonus < 1) return;
+
+    await addCredits(
+      user.referredBy,
+      bonus,
+      `Referral bonus: ${bonus} credits for referring ${user.email}`,
+      referenceId
+    );
+    logger.info(`Referral bonus of ${bonus} credits awarded to ${user.referredBy} for referring ${userId}`);
+  } catch (err) {
+    logger.error('Referral bonus error:', err.message);
+  }
 }
 
 exports.cryptoCreate = async (req, res, next) => {
@@ -207,6 +232,7 @@ exports.cryptoWebhook = async (req, res, next) => {
           `Credit purchase: $${payment.amountUSD} via Crypto`,
           payment._id.toString()
         );
+        await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
       }
     }
     res.sendStatus(200);

@@ -8,6 +8,7 @@ const {
   generateAccessToken,
   generateRefreshToken,
   generateRandomToken,
+  generateReferralCode,
   setRefreshCookie,
   clearRefreshCookie,
 } = require('../utils/tokens');
@@ -32,17 +33,23 @@ const formatUser = (user) => ({
 
 exports.register = async (req, res, next) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, referralCode: refCode } = req.body;
 
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
-      // Don't reveal whether the email is registered — return the same shape
-      // either way so attackers cannot enumerate accounts via register.
       return success(res, { message: 'If this email is new, your account has been created.' }, 201);
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
     const emailVerifyToken = generateRandomToken();
+    const referralCode = generateReferralCode();
+
+    // Look up referrer if a code was passed
+    let referredBy = null;
+    if (refCode) {
+      const referrer = await User.findOne({ referralCode: refCode.toUpperCase() });
+      if (referrer) referredBy = referrer._id;
+    }
 
     const user = await User.create({
       email: email.toLowerCase(),
@@ -50,6 +57,8 @@ exports.register = async (req, res, next) => {
       name,
       provider: 'LOCAL',
       emailVerifyToken,
+      referralCode,
+      referredBy,
     });
 
     sendVerificationEmail(user.email, emailVerifyToken).catch((err) => {

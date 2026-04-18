@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import toast from 'react-hot-toast';
 import { register } from '../../api/auth';
@@ -12,6 +12,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get('ref');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +27,9 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const { data } = await register({ name: form.name, email: form.email, password: form.password });
+      const payload = { name: form.name, email: form.email, password: form.password };
+      if (refCode) payload.referralCode = refCode;
+      const { data } = await register(payload);
       const { user, accessToken } = data.data;
       setAuth(user, accessToken);
       toast.success('Account created!');
@@ -46,6 +50,12 @@ export default function RegisterPage() {
           <Link to="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl text-gray-900 mb-2"><span>✓</span> TextLix</Link>
           <h1 className="text-xl font-semibold text-gray-900">Create your account</h1>
         </div>
+
+        {refCode && (
+          <div className="mb-4 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-700 text-center">
+            🎉 You were invited — you'll get started with a bonus when you top up!
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -4,6 +4,7 @@ const CreditTransaction = require('../models/CreditTransaction');
 const NumberOrder = require('../models/NumberOrder');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
+const { generateReferralCode } = require('../utils/tokens');
 
 exports.getMe = async (req, res, next) => {
   try {
@@ -17,10 +18,11 @@ exports.getMe = async (req, res, next) => {
 
 exports.updateMe = async (req, res, next) => {
   try {
-    const { name, avatar } = req.body;
+    const { name, avatar, emailNotifications } = req.body;
     const updates = {};
     if (name) updates.name = name.trim();
     if (avatar !== undefined) updates.avatar = avatar;
+    if (emailNotifications !== undefined) updates.emailNotifications = Boolean(emailNotifications);
 
     const user = await User.findByIdAndUpdate(req.user.userId, updates, { new: true }).select('-passwordHash');
     success(res, { user });
@@ -44,6 +46,38 @@ exports.changePassword = async (req, res, next) => {
     await user.save();
 
     success(res, { message: 'Password updated' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getReferral = async (req, res, next) => {
+  try {
+    let user = await User.findById(req.user.userId);
+
+    // Generate a code for legacy accounts that don't have one yet
+    if (!user.referralCode) {
+      const code = generateReferralCode();
+      user = await User.findByIdAndUpdate(req.user.userId, { referralCode: code }, { new: true });
+    }
+
+    const frontendUrl = (process.env.FRONTEND_URL || 'https://textlix.com').trim();
+    const referralLink = `${frontendUrl}/register?ref=${user.referralCode}`;
+
+    const [referredCount, bonusEarned] = await Promise.all([
+      User.countDocuments({ referredBy: user._id }),
+      CreditTransaction.aggregate([
+        { $match: { userId: user._id, description: /^Referral bonus:/ } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+    ]);
+
+    success(res, {
+      referralCode: user.referralCode,
+      referralLink,
+      referredCount,
+      bonusEarned: bonusEarned[0]?.total || 0,
+    });
   } catch (err) {
     next(err);
   }
