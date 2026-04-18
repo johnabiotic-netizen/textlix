@@ -23,10 +23,61 @@ function renderContent(content) {
       continue;
     }
 
+    // H3
+    if (line.startsWith('### ')) {
+      elements.push(
+        <h3 key={i} className="font-display font-semibold text-lg text-gray-800 mt-8 mb-3">
+          {line.slice(4)}
+        </h3>
+      );
+      i++;
+      continue;
+    }
+
+    // Inline image: ![alt](url)
+    if (line.startsWith('![')) {
+      const match = line.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+      if (match) {
+        elements.push(
+          <figure key={i} className="my-8">
+            <img
+              src={match[2]}
+              alt={match[1]}
+              className="w-full rounded-2xl object-cover shadow-sm"
+              style={{ maxHeight: '420px' }}
+              loading="lazy"
+            />
+            {match[1] && (
+              <figcaption className="text-center text-xs text-gray-400 mt-2">{match[1]}</figcaption>
+            )}
+          </figure>
+        );
+      }
+      i++;
+      continue;
+    }
+
+    // Callout / blockquote: > text
+    if (line.startsWith('> ')) {
+      const items = [];
+      while (i < lines.length && lines[i].startsWith('> ')) {
+        items.push(lines[i].slice(2));
+        i++;
+      }
+      elements.push(
+        <blockquote key={`bq-${i}`} className="border-l-4 border-brand-400 bg-brand-50 rounded-r-xl px-5 py-4 my-6 italic text-gray-700">
+          {items.map((item, idx) => (
+            <p key={idx} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} className="mb-1 last:mb-0" />
+          ))}
+        </blockquote>
+      );
+      continue;
+    }
+
     // Table: detect header row
     if (line.startsWith('|') && lines[i + 1]?.startsWith('|--')) {
       const headers = line.split('|').filter((c) => c.trim());
-      i += 2; // skip separator row
+      i += 2;
       const rows = [];
       while (i < lines.length && lines[i].startsWith('|')) {
         rows.push(lines[i].split('|').filter((c) => c.trim()));
@@ -46,7 +97,7 @@ function renderContent(content) {
               {rows.map((row, ri) => (
                 <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   {row.map((cell, ci) => (
-                    <td key={ci} className="px-4 py-3 text-gray-600 border-b border-gray-100">{cell.trim()}</td>
+                    <td key={ci} className="px-4 py-3 text-gray-600 border-b border-gray-100" dangerouslySetInnerHTML={{ __html: inlineFormat(cell.trim()) }} />
                   ))}
                 </tr>
               ))}
@@ -120,8 +171,9 @@ function renderContent(content) {
 
 function inlineFormat(text) {
   return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-800">$1</code>');
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>')
+    .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-800">$1</code>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:text-brand-700 underline underline-offset-2 font-medium">$1</a>');
 }
 
 export default function BlogPostPage() {
@@ -144,6 +196,7 @@ export default function BlogPostPage() {
         <meta property="og:description" content={post.description} />
         <meta property="og:url" content={`https://www.textlix.com/blog/${post.slug}`} />
         <meta property="og:type" content="article" />
+        {post.image && <meta property="og:image" content={post.image} />}
         <meta property="article:published_time" content={post.date} />
         <script type="application/ld+json">{JSON.stringify({
           '@context': 'https://schema.org',
@@ -151,6 +204,7 @@ export default function BlogPostPage() {
           headline: post.title,
           description: post.description,
           datePublished: post.date,
+          image: post.image,
           author: { '@type': 'Organization', name: 'TextLix' },
           publisher: { '@type': 'Organization', name: 'TextLix', url: 'https://www.textlix.com' },
           url: `https://www.textlix.com/blog/${post.slug}`,
@@ -177,9 +231,21 @@ export default function BlogPostPage() {
         <h1 className="font-display font-extrabold text-3xl md:text-4xl text-gray-900 mb-4 leading-tight">
           {post.title}
         </h1>
-        <p className="text-lg text-gray-500 mb-10 leading-relaxed border-b border-gray-100 pb-10">
+        <p className="text-lg text-gray-500 mb-8 leading-relaxed">
           {post.description}
         </p>
+
+        {/* Hero image */}
+        {post.image && (
+          <img
+            src={post.image}
+            alt={post.title}
+            className="w-full rounded-2xl object-cover shadow-sm mb-10"
+            style={{ maxHeight: '420px' }}
+          />
+        )}
+
+        <div className="border-b border-gray-100 mb-10" />
 
         {/* Content */}
         <div className="text-base">
@@ -205,7 +271,7 @@ export default function BlogPostPage() {
         {/* CTA */}
         <div className="mt-12 bg-gradient-to-br from-brand-600 to-purple-600 rounded-2xl p-8 text-white text-center">
           <h2 className="font-display font-bold text-xl mb-2">Ready to try TextLix?</h2>
-          <p className="text-brand-100 text-sm mb-6">Virtual phone numbers from 50+ countries. Codes delivered in seconds.</p>
+          <p className="text-brand-100 text-sm mb-6">Virtual phone numbers from 150+ countries. Codes delivered in seconds.</p>
           <Link to="/register" className="bg-white text-brand-600 font-semibold px-6 py-2.5 rounded-xl hover:bg-brand-50 transition-colors inline-block text-sm">
             Create Free Account
           </Link>
