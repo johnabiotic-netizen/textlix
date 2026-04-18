@@ -249,7 +249,7 @@ Developers creating bots via [@BotFather](https://t.me/BotFather) need a Telegra
 **Setup:**
 1. Create a Telegram account with a virtual number (as above)
 2. Open a chat with [@BotFather](https://t.me/BotFather)
-3. Send `/newbot` and follow the prompts
+3. Send /newbot and follow the prompts
 4. Copy the API token — you're ready to start building
 
 The account with the virtual number is the owner account. You can add your personal account as an admin separately, keeping everything compartmentalised.
