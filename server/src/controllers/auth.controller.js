@@ -13,6 +13,7 @@ const {
 } = require('../utils/tokens');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
 const { audit, getIP, getUA } = require('../utils/audit');
+const logger = require('../config/logger');
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -51,7 +52,9 @@ exports.register = async (req, res, next) => {
       emailVerifyToken,
     });
 
-    sendVerificationEmail(user.email, emailVerifyToken).catch(() => {});
+    sendVerificationEmail(user.email, emailVerifyToken).catch((err) => {
+      logger.error('Failed to send verification email', { email: user.email, error: err.message });
+    });
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
