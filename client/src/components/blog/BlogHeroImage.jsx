@@ -159,7 +159,7 @@ function FivesimAlternativesHero() {
   ];
   return (
     <Base id="alternatives" category="Comparison">
-      <text x="600" y="115" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="18" fontWeight="600" fill="rgba(255,255,255,0.6)">Top 5sim Alternatives</text>
+      <text x="600" y="115" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="18" fontWeight="600" fill="rgba(255,255,255,0.6)">SMS Verification Platforms Compared</text>
       {items.map(({ label, score, highlight }, i) => (
         <g key={i}>
           <rect x="320" y={140 + i * 54} rx="10" width="560" height="44"
@@ -174,7 +174,7 @@ function FivesimAlternativesHero() {
           <text x="844" y={167 + i * 54} textAnchor="end" fontFamily="-apple-system,sans-serif" fontSize="15" fill={highlight ? 'rgba(253,224,71,1)' : 'rgba(255,255,255,0.5)'}>{score}</text>
         </g>
       ))}
-      <text x="600" y="450" textAnchor="middle" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="22" fontWeight="700" fill="white">5sim Alternatives for SMS Verification 2026</text>
+      <text x="600" y="450" textAnchor="middle" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="22" fontWeight="700" fill="white">Best SMS Verification Alternatives in 2026</text>
     </Base>
   );
 }
