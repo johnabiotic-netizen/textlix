@@ -44,8 +44,8 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
   const { days, hrs, mins, secs, expired } = useCountdown(order.expiresAt);
   const isRental = order.orderType === 'RENTAL';
 
-  // If the card mounts already completed (socket was missed, fallback refetch
-  // found it), play the sound once so the user knows their code is here
+  // On mount: if the card is already completed (socket was missed before this
+  // mount, poll already has the data), play sound once.
   useEffect(() => {
     if (initialOrder.status === 'COMPLETED' && initialOrder.smsContent) {
       playNotificationSound();
@@ -53,6 +53,27 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Sync poll-based updates into local state (handles missed socket events:
+  // user was on another page, socket wasn't listening, poll brought the data).
+  const initialSmsContent = initialOrder.smsContent;
+  const initialMsgCount = initialOrder.smsMessages?.length ?? 0;
+  useEffect(() => {
+    setOrder((o) => {
+      if (!o.smsContent && initialSmsContent) {
+        playNotificationSound();
+        return { ...o, smsContent: initialSmsContent, smsCode: initialOrder.smsCode, status: 'COMPLETED' };
+      }
+      if (initialMsgCount > (o.smsMessages?.length ?? 0)) {
+        playNotificationSound();
+        return { ...o, smsMessages: initialOrder.smsMessages };
+      }
+      return o;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSmsContent, initialMsgCount]);
+
+  // Socket handler: update local state only — GlobalSmsNotifier in UserLayout
+  // handles the toast and sound so they fire exactly once per event.
   useSocket(
     (data) => {
       if (data.orderId?.toString() !== order._id?.toString()) return;
@@ -62,13 +83,9 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
           ...o,
           smsMessages: [...(o.smsMessages || []), ...data.newMessages],
         }));
-        playNotificationSound();
-        toast.success(`${data.newMessages.length} new SMS received!`);
         onSmsReceived?.();
       } else if (data.orderType !== 'RENTAL') {
         setOrder((o) => ({ ...o, smsContent: data.smsContent, smsCode: data.smsCode, status: 'COMPLETED' }));
-        playNotificationSound();
-        toast.success('SMS received! Your code is ready.');
         onSmsReceived?.();
       }
     },

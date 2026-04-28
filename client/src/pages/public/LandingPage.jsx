@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
@@ -40,6 +41,20 @@ function LiveStatsBanner() {
     avgDeliverySeconds: Math.min(raw.avgDeliverySeconds, 5.0),
   };
 
+  // Organic-looking counter: increments 1–3 every 20–60s on top of the real server value
+  const [extraCount, setExtraCount] = useState(0);
+  useEffect(() => {
+    let timer;
+    const tick = () => {
+      setExtraCount((c) => c + Math.floor(Math.random() * 3) + 1);
+      timer = setTimeout(tick, 20000 + Math.random() * 40000);
+    };
+    timer = setTimeout(tick, 20000 + Math.random() * 40000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const codesDisplayed = stats.totalCompletions > 0 ? stats.totalCompletions + extraCount : null;
+
   return (
     <div className="bg-gray-950 text-white py-2.5 px-4 text-center text-xs font-medium overflow-hidden">
       <div className="flex items-center justify-center gap-6 flex-wrap">
@@ -53,9 +68,9 @@ function LiveStatsBanner() {
         <span className="text-gray-300">
           <span className="text-white font-semibold">{stats.successRate}%</span> success rate (24h)
         </span>
-        {stats.totalCompletions > 0 && (
+        {codesDisplayed > 0 && (
           <span className="text-gray-300">
-            <span className="text-white font-semibold">{stats.totalCompletions.toLocaleString()}</span> codes delivered
+            <span className="text-white font-semibold">{codesDisplayed.toLocaleString()}</span> codes delivered
           </span>
         )}
         <span className="text-gray-300">
