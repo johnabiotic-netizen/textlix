@@ -162,8 +162,9 @@ exports.korapayInitialize = async (req, res, next) => {
 exports.korapayWebhook = async (req, res, next) => {
   try {
     const signature = req.headers['x-korapay-signature'];
+    const isBuffer = Buffer.isBuffer(req.body);
     if (!signature || !korapayProvider.verifyWebhookSignature(req.body, signature)) {
-      logger.warn('KoraPay webhook rejected: invalid signature');
+      logger.warn(`KoraPay webhook rejected: invalid signature (bodyIsBuffer:${isBuffer} contentType:${req.headers['content-type']})`);
       return res.status(401).end();
     }
 
