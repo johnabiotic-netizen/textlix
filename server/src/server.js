@@ -13,7 +13,8 @@ const REQUIRED_ENV = [
   'MONGODB_URI',
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
-  'PAYSTACK_SECRET_KEY',
+  'OXPROCESSING_API_KEY',
+  'KORAPAY_SECRET_KEY',
   'FIVESIM_API_KEY',
 ];
 const WEAK_PLACEHOLDERS = ['your-', 'change-this', 'xxxx', 'your_'];
