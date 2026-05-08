@@ -39,4 +39,9 @@ const computeSignature = (rawBody) =>
 const verifyWebhookSignature = (rawBody, signature) =>
   computeSignature(rawBody) === signature;
 
-module.exports = { initializeCharge, verifyCharge, verifyWebhookSignature, computeSignature };
+const getKeyInfo = () => {
+  const key = process.env.KORAPAY_ENCRYPTION_KEY || '';
+  return { len: key.length, start: key.slice(0, 4), end: key.slice(-4) };
+};
+
+module.exports = { initializeCharge, verifyCharge, verifyWebhookSignature, computeSignature, getKeyInfo };
