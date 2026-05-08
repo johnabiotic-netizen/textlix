@@ -30,12 +30,13 @@ const verifyCharge = async (reference) => {
 };
 
 // KoraPay signs webhook payloads with HMAC-SHA256 using the encryption key
-const verifyWebhookSignature = (rawBody, signature) => {
-  const expected = crypto
+const computeSignature = (rawBody) =>
+  crypto
     .createHmac('sha256', process.env.KORAPAY_ENCRYPTION_KEY || '')
     .update(rawBody)
     .digest('hex');
-  return expected === signature;
-};
 
-module.exports = { initializeCharge, verifyCharge, verifyWebhookSignature };
+const verifyWebhookSignature = (rawBody, signature) =>
+  computeSignature(rawBody) === signature;
+
+module.exports = { initializeCharge, verifyCharge, verifyWebhookSignature, computeSignature };
