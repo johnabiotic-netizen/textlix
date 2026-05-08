@@ -51,14 +51,21 @@ exports.oxprocessingCreate = async (req, res, next) => {
       status: 'PENDING',
     });
 
-    const invoice = await oxprocessingProvider.createInvoice({
-      invoiceId: payment._id.toString(),
-      amountUSD: finalAmount,
-      currency: currency || 'USDT',
-      callbackUrl: `${process.env.SERVER_URL}/api/v1/payments/oxprocessing/webhook`,
-      successUrl: `${process.env.FRONTEND_URL}/payments/success`,
-      failUrl: `${process.env.FRONTEND_URL}/payments/cancel`,
-    });
+    let invoice;
+    try {
+      invoice = await oxprocessingProvider.createInvoice({
+        invoiceId: payment._id.toString(),
+        amountUSD: finalAmount,
+        currency: currency || 'USDT',
+        callbackUrl: `${process.env.SERVER_URL}/api/v1/payments/oxprocessing/webhook`,
+        successUrl: `${process.env.FRONTEND_URL}/payments/success`,
+        failUrl: `${process.env.FRONTEND_URL}/payments/cancel`,
+      });
+    } catch (providerErr) {
+      await Payment.findByIdAndUpdate(payment._id, { status: 'FAILED' });
+      logger.error('0xProcessing createInvoice failed:', providerErr.message);
+      throw new AppError('PROVIDER_ERROR', 502, providerErr.message);
+    }
 
     payment.externalId = invoice.invoice_id?.toString() || invoice.id?.toString();
     await payment.save();

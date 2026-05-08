@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { verifyKorapay } from '../../api/payments';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
@@ -7,20 +7,23 @@ import useAuthStore from '../../store/authStore';
 export default function PaymentVerifyPage() {
   const [params] = useSearchParams();
   const reference = params.get('reference') || params.get('trxref');
-  const navigate = useNavigate();
-  const { setUser } = useAuthStore();
   const [status, setStatus] = useState('verifying');
 
   useEffect(() => {
-    if (!reference) { setStatus('success'); return; }
+    if (!reference) { setStatus('cancelled'); return; }
 
     const verify = async () => {
       try {
-        await verifyKorapay(reference);
-        // Refresh user to get updated balance
-        const { data } = await getMe();
-        useAuthStore.setState({ user: data.data.user });
-        setStatus('success');
+        const { data } = await verifyKorapay(reference);
+        const payment = data?.data?.payment;
+
+        if (payment?.status === 'COMPLETED') {
+          const meRes = await getMe();
+          useAuthStore.setState({ user: meRes.data.data.user });
+          setStatus('success');
+        } else {
+          setStatus('cancelled');
+        }
       } catch {
         setStatus('error');
       }
@@ -51,11 +54,22 @@ export default function PaymentVerifyPage() {
     </div>
   );
 
+  if (status === 'cancelled') return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="text-center max-w-sm">
+        <div className="text-6xl mb-4">↩️</div>
+        <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Payment Cancelled</h1>
+        <p className="text-gray-500 mb-8">No charge was made. You can try again whenever you're ready.</p>
+        <Link to="/credits" className="bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-brand-700 transition-colors">Back to Buy Credits</Link>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center max-w-sm">
         <div className="text-6xl mb-4">❌</div>
-        <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Payment Failed</h1>
+        <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Verification Failed</h1>
         <p className="text-gray-500 mb-8">Something went wrong. Please try again.</p>
         <Link to="/credits" className="bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-brand-700 transition-colors">Try Again</Link>
       </div>
