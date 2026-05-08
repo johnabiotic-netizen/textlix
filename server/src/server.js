@@ -42,7 +42,7 @@ const server = http.createServer(app);
 const ALLOWED_ORIGINS = [
   'https://www.textlix.com',
   'https://textlix.com',
-  'https://textlix-production.up.railway.app',
+  'https://lucky-appreciation-production-9063.up.railway.app',
   'http://localhost:5173',
   'http://localhost:5174',
 ];
