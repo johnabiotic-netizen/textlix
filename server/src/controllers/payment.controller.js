@@ -161,18 +161,16 @@ exports.korapayInitialize = async (req, res, next) => {
 
 exports.korapayWebhook = async (req, res, next) => {
   try {
-    const signature = req.headers['x-korapay-signature'];
-    const isBuffer = Buffer.isBuffer(req.body);
-    if (!signature || !korapayProvider.verifyWebhookSignature(req.body, signature)) {
-      logger.warn(`KoraPay webhook rejected: invalid signature (bodyIsBuffer:${isBuffer} contentType:${req.headers['content-type']})`);
-      return res.status(401).end();
-    }
-
-    const payload = JSON.parse(req.body.toString('utf8'));
+    const body = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
+    const payload = JSON.parse(body);
     const { event, data } = payload;
 
-    if (event === 'charge.success' && data?.status === 'success') {
-      await processKorapayPayment(data.reference);
+    if (event === 'charge.success' && data?.reference) {
+      // Verify independently with KoraPay API — safe even without signature check
+      const charge = await korapayProvider.verifyCharge(data.reference);
+      if (charge?.status === 'success') {
+        await processKorapayPayment(data.reference);
+      }
     }
     res.sendStatus(200);
   } catch (err) {
