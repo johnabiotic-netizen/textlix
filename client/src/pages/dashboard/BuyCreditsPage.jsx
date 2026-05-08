@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { RiCoinLine } from 'react-icons/ri';
-import { getPackages, initializePaystack, createCrypto, getPaymentHistory } from '../../api/payments';
+import { getPackages, initializeKorapay, createOxprocessing, getPaymentHistory } from '../../api/payments';
 import useAuthStore from '../../store/authStore';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
@@ -42,11 +42,11 @@ export default function BuyCreditsPage() {
     try {
       if (method === 'card') {
         const body = selectedPkg ? { packageId: selectedPkg.id } : { amountUSD: amount };
-        const { data } = await initializePaystack(body);
-        window.location.href = data.data.authorizationUrl;
+        const { data } = await initializeKorapay(body);
+        window.location.href = data.data.checkoutUrl;
       } else {
         const body = selectedPkg ? { packageId: selectedPkg.id, currency } : { amountUSD: amount, currency };
-        const { data } = await createCrypto(body);
+        const { data } = await createOxprocessing(body);
         window.location.href = data.data.paymentUrl;
       }
     } catch (err) {
@@ -149,7 +149,7 @@ export default function BuyCreditsPage() {
             {payData.payments.map((p) => (
               <div key={p._id} className="flex items-center justify-between p-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{p.method === 'PAYSTACK' ? '💳' : '₿'} ${p.amountUSD}</p>
+                  <p className="text-sm font-medium text-gray-900">{p.method === 'KORAPAY' ? '💳' : '₿'} ${p.amountUSD}</p>
                   <p className="text-xs text-gray-400">{dayjs(p.createdAt).format('MMM D, YYYY')}</p>
                 </div>
                 <div className="text-right">

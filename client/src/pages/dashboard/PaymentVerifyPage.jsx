@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { verifyPaystack } from '../../api/payments';
+import { verifyKorapay } from '../../api/payments';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
 
@@ -16,7 +16,7 @@ export default function PaymentVerifyPage() {
 
     const verify = async () => {
       try {
-        await verifyPaystack(reference);
+        await verifyKorapay(reference);
         // Refresh user to get updated balance
         const { data } = await getMe();
         useAuthStore.setState({ user: data.data.user });
