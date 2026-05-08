@@ -1,13 +1,14 @@
 const crypto = require('crypto');
-const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { addCredits } = require('../services/credit.service');
-const paystackProvider = require('../providers/payment/paystack.provider');
-const coingateProvider = require('../providers/payment/coingate.provider');
+const oxprocessingProvider = require('../providers/payment/0xprocessing.provider');
+const korapayProvider = require('../providers/payment/korapay.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const logger = require('../config/logger');
+
+const getNgnRate = () => parseFloat(process.env.KORAPAY_NGN_RATE) || 1600;
 
 const PACKAGES = [
   { id: 'starter', amountUSD: 2, credits: 200, bonus: 0, label: 'Starter' },
@@ -30,88 +31,159 @@ exports.getPackages = (req, res) => {
   success(res, { packages: PACKAGES.map((p) => ({ ...p, totalCredits: p.credits + p.bonus })) });
 };
 
-exports.paystackInitialize = async (req, res, next) => {
+// ─── 0xProcessing (crypto) ───────────────────────────────────────────────────
+
+exports.oxprocessingCreate = async (req, res, next) => {
   try {
-    const { amountUSD, packageId } = req.body;
+    const { amountUSD, currency, packageId } = req.body;
     const { credits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
 
-    const minTopup = 2;
-    if (finalAmount < minTopup) {
-      throw new AppError('VALIDATION_ERROR', 400, `Minimum top-up is $${minTopup}`);
-    }
+    if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
 
     const user = await User.findById(req.user.userId);
     const payment = await Payment.create({
       userId: user._id,
-      method: 'PAYSTACK',
-      provider: 'paystack',
+      method: 'CRYPTO',
+      provider: '0xprocessing',
       amountUSD: finalAmount,
-      currency: 'USD',
+      currency: currency || 'USDT',
       creditsAdded: credits,
       status: 'PENDING',
     });
 
-    const amountKobo = Math.round(finalAmount * 100 * 100); // USD → cents → kobo
-    const data = await paystackProvider.initializeTransaction({
-      email: user.email,
-      amountKobo,
-      reference: payment._id.toString(),
-      callbackUrl: `${process.env.FRONTEND_URL}/payments/verify`,
-      metadata: { userId: user._id, credits, paymentId: payment._id },
+    const invoice = await oxprocessingProvider.createInvoice({
+      invoiceId: payment._id.toString(),
+      amountUSD: finalAmount,
+      currency: currency || 'USDT',
+      callbackUrl: `${process.env.SERVER_URL}/api/v1/payments/oxprocessing/webhook`,
+      successUrl: `${process.env.FRONTEND_URL}/payments/success`,
+      failUrl: `${process.env.FRONTEND_URL}/payments/cancel`,
     });
 
-    payment.externalId = data.reference;
+    payment.externalId = invoice.invoice_id?.toString() || invoice.id?.toString();
     await payment.save();
 
-    success(res, { authorizationUrl: data.authorization_url, reference: payment._id.toString() });
+    success(res, {
+      paymentUrl: invoice.payment_url || invoice.url,
+      orderId: payment._id,
+      expiresAt: invoice.expires_at || invoice.expire_at,
+    }, 201);
   } catch (err) {
     next(err);
   }
 };
 
-exports.paystackWebhook = async (req, res, next) => {
+exports.oxprocessingWebhook = async (req, res, next) => {
   try {
-    // req.body is a raw Buffer (express.raw middleware applied upstream)
-    const signature = req.headers['x-paystack-signature'];
-    if (!signature) {
-      logger.warn('Paystack webhook rejected: missing signature header');
-      return res.status(400).json({ error: 'Missing signature' });
-    }
-
-    const hash = crypto
-      .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY || '')
-      .update(req.body) // raw Buffer — correct input for HMAC
-      .digest('hex');
-
-    if (hash !== signature) {
-      logger.warn('Paystack webhook rejected: signature mismatch');
-      return res.status(400).json({ error: 'Invalid signature' });
+    const signature = req.headers['x-signature'] || req.headers['x-api-signature'];
+    if (!signature || !oxprocessingProvider.verifyWebhookSignature(req.body, signature)) {
+      logger.warn('0xProcessing webhook rejected: invalid signature');
+      return res.status(401).end();
     }
 
     const payload = JSON.parse(req.body.toString('utf8'));
-    const { event, data } = payload;
-    if (event !== 'charge.success') return res.sendStatus(200);
+    const { order_id, status } = payload;
 
-    await processPaystackPayment(data.reference);
+    if (status === 'paid' || status === 'PAID') {
+      const payment = await Payment.findOneAndUpdate(
+        { _id: order_id, status: 'PENDING' },
+        { $set: { status: 'COMPLETED', completedAt: new Date() } },
+        { new: false }
+      );
+      if (payment) {
+        await addCredits(
+          payment.userId,
+          payment.creditsAdded,
+          `Credit purchase: $${payment.amountUSD} via 0xProcessing`,
+          payment._id.toString()
+        );
+        await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+      }
+    }
     res.sendStatus(200);
   } catch (err) {
-    logger.error('Paystack webhook error:', err);
+    logger.error('0xProcessing webhook error:', err);
     res.sendStatus(500);
   }
 };
 
-exports.paystackVerify = async (req, res, next) => {
+// ─── KoraPay (Nigeria) ────────────────────────────────────────────────────────
+
+exports.korapayInitialize = async (req, res, next) => {
   try {
-    // Ownership check — users may only verify their own payments (prevents IDOR)
+    const { amountUSD, packageId } = req.body;
+    const { credits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
+
+    if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
+
+    const user = await User.findById(req.user.userId);
+    const amountNGN = Math.round(finalAmount * getNgnRate() * 100) / 100;
+
+    const payment = await Payment.create({
+      userId: user._id,
+      method: 'KORAPAY',
+      provider: 'korapay',
+      amountUSD: finalAmount,
+      amountLocal: amountNGN,
+      currency: 'NGN',
+      creditsAdded: credits,
+      status: 'PENDING',
+    });
+
+    const charge = await korapayProvider.initializeCharge({
+      reference: payment._id.toString(),
+      amountNGN,
+      email: user.email,
+      name: user.name || user.email,
+      redirectUrl: `${process.env.FRONTEND_URL}/payments/verify`,
+      notificationUrl: `${process.env.SERVER_URL}/api/v1/payments/korapay/webhook`,
+    });
+
+    payment.externalId = charge.reference || payment._id.toString();
+    await payment.save();
+
+    success(res, {
+      checkoutUrl: charge.checkout_url,
+      reference: payment._id.toString(),
+      amountNGN,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.korapayWebhook = async (req, res, next) => {
+  try {
+    const signature = req.headers['x-korapay-signature'];
+    if (!signature || !korapayProvider.verifyWebhookSignature(req.body, signature)) {
+      logger.warn('KoraPay webhook rejected: invalid signature');
+      return res.status(401).end();
+    }
+
+    const payload = JSON.parse(req.body.toString('utf8'));
+    const { event, data } = payload;
+
+    if (event === 'charge.success' && data?.status === 'success') {
+      await processKorapayPayment(data.reference);
+    }
+    res.sendStatus(200);
+  } catch (err) {
+    logger.error('KoraPay webhook error:', err);
+    res.sendStatus(500);
+  }
+};
+
+exports.korapayVerify = async (req, res, next) => {
+  try {
     const payment = await Payment.findById(req.params.reference);
     if (!payment) throw new AppError('NOT_FOUND', 404, 'Payment not found');
     if (payment.userId.toString() !== req.user.userId.toString()) {
       throw new AppError('FORBIDDEN', 403, 'Access denied');
     }
 
-    const data = await paystackProvider.verifyTransaction(req.params.reference);
-    if (data.status === 'success') {
-      await processPaystackPayment(req.params.reference);
+    const charge = await korapayProvider.verifyCharge(req.params.reference);
+    if (charge?.status === 'success') {
+      await processKorapayPayment(req.params.reference);
     }
 
     const updated = await Payment.findById(req.params.reference);
@@ -121,7 +193,7 @@ exports.paystackVerify = async (req, res, next) => {
   }
 };
 
-async function processPaystackPayment(reference) {
+async function processKorapayPayment(reference) {
   const payment = await Payment.findOneAndUpdate(
     { _id: reference, status: 'PENDING' },
     { $set: { status: 'COMPLETED', completedAt: new Date() } },
@@ -132,17 +204,17 @@ async function processPaystackPayment(reference) {
   await addCredits(
     payment.userId,
     payment.creditsAdded,
-    `Credit purchase: $${payment.amountUSD} via Paystack`,
+    `Credit purchase: $${payment.amountUSD} via KoraPay`,
     payment._id.toString()
   );
-  logger.info(`Paystack payment completed: ${payment._id}, credits: ${payment.creditsAdded}`);
-
+  logger.info(`KoraPay payment completed: ${payment._id}, credits: ${payment.creditsAdded}`);
   await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
 }
 
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+
 async function maybeAwardReferralBonus(userId, creditsAdded, referenceId) {
   try {
-    // Atomic claim: mark referralBonusPaid only if it wasn't already (prevents double-award)
     const user = await User.findOneAndUpdate(
       { _id: userId, referredBy: { $ne: null }, referralBonusPaid: false },
       { $set: { referralBonusPaid: true } },
@@ -165,93 +237,17 @@ async function maybeAwardReferralBonus(userId, creditsAdded, referenceId) {
   }
 }
 
-exports.cryptoCreate = async (req, res, next) => {
-  try {
-    const { amountUSD, currency, packageId } = req.body;
-    const { credits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
-
-    if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
-
-    const user = await User.findById(req.user.userId);
-    const payment = await Payment.create({
-      userId: user._id,
-      method: 'CRYPTO',
-      provider: 'coingate',
-      amountUSD: finalAmount,
-      currency: currency || 'USDT',
-      creditsAdded: credits,
-      status: 'PENDING',
-    });
-
-    const order = await coingateProvider.createOrder({
-      orderId: payment._id.toString(),
-      priceAmount: finalAmount,
-      priceCurrency: 'USD',
-      title: 'TextLix Credits',
-      description: `Purchase of ${credits} credits`,
-      callbackUrl: `${process.env.SERVER_URL}/api/v1/payments/crypto/webhook`,
-      successUrl: `${process.env.FRONTEND_URL}/payments/success`,
-      cancelUrl: `${process.env.FRONTEND_URL}/payments/cancel`,
-    });
-
-    payment.externalId = order.id?.toString();
-    await payment.save();
-
-    success(res, {
-      paymentUrl: order.payment_url,
-      orderId: payment._id,
-      expiresAt: order.expire_at,
-    }, 201);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.cryptoWebhook = async (req, res, next) => {
-  try {
-    // CoinGate sends: Authorization: Token <your_api_token>
-    const authHeader = req.headers['authorization'];
-    const expectedToken = `Token ${process.env.COINGATE_API_TOKEN}`;
-    if (!authHeader || authHeader !== expectedToken) {
-      logger.warn('CoinGate webhook rejected: invalid or missing Authorization header');
-      return res.status(401).end();
-    }
-
-    const { status, order_id } = req.body;
-    if (status === 'paid') {
-      // Atomic claim — same pattern as Paystack to prevent double-credit on concurrent calls
-      const payment = await Payment.findOneAndUpdate(
-        { _id: order_id, status: 'PENDING' },
-        { $set: { status: 'COMPLETED', completedAt: new Date() } },
-        { new: false }
-      );
-      if (payment) {
-        await addCredits(
-          payment.userId,
-          payment.creditsAdded,
-          `Credit purchase: $${payment.amountUSD} via Crypto`,
-          payment._id.toString()
-        );
-        await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
-      }
-    }
-    res.sendStatus(200);
-  } catch (err) {
-    logger.error('Crypto webhook error:', err);
-    res.sendStatus(500);
-  }
-};
+// ─── Payment history ──────────────────────────────────────────────────────────
 
 exports.getHistory = async (req, res, next) => {
   try {
     const p = Math.max(1, parseInt(req.query.page) || 1);
     const l = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
     const skip = (p - 1) * l;
-    const filter = { userId: req.user.userId };
 
     const [payments, total] = await Promise.all([
-      Payment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(l),
-      Payment.countDocuments(filter),
+      Payment.find({ userId: req.user.userId }).sort({ createdAt: -1 }).skip(skip).limit(l),
+      Payment.countDocuments({ userId: req.user.userId }),
     ]);
 
     success(res, { payments, total, page: p, pages: Math.ceil(total / l) });

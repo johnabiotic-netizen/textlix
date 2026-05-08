@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const paymentSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    method: { type: String, enum: ['PAYSTACK', 'CRYPTO'], required: true },
+    method: { type: String, enum: ['CRYPTO', 'KORAPAY'], required: true },
     provider: { type: String, required: true },
     externalId: { type: String, default: null, index: true },
     amountUSD: { type: Number, required: true },
