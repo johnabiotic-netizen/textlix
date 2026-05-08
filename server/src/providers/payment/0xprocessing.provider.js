@@ -7,7 +7,7 @@ const createPayment = async ({ orderId, amountUSD, currency, email, clientId, su
       email,
       amountUSD: String(amountUSD),
       currency: currency || 'USDT',
-      MerchantId: process.env.OXPROCESSING_API_KEY,
+      MerchantId: process.env.OXPROCESSING_MERCHANT_ID,
       ClientId: clientId,
       BillingId: orderId,
       SuccessUrl: successUrl,
