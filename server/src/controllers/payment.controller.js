@@ -51,28 +51,19 @@ exports.oxprocessingCreate = async (req, res, next) => {
       status: 'PENDING',
     });
 
-    let invoice;
-    try {
-      invoice = await oxprocessingProvider.createPayment({
-        orderId: payment._id.toString(),
-        amountUSD: finalAmount,
-        currency: currency || 'USDT',
-        email: user.email,
-        clientId: user._id.toString(),
-        successUrl: `${process.env.FRONTEND_URL}/payments/success`,
-        cancelUrl: `${process.env.FRONTEND_URL}/payments/cancel`,
-      });
-    } catch (providerErr) {
-      await Payment.findByIdAndUpdate(payment._id, { status: 'FAILED' });
-      logger.error('0xProcessing createPayment failed:', providerErr.message);
-      throw new AppError('PROVIDER_ERROR', 502, providerErr.message);
-    }
-
-    payment.externalId = invoice.id?.toString();
-    await payment.save();
+    const formFields = oxprocessingProvider.buildPaymentForm({
+      orderId: payment._id.toString(),
+      amountUSD: finalAmount,
+      currency: currency || 'USDT',
+      email: user.email,
+      clientId: user._id.toString(),
+      successUrl: `${process.env.FRONTEND_URL}/payments/success`,
+      cancelUrl: `${process.env.FRONTEND_URL}/payments/cancel`,
+    });
 
     success(res, {
-      paymentUrl: invoice.redirectUrl,
+      formAction: 'https://app.0xprocessing.com/Payment',
+      formFields,
       orderId: payment._id,
     }, 201);
   } catch (err) {
