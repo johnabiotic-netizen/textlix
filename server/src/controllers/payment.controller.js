@@ -192,6 +192,7 @@ exports.korapayVerify = async (req, res, next) => {
     }
 
     const charge = await korapayProvider.verifyCharge(req.params.reference);
+    logger.info(`KoraPay verify — ref:${req.params.reference} chargeStatus:${charge?.status} paymentStatus:${payment.status}`);
     if (charge?.status === 'success') {
       await processKorapayPayment(req.params.reference);
     }
