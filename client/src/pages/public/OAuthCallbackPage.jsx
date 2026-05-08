@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
 export default function OAuthCallbackPage() {
-  const [params] = useSearchParams();
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
 
   useEffect(() => {
-    const token = params.get('token');
-    const error = params.get('error');
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const token = hashParams.get('token');
+    const error = hashParams.get('error');
 
     if (error) {
       toast.error('OAuth login failed');

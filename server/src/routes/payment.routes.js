@@ -4,11 +4,9 @@ const { authenticate } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-const rawBody = express.raw({ type: 'application/json' });
-
-// Webhooks — no auth, raw body for signature verification
-router.post('/oxprocessing/webhook', rawBody, paymentController.oxprocessingWebhook);
-router.post('/korapay/webhook', rawBody, paymentController.korapayWebhook);
+// Webhooks — no auth (raw body is handled in app.js before express.json runs)
+router.post('/oxprocessing/webhook', paymentController.oxprocessingWebhook);
+router.post('/korapay/webhook', paymentController.korapayWebhook);
 
 // Protected routes
 router.use(authenticate);

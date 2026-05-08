@@ -7,6 +7,7 @@ const korapayProvider = require('../providers/payment/korapay.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const logger = require('../config/logger');
+const { getIO } = require('../config/io');
 
 const getNgnRate = () => parseFloat(process.env.KORAPAY_NGN_RATE) || 1600;
 
@@ -89,13 +90,21 @@ exports.oxprocessingWebhook = async (req, res, next) => {
         { new: false }
       );
       if (payment) {
-        await addCredits(
-          payment.userId,
-          payment.creditsAdded,
-          `Credit purchase: $${payment.amountUSD} via 0xProcessing`,
-          payment._id.toString()
-        );
-        await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+        try {
+          await addCredits(
+            payment.userId,
+            payment.creditsAdded,
+            `Credit purchase: $${payment.amountUSD} via 0xProcessing`,
+            payment._id.toString()
+          );
+          await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+          const io = getIO();
+          if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: payment.creditsAdded });
+        } catch (err) {
+          await Payment.findByIdAndUpdate(order_id, { $set: { status: 'PENDING', completedAt: null } });
+          logger.error(`0xProcessing credit delivery failed for ${order_id}: ${err.message}`);
+          return res.sendStatus(500);
+        }
       }
     }
     res.sendStatus(200);
@@ -199,14 +208,24 @@ async function processKorapayPayment(reference) {
   );
   if (!payment) return;
 
-  await addCredits(
-    payment.userId,
-    payment.creditsAdded,
-    `Credit purchase: $${payment.amountUSD} via KoraPay`,
-    payment._id.toString()
-  );
+  try {
+    await addCredits(
+      payment.userId,
+      payment.creditsAdded,
+      `Credit purchase: $${payment.amountUSD} via KoraPay`,
+      payment._id.toString()
+    );
+  } catch (err) {
+    // Roll back so the webhook or verify endpoint can retry
+    await Payment.findByIdAndUpdate(reference, { $set: { status: 'PENDING', completedAt: null } });
+    logger.error(`KoraPay credit delivery failed for ${reference}: ${err.message}`);
+    throw err;
+  }
+
   logger.info(`KoraPay payment completed: ${payment._id}, credits: ${payment.creditsAdded}`);
   await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+  const io = getIO();
+  if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: payment.creditsAdded });
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────

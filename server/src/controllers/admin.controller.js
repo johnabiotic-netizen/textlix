@@ -335,10 +335,25 @@ exports.getSettings = async (req, res, next) => {
   }
 };
 
+const ALLOWED_SETTINGS_KEYS = new Set([
+  'maxActiveNumbers',
+  'numberExpiryMinutes',
+  'defaultMarginPercent',
+  'maintenanceMode',
+  'korapayNgnRate',
+  'smsProviderPrimary',
+  'smsProviderFallback',
+  'referralBonusPercent',
+  'minTopupUSD',
+]);
+
 exports.updateSettings = async (req, res, next) => {
   try {
     const updates = req.body;
     for (const [key, value] of Object.entries(updates)) {
+      if (!ALLOWED_SETTINGS_KEYS.has(key)) {
+        throw new AppError('VALIDATION_ERROR', 400, `Unknown setting key: ${key}`);
+      }
       await PlatformSettings.findOneAndUpdate(
         { key },
         { value: String(value) },
@@ -396,17 +411,23 @@ exports.exportTransactions = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .limit(10000);
 
+    const sanitizeCsv = (v) => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      // Prefix formula-triggering characters to prevent spreadsheet injection
+      return /^[=+\-@\t\r]/.test(s) ? `"'${s}"` : `"${s}"`;
+    };
+
     const csv = [
       'Date,User,Email,Type,Amount,Balance After,Description',
       ...transactions.map((t) =>
         [
           t.createdAt.toISOString(),
-          t.userId?.name || '',
-          t.userId?.email || '',
+          sanitizeCsv(t.userId?.name),
+          sanitizeCsv(t.userId?.email),
           t.type,
           t.amount,
           t.balanceAfter,
-          `"${(t.description || '').replace(/"/g, '""')}"`,
+          sanitizeCsv(t.description),
         ].join(',')
       ),
     ].join('\n');

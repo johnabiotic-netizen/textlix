@@ -45,7 +45,8 @@ app.use(
 );
 
 // Webhooks need raw body — register before json parser
-app.use('/api/v1/payments/paystack/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/v1/payments/oxprocessing/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/v1/payments/korapay/webhook', express.raw({ type: 'application/json' }));
 
 // Body parsing — 50kb limit prevents large-payload attacks
 app.use(express.json({ limit: '50kb' }));

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { verifyKorapay } from '../../api/payments';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
@@ -8,6 +8,8 @@ export default function PaymentVerifyPage() {
   const [params] = useSearchParams();
   const reference = params.get('reference') || params.get('trxref');
   const [status, setStatus] = useState('verifying');
+  const [countdown, setCountdown] = useState(5);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!reference) { setStatus('cancelled'); return; }
@@ -31,6 +33,13 @@ export default function PaymentVerifyPage() {
     verify();
   }, [reference]);
 
+  useEffect(() => {
+    if (status !== 'success') return;
+    if (countdown <= 0) { navigate('/dashboard'); return; }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [status, countdown, navigate]);
+
   if (status === 'verifying') return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center">
@@ -45,7 +54,8 @@ export default function PaymentVerifyPage() {
       <div className="text-center max-w-sm">
         <div className="text-6xl mb-4">✅</div>
         <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Payment Successful!</h1>
-        <p className="text-gray-500 mb-8">Your credits have been added to your account.</p>
+        <p className="text-gray-500 mb-2">Your credits have been added to your account.</p>
+        <p className="text-sm text-gray-400 mb-8">Redirecting to dashboard in {countdown}s…</p>
         <div className="flex gap-3 justify-center">
           <Link to="/dashboard" className="bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-brand-700 transition-colors">Go to Dashboard</Link>
           <Link to="/numbers" className="border border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors">Get a Number</Link>

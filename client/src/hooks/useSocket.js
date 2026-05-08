@@ -10,6 +10,7 @@ let socketToken = null;
 const listeners = {
   'sms:received': new Set(),
   'number:expired': new Set(),
+  'payment:completed': new Set(),
 };
 
 function getOrCreateSocket(token) {
@@ -34,6 +35,10 @@ function getOrCreateSocket(token) {
     listeners['number:expired'].forEach((cb) => cb(data));
   });
 
+  socket.on('payment:completed', (data) => {
+    listeners['payment:completed'].forEach((cb) => cb(data));
+  });
+
   socketInstance = socket;
   socketToken = token;
   return socket;
@@ -41,13 +46,13 @@ function getOrCreateSocket(token) {
 
 export const getSocket = () => socketInstance;
 
-export const useSocket = (onSmsReceived, onNumberExpired) => {
+export const useSocket = (onSmsReceived, onNumberExpired, onPaymentCompleted) => {
   const { accessToken, user } = useAuthStore();
-  const cbRef = useRef({ onSmsReceived, onNumberExpired });
+  const cbRef = useRef({ onSmsReceived, onNumberExpired, onPaymentCompleted });
 
   // Keep callbacks current without re-subscribing the effect
   useEffect(() => {
-    cbRef.current = { onSmsReceived, onNumberExpired };
+    cbRef.current = { onSmsReceived, onNumberExpired, onPaymentCompleted };
   });
 
   useEffect(() => {
@@ -55,14 +60,17 @@ export const useSocket = (onSmsReceived, onNumberExpired) => {
 
     const smsCb = (data) => cbRef.current.onSmsReceived?.(data);
     const expiredCb = (data) => cbRef.current.onNumberExpired?.(data);
+    const paymentCb = (data) => cbRef.current.onPaymentCompleted?.(data);
 
     getOrCreateSocket(accessToken);
     listeners['sms:received'].add(smsCb);
     listeners['number:expired'].add(expiredCb);
+    listeners['payment:completed'].add(paymentCb);
 
     return () => {
       listeners['sms:received'].delete(smsCb);
       listeners['number:expired'].delete(expiredCb);
+      listeners['payment:completed'].delete(paymentCb);
     };
   }, [accessToken, user]);
 };

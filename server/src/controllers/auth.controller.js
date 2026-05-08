@@ -185,7 +185,7 @@ exports.oauthCallback = (user, res, req) => {
   setRefreshCookie(res, refreshToken);
   audit('OAUTH_LOGIN', { userId: user._id, email: user.email });
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
-  res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}`);
+  res.redirect(`${frontendUrl}/auth/callback#token=${accessToken}`);
 };
 
 exports.forgotPassword = async (req, res, next) => {

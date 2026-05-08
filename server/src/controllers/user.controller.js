@@ -20,8 +20,13 @@ exports.updateMe = async (req, res, next) => {
   try {
     const { name, avatar, emailNotifications } = req.body;
     const updates = {};
-    if (name) updates.name = name.trim();
-    if (avatar !== undefined) updates.avatar = avatar;
+    if (name) updates.name = name.trim().slice(0, 100);
+    if (avatar !== undefined) {
+      if (avatar && !/^https?:\/\/.{1,2000}$/.test(avatar)) {
+        throw new AppError('VALIDATION_ERROR', 400, 'Avatar must be a valid http/https URL');
+      }
+      updates.avatar = avatar;
+    }
     if (emailNotifications !== undefined) updates.emailNotifications = Boolean(emailNotifications);
 
     const user = await User.findByIdAndUpdate(req.user.userId, updates, { new: true }).select('-passwordHash');

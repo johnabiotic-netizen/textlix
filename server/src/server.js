@@ -3,6 +3,7 @@ const { Server } = require('socket.io');
 const app = require('./app');
 const connectDB = require('./config/db');
 const setupSocket = require('./sockets/socket.handler');
+const { setIO } = require('./config/io');
 const smsPoller = require('./services/sms-poller.service');
 const expiryJob = require('./jobs/number-expiry.job');
 const cleanupJob = require('./jobs/sms-cleanup.job');
@@ -58,6 +59,7 @@ const io = new Server(server, {
 });
 
 setupSocket(io);
+setIO(io);
 smsPoller.setIO(io);
 expiryJob.setIO(io);
 

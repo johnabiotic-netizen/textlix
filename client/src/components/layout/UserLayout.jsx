@@ -1,12 +1,16 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Navbar from './Navbar';
 import { useSocket } from '../../hooks/useSocket';
 import { playNotificationSound } from '../../hooks/useNotificationSound';
+import { getMe } from '../../api/user';
+import useAuthStore from '../../store/authStore';
 
 function GlobalSmsNotifier() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
   useSocket(
     (data) => {
       playNotificationSound();
@@ -22,7 +26,15 @@ function GlobalSmsNotifier() {
         { duration: 8000, id: `sms-${data.orderId}` }
       );
     },
-    () => {}
+    () => {},
+    async (data) => {
+      try {
+        const meRes = await getMe();
+        useAuthStore.setState({ user: meRes.data.data.user });
+      } catch {}
+      toast.success(`Payment confirmed! +${data.creditsAdded?.toLocaleString()} credits added.`, { duration: 6000, id: 'payment-completed' });
+      navigate('/dashboard');
+    }
   );
   return null;
 }
