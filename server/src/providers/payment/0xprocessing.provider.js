@@ -4,15 +4,15 @@ const crypto = require('crypto');
 const createPayment = async ({ orderId, amountUSD, currency, email, clientId, successUrl, cancelUrl }) => {
   try {
     const params = new URLSearchParams({
-      AmountUSD: String(amountUSD),
-      Currency: currency || 'USDT',
-      Email: email,
-      ClientId: clientId,
+      email,
+      amountUSD: String(amountUSD),
+      currency: currency || 'USDT',
       MerchantId: process.env.OXPROCESSING_API_KEY,
-      BillingID: orderId,
+      ClientId: clientId,
+      BillingId: orderId,
       SuccessUrl: successUrl,
       CancelUrl: cancelUrl,
-      ReturnUrl: 'true', // return JSON { redirectUrl, id } instead of HTML form
+      ReturnUrl: 'true',
     });
 
     const res = await axios.post('https://app.0xprocessing.com/Payment', params.toString(), {
