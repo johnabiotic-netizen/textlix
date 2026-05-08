@@ -1,23 +1,23 @@
 const axios = require('axios');
 const crypto = require('crypto');
 
-const api = axios.create({
-  baseURL: 'https://api.0xprocessing.com/v1',
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
-});
-
-const createInvoice = async ({ invoiceId, amountUSD, currency, callbackUrl, successUrl, failUrl }) => {
+const createPayment = async ({ orderId, amountUSD, currency, email, clientId, successUrl, cancelUrl }) => {
   try {
-    const res = await api.post('/invoice/create', {
-      api_key: process.env.OXPROCESSING_API_KEY,
-      order_id: invoiceId,
-      amount: amountUSD,
-      currency: currency || 'USDT',
-      description: 'VerifyNow Credits',
-      callback_url: callbackUrl,
-      success_url: successUrl,
-      fail_url: failUrl,
+    const params = new URLSearchParams({
+      AmountUSD: String(amountUSD),
+      Currency: currency || 'USDT',
+      Email: email,
+      ClientId: clientId,
+      MerchantId: process.env.OXPROCESSING_API_KEY,
+      BillingID: orderId,
+      SuccessUrl: successUrl,
+      CancelUrl: cancelUrl,
+      ReturnUrl: 'true', // return JSON { redirectUrl, id } instead of HTML form
+    });
+
+    const res = await axios.post('https://app.0xprocessing.com/Payment', params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      timeout: 15000,
     });
     return res.data;
   } catch (err) {
@@ -28,13 +28,13 @@ const createInvoice = async ({ invoiceId, amountUSD, currency, callbackUrl, succ
   }
 };
 
-// 0xProcessing signs webhook payloads with HMAC-SHA256 using the API key
+// 0xProcessing webhook signature uses MD5
 const verifyWebhookSignature = (rawBody, signature) => {
   const expected = crypto
-    .createHmac('sha256', process.env.OXPROCESSING_API_KEY || '')
+    .createHash('md5')
     .update(rawBody)
     .digest('hex');
   return expected === signature;
 };
 
-module.exports = { createInvoice, verifyWebhookSignature };
+module.exports = { createPayment, verifyWebhookSignature };
