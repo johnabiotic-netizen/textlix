@@ -7,6 +7,7 @@ const logger = require('../config/logger');
 class SMSPollerService {
   constructor() {
     this.activePolls = new Map();
+    this.pollFailures = new Map(); // orderId → consecutive error count
     this.io = null;
   }
 
@@ -15,18 +16,26 @@ class SMSPollerService {
   }
 
   startPolling(order) {
-    if (this.activePolls.has(order._id.toString())) return;
+    const orderId = order._id.toString();
+    if (this.activePolls.has(orderId)) return;
 
     const intervalId = setInterval(async () => {
       try {
         await this._poll(order);
+        this.pollFailures.delete(orderId);
       } catch (err) {
-        logger.error(`Poll error for order ${order._id}:`, err.message);
+        const fails = (this.pollFailures.get(orderId) || 0) + 1;
+        this.pollFailures.set(orderId, fails);
+        logger.error(`Poll error for order ${orderId} (${fails}/10):`, err.message);
+        if (fails >= 10) {
+          logger.warn(`Stopping poll for order ${orderId} after 10 consecutive errors`);
+          this.stopPolling(orderId);
+        }
       }
     }, 5000);
 
-    this.activePolls.set(order._id.toString(), intervalId);
-    logger.debug(`Started polling order ${order._id}`);
+    this.activePolls.set(orderId, intervalId);
+    logger.debug(`Started polling order ${orderId}`);
   }
 
   async _poll(order) {
@@ -120,6 +129,7 @@ class SMSPollerService {
     if (intervalId) {
       clearInterval(intervalId);
       this.activePolls.delete(key);
+      this.pollFailures.delete(key);
       logger.debug(`Stopped polling order ${key}`);
     }
   }
@@ -129,6 +139,7 @@ class SMSPollerService {
       clearInterval(intervalId);
     }
     this.activePolls.clear();
+    this.pollFailures.clear();
     logger.info('All SMS polling stopped');
   }
 

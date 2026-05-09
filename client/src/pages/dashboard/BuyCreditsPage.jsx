@@ -9,8 +9,6 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import dayjs from 'dayjs';
 
-const NGN_RATE = 1600;
-
 const CRYPTO_COINS = [
   {
     id: 'USDT', label: 'USDT', name: 'Tether', symbol: '₮',
@@ -62,10 +60,12 @@ export default function BuyCreditsPage() {
 
   const [loading, setLoading] = useState(false);
 
-  const { data: pkgData } = useQuery({
+  const { data: pkgResponse } = useQuery({
     queryKey: ['packages'],
-    queryFn: () => getPackages().then((r) => r.data.data.packages),
+    queryFn: () => getPackages().then((r) => r.data.data),
   });
+  const pkgData = pkgResponse?.packages;
+  const ngnRate = pkgResponse?.ngnRate || 1600;
 
   const { data: payData } = useQuery({
     queryKey: ['paymentHistory'],
@@ -245,7 +245,7 @@ export default function BuyCreditsPage() {
             {/* NGN equivalent for Naira method */}
             {method === 'naira' && amountUSD >= 2 && (
               <p className="mt-2 text-sm text-gray-500">
-                ≈ ₦{(amountUSD * NGN_RATE).toLocaleString()} at current rate
+                ≈ ₦{(amountUSD * ngnRate).toLocaleString()} at current rate
               </p>
             )}
           </div>
@@ -311,7 +311,7 @@ export default function BuyCreditsPage() {
               className="w-full sm:w-auto"
             >
               {method === 'naira'
-                ? `Pay ₦${amountUSD >= 2 ? (amountUSD * NGN_RATE).toLocaleString() : '—'}`
+                ? `Pay ₦${amountUSD >= 2 ? (amountUSD * ngnRate).toLocaleString() : '—'}`
                 : selectedNetwork
                   ? `Pay $${amountUSD >= 2 ? amountUSD.toFixed(2) : '—'} with ${selectedCoin?.label} (${selectedNetwork.label})`
                   : `Pay with Crypto`}

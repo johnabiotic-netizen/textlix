@@ -1,18 +1,51 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { verifyKorapay } from '../../api/payments';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
+import useSocket from '../../hooks/useSocket';
 
 export default function PaymentVerifyPage() {
   const [params] = useSearchParams();
-  const reference = params.get('reference') || params.get('trxref');
-  const [status, setStatus] = useState('verifying');
-  const [countdown, setCountdown] = useState(5);
+  const location = useLocation();
   const navigate = useNavigate();
 
+  const reference = params.get('reference') || params.get('trxref');
+  const isCancelPage = location.pathname === '/payments/cancel';
+  const isSuccessPage = location.pathname === '/payments/success';
+
+  // Determine initial status based on route + params
+  const getInitialStatus = () => {
+    if (isCancelPage) return 'cancelled';
+    if (isSuccessPage && !reference) return 'crypto_pending';
+    if (!reference) return 'cancelled';
+    return 'verifying';
+  };
+
+  const [status, setStatus] = useState(getInitialStatus);
+  const [countdown, setCountdown] = useState(5);
+
+  const socket = useSocket();
+
+  // Listen for the payment:completed socket event on the crypto pending screen
   useEffect(() => {
-    if (!reference) { setStatus('cancelled'); return; }
+    if (status !== 'crypto_pending' || !socket) return;
+
+    const handlePaymentCompleted = async () => {
+      try {
+        const meRes = await getMe();
+        useAuthStore.setState({ user: meRes.data.data.user });
+      } catch (_) {}
+      setStatus('success');
+    };
+
+    socket.on('payment:completed', handlePaymentCompleted);
+    return () => socket.off('payment:completed', handlePaymentCompleted);
+  }, [status, socket]);
+
+  // KoraPay verify flow (reference present)
+  useEffect(() => {
+    if (status !== 'verifying' || !reference) return;
 
     const verify = async () => {
       try {
@@ -31,8 +64,9 @@ export default function PaymentVerifyPage() {
       }
     };
     verify();
-  }, [reference]);
+  }, [reference, status]);
 
+  // Auto-redirect to dashboard after success
   useEffect(() => {
     if (status !== 'success') return;
     if (countdown <= 0) { navigate('/dashboard'); return; }
@@ -45,6 +79,21 @@ export default function PaymentVerifyPage() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600 mx-auto mb-4" />
         <p className="text-gray-600">Verifying payment...</p>
+      </div>
+    </div>
+  );
+
+  if (status === 'crypto_pending') return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="text-center max-w-sm">
+        <div className="text-6xl mb-4">⏳</div>
+        <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Payment Submitted</h1>
+        <p className="text-gray-500 mb-2">Your crypto payment was received. Credits will be added to your account once the transaction is confirmed on-chain.</p>
+        <p className="text-sm text-gray-400 mb-8">This page will update automatically — you can also check your balance in a few minutes.</p>
+        <div className="flex gap-3 justify-center">
+          <Link to="/dashboard" className="bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-brand-700 transition-colors">Go to Dashboard</Link>
+          <Link to="/credits" className="border border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors">Buy More</Link>
+        </div>
       </div>
     </div>
   );

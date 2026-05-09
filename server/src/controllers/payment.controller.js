@@ -29,7 +29,10 @@ const calcCredits = (amountUSD, packageId) => {
 };
 
 exports.getPackages = (req, res) => {
-  success(res, { packages: PACKAGES.map((p) => ({ ...p, totalCredits: p.credits + p.bonus })) });
+  success(res, {
+    packages: PACKAGES.map((p) => ({ ...p, totalCredits: p.credits + p.bonus })),
+    ngnRate: getNgnRate(),
+  });
 };
 
 // ─── 0xProcessing (crypto) ───────────────────────────────────────────────────

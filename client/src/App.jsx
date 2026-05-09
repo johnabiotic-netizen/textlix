@@ -133,21 +133,7 @@ export default function App() {
         setAuth(userRes.data.data.user, token);
         scheduleProactiveRefresh(token, doRefresh);
       } catch {
-        if (import.meta.env.DEV) {
-          // Mock user for UI review — remove before production
-          setAuth({
-            _id: 'dev-user',
-            name: 'Dev Admin',
-            email: 'admin@textlix.com',
-            role: 'ADMIN',
-            creditBalance: 1250,
-            provider: 'LOCAL',
-            isEmailVerified: true,
-            createdAt: new Date().toISOString(),
-          }, 'dev-token');
-        } else {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
     initAuth();
@@ -194,6 +180,7 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/payments/verify" element={<PaymentVerifyPage />} />
             <Route path="/payments/success" element={<PaymentVerifyPage />} />
+            <Route path="/payments/cancel" element={<PaymentVerifyPage />} />
           </Route>
 
           {/* Admin */}

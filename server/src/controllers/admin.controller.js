@@ -8,6 +8,8 @@ const Service = require('../models/Service');
 const NumberPricing = require('../models/NumberPricing');
 const PlatformSettings = require('../models/PlatformSettings');
 const { adminAdjustCredits } = require('../services/credit.service');
+const fivesim = require('../providers/sms/fivesim.provider');
+const smsPoller = require('../services/sms-poller.service');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const { audit, getIP, getUA } = require('../utils/audit');
@@ -137,6 +139,15 @@ exports.deleteUser = async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
     if (user.role === 'ADMIN') throw new AppError('FORBIDDEN', 403, 'Cannot delete admin accounts');
+
+    // Cancel active 5sim orders before removing DB records so the provider
+    // doesn't keep charging the account balance after the user is gone
+    const activeOrders = await NumberOrder.find({ userId: req.params.id, status: 'ACTIVE' });
+    for (const order of activeOrders) {
+      smsPoller.stopPolling(order._id.toString());
+      try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
+    }
+
     await Promise.all([
       User.findByIdAndDelete(req.params.id),
       CreditTransaction.deleteMany({ userId: req.params.id }),

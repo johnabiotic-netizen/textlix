@@ -2,14 +2,14 @@ const { Resend } = require('resend');
 const logger = require('../config/logger');
 
 const getClient = () => {
-  if (process.env.SMTP_PASS) return new Resend(process.env.SMTP_PASS);
+  if (process.env.RESEND_API_KEY) return new Resend(process.env.RESEND_API_KEY);
   return null;
 };
 
 const sendEmail = async ({ to, subject, html }) => {
   const client = getClient();
   if (!client) {
-    logger.warn(`[EMAIL SKIPPED - no SMTP_PASS] To: ${to} | Subject: ${subject}`);
+    logger.warn(`[EMAIL SKIPPED - no RESEND_API_KEY] To: ${to} | Subject: ${subject}`);
     return;
   }
   const from = process.env.EMAIL_FROM || 'TextLix <noreply@textlix.com>';
