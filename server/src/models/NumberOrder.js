@@ -44,6 +44,7 @@ const numberOrderSchema = new mongoose.Schema(
 
 numberOrderSchema.index({ userId: 1, status: 1 });
 numberOrderSchema.index({ status: 1, expiresAt: 1 });
+numberOrderSchema.index({ serviceId: 1 }); // admin orders filter by service
 numberOrderSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('NumberOrder', numberOrderSchema);

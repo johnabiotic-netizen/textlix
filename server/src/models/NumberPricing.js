@@ -14,5 +14,6 @@ const numberPricingSchema = new mongoose.Schema(
 
 numberPricingSchema.index({ countryId: 1, serviceId: 1 }, { unique: true });
 numberPricingSchema.index({ isAvailable: 1 });
+numberPricingSchema.index({ serviceId: 1, isAvailable: 1 }); // service browse queries
 
 module.exports = mongoose.model('NumberPricing', numberPricingSchema);

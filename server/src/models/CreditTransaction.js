@@ -17,6 +17,7 @@ const creditTransactionSchema = new mongoose.Schema(
 );
 
 creditTransactionSchema.index({ userId: 1, createdAt: -1 });
+creditTransactionSchema.index({ userId: 1, type: 1 }); // admin referral + stats aggregations
 creditTransactionSchema.index({ type: 1 });
 creditTransactionSchema.index({ createdAt: -1 });
 

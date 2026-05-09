@@ -8,7 +8,13 @@ import './styles/index.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 30000 },
+    queries: {
+      retry: 1,
+      staleTime: 2 * 60 * 1000,          // treat data fresh for 2 min
+      gcTime: 10 * 60 * 1000,             // keep cache 10 min after unmount
+      refetchOnWindowFocus: false,         // don't refetch on tab switch
+      refetchIntervalInBackground: false,  // pause polling when tab is hidden
+    },
   },
 });
 

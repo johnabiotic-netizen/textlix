@@ -33,7 +33,7 @@ export default function DashboardPage() {
   const { data: activeData, isLoading: loadingActive, refetch } = useQuery({
     queryKey: ['activeOrders'],
     queryFn: () => getActiveOrders().then((r) => r.data.data),
-    refetchInterval: 10000,
+    refetchInterval: 20000,
   });
 
   const { data: statsData } = useQuery({

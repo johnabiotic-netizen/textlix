@@ -16,7 +16,7 @@ export default function ActiveNumbersPage() {
     queryFn: () => getActiveOrders().then((r) => r.data.data),
     // Poll every 15s as a socket fallback — backend now returns recently
     // COMPLETED orders too, so if socket missed the event the card reappears
-    refetchInterval: 15000,
+    refetchInterval: 20000,
     refetchOnWindowFocus: true,
   });
 

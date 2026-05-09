@@ -23,5 +23,6 @@ const paymentSchema = new mongoose.Schema(
 
 paymentSchema.index({ userId: 1, createdAt: -1 });
 paymentSchema.index({ status: 1 });
+paymentSchema.index({ status: 1, completedAt: -1 }); // admin revenue aggregations
 
 module.exports = mongoose.model('Payment', paymentSchema);
