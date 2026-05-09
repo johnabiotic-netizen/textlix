@@ -62,6 +62,8 @@ exports.oxprocessingCreate = async (req, res, next) => {
       cancelUrl: `${process.env.FRONTEND_URL}/payments/cancel`,
     });
 
+    logger.info(`0xProcessing form fields for order ${payment._id}: ${JSON.stringify({ ...formFields, email: '***' })}`);
+
     success(res, {
       formAction: 'https://app.0xprocessing.com/Payment',
       formFields,

@@ -6,7 +6,7 @@ const buildPaymentForm = ({ orderId, amountUSD, currency, email, clientId, succe
   AmountUSD: String(amountUSD),
   currency: currency || 'USDT',
   email,
-  MerchantId: process.env.OXPROCESSING_MERCHANT_ID,
+  MerchantId: process.env.OXPROCESSING_MERCHANT_ID || process.env.OXPROCESSING_API_KEY,
   ClientId: clientId,
   BillingId: orderId,
   SuccessUrl: successUrl,
