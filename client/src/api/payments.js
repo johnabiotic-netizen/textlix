@@ -7,3 +7,4 @@ export const initializeKorapay = (data) => api.post('/payments/korapay/initializ
 export const verifyKorapay = (reference) => api.get(`/payments/korapay/verify/${reference}`);
 export const createOxprocessing = (data) => api.post('/payments/oxprocessing/create', data);
 export const getPaymentHistory = (params) => api.get('/payments/history', { params });
+export const validatePromo = (data) => api.post('/payments/promo/validate', data);

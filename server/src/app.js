@@ -68,6 +68,17 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
+// Public settings (announcement banner, etc.) — no auth required
+app.get('/api/v1/public/settings', async (req, res) => {
+  try {
+    const PlatformSettings = require('./models/PlatformSettings');
+    const banner = await PlatformSettings.findOne({ key: 'announcementBanner' });
+    res.json({ success: true, data: { announcementBanner: banner?.value || null } });
+  } catch (_) {
+    res.json({ success: true, data: { announcementBanner: null } });
+  }
+});
+
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes);

@@ -43,6 +43,14 @@ router.patch('/settings', adminController.updateSettings);
 router.get('/revenue-report', adminController.getRevenueReport);
 router.get('/export/transactions', adminController.exportTransactions);
 
+router.get('/provider-health', adminController.getProviderHealth);
+
+// Promo codes
+router.get('/promo-codes', adminController.getPromoCodes);
+router.post('/promo-codes', adminController.createPromoCode);
+router.patch('/promo-codes/:id', adminController.updatePromoCode);
+router.delete('/promo-codes/:id', adminController.deletePromoCode);
+
 // Audit log viewer
 router.get('/audit-logs', async (req, res, next) => {
   try {

@@ -7,6 +7,7 @@ const User = require('../models/User');
 const { spendCredits, refundCredits } = require('../services/credit.service');
 const smsPoller = require('../services/sms-poller.service');
 const fivesim = require('../providers/sms/fivesim.provider');
+const smsactivate = require('../providers/sms/smsactivate.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const { getSettingNum } = require('../utils/settings');
@@ -573,17 +574,25 @@ exports.orderNumber = async (req, res, next) => {
       throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
     }
 
-    // Buy number from provider before touching credits
+    // Buy number from provider before touching credits — try 5sim first, fall back to SMSActivate
     let providerResponse;
+    let usedProvider = '5sim';
     try {
       providerResponse = await fivesim.buyNumber(countryName, 'any', service.slug);
-    } catch (err) {
-      const detail = err.response?.data || err.message;
-      logger.error(`5sim buyNumber failed — country: ${countryName}, service: ${service.slug}, error:`, detail);
-      throw new AppError('PROVIDER_ERROR', 502, `Could not get a number: ${JSON.stringify(detail)}`);
+    } catch (fivesimErr) {
+      const fivesimDetail = fivesimErr.response?.data || fivesimErr.message;
+      logger.warn(`5sim buyNumber failed — country: ${countryName}, service: ${service.slug}, error: ${JSON.stringify(fivesimDetail)} — trying SMSActivate`);
+      try {
+        const saResult = await smsactivate.getNumber(service.slug, country.code.toLowerCase());
+        providerResponse = { id: saResult.id, phone: saResult.phone, price: 0 };
+        usedProvider = 'smsactivate';
+      } catch (saErr) {
+        logger.error(`SMSActivate buyNumber also failed — ${saErr.message}`);
+        throw new AppError('PROVIDER_ERROR', 502, `Could not get a number: ${JSON.stringify(fivesimDetail)}`);
+      }
     }
 
-    logger.info(`Order ${countryName}/${service.slug}: charged ${chargeCredits}cr, 5sim used $${providerResponse.price}`);
+    logger.info(`Order ${countryName}/${service.slug}: charged ${chargeCredits}cr via ${usedProvider}`);
 
     const timeoutMinutes = await getSettingNum('number_timeout_minutes', 20);
 
@@ -606,7 +615,7 @@ exports.orderNumber = async (req, res, next) => {
           serviceId,
           phoneNumber: providerResponse.phone,
           providerOrderId: providerResponse.id.toString(),
-          provider: '5sim',
+          provider: usedProvider,
           creditsCharged: chargeCredits,
           status: 'ACTIVE',
           expiresAt: new Date(Date.now() + timeoutMinutes * 60 * 1000),
@@ -638,6 +647,18 @@ exports.orderNumber = async (req, res, next) => {
         status: order.status,
       },
     }, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getOrder = async (req, res, next) => {
+  try {
+    const order = await NumberOrder.findOne({ _id: req.params.orderId, userId: req.user.userId })
+      .populate('countryId', 'name code flagEmoji')
+      .populate('serviceId', 'name slug icon');
+    if (!order) throw new AppError('NOT_FOUND', 404, 'Order not found');
+    success(res, { order });
   } catch (err) {
     next(err);
   }

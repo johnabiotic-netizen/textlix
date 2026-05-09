@@ -11,6 +11,7 @@ router.post('/korapay/webhook', paymentController.korapayWebhook);
 // Protected routes
 router.use(authenticate);
 router.get('/packages', paymentController.getPackages);
+router.post('/validate-promo', paymentController.validatePromo);
 
 // 0xProcessing (crypto)
 router.post('/oxprocessing/create', paymentController.oxprocessingCreate);

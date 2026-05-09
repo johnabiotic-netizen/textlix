@@ -139,6 +139,21 @@ export default function AdminSettingsPage() {
       </Card>
 
       <Card className="px-6 py-2">
+        <h2 className="font-semibold text-gray-900 pt-4 mb-2">Announcements</h2>
+        <div className="py-4">
+          <p className="text-sm font-medium text-gray-900 mb-1">Site Announcement Banner</p>
+          <p className="text-xs text-gray-400 mb-2">Shown to all logged-in users at the top of every page. Leave empty to hide.</p>
+          <textarea
+            value={form.announcementBanner ?? ''}
+            onChange={(e) => set('announcementBanner')(e.target.value)}
+            placeholder="e.g. Maintenance scheduled Saturday 2am UTC"
+            rows={2}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none"
+          />
+        </div>
+      </Card>
+
+      <Card className="px-6 py-2">
         <h2 className="font-semibold text-gray-900 pt-4 mb-2">Crypto Payments</h2>
         <SettingField
           label="CoinGate Environment"

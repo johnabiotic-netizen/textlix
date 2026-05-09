@@ -7,6 +7,7 @@ const Country = require('../models/Country');
 const Service = require('../models/Service');
 const NumberPricing = require('../models/NumberPricing');
 const PlatformSettings = require('../models/PlatformSettings');
+const PromoCode = require('../models/PromoCode');
 const { adminAdjustCredits } = require('../services/credit.service');
 const fivesim = require('../providers/sms/fivesim.provider');
 const smsPoller = require('../services/sms-poller.service');
@@ -356,6 +357,7 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   'smsProviderFallback',
   'referralBonusPercent',
   'minTopupUSD',
+  'announcementBanner',
 ]);
 
 exports.updateSettings = async (req, res, next) => {
@@ -446,6 +448,105 @@ exports.exportTransactions = async (req, res, next) => {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="transactions.csv"');
     res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── Provider health ──────────────────────────────────────────────────────────
+
+exports.getProviderHealth = async (req, res, next) => {
+  try {
+    const since1h = new Date(Date.now() - 60 * 60 * 1000);
+
+    const [fivesimBalance, hourlyAgg] = await Promise.all([
+      fivesim.getProfile().then((p) => p?.balance ?? null).catch(() => null),
+      NumberOrder.aggregate([
+        { $match: { provider: '5sim', createdAt: { $gte: since1h }, status: { $in: ['COMPLETED', 'EXPIRED', 'REFUNDED', 'CANCELLED'] } } },
+        { $group: { _id: null, total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] } } } },
+      ]),
+    ]);
+
+    const hourly = hourlyAgg[0] || { total: 0, completed: 0 };
+    const successRate1h = hourly.total >= 5
+      ? Math.round((hourly.completed / hourly.total) * 1000) / 10
+      : null;
+
+    success(res, {
+      fivesim: {
+        balance: fivesimBalance,
+        successRate1h,
+        ordersLast1h: hourly.total,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── Promo codes ──────────────────────────────────────────────────────────────
+
+exports.getPromoCodes = async (req, res, next) => {
+  try {
+    const p = safePage(req.query.page);
+    const l = safeLimit(req.query.limit);
+    const skip = (p - 1) * l;
+    const filter = {};
+    if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
+
+    const [promoCodes, total] = await Promise.all([
+      PromoCode.find(filter).sort({ createdAt: -1 }).skip(skip).limit(l),
+      PromoCode.countDocuments(filter),
+    ]);
+    success(res, { promoCodes, total, page: p, pages: Math.ceil(total / l) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.createPromoCode = async (req, res, next) => {
+  try {
+    const { code, type, value, maxUses, minAmountUSD, expiresAt } = req.body;
+    if (!code || value == null) throw new AppError('VALIDATION_ERROR', 400, 'code and value are required');
+    const promo = await PromoCode.create({
+      code,
+      type: type || 'PERCENT_BONUS',
+      value: parseFloat(value),
+      maxUses: maxUses != null ? parseInt(maxUses) : null,
+      minAmountUSD: parseFloat(minAmountUSD) || 0,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    });
+    audit('ADMIN_CREATE_PROMO', { userId: req.user.userId, ip: getIP(req), userAgent: getUA(req), meta: { code: promo.code } });
+    success(res, { promo }, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updatePromoCode = async (req, res, next) => {
+  try {
+    const { isActive, maxUses, expiresAt, value, minAmountUSD } = req.body;
+    const updates = {};
+    if (isActive !== undefined) updates.isActive = Boolean(isActive);
+    if (maxUses !== undefined) updates.maxUses = maxUses === null ? null : parseInt(maxUses);
+    if (expiresAt !== undefined) updates.expiresAt = expiresAt ? new Date(expiresAt) : null;
+    if (value !== undefined) updates.value = parseFloat(value);
+    if (minAmountUSD !== undefined) updates.minAmountUSD = parseFloat(minAmountUSD);
+    const promo = await PromoCode.findByIdAndUpdate(req.params.id, updates, { new: true });
+    if (!promo) throw new AppError('NOT_FOUND', 404, 'Promo code not found');
+    audit('ADMIN_UPDATE_PROMO', { userId: req.user.userId, ip: getIP(req), userAgent: getUA(req), meta: { promoId: req.params.id, updates } });
+    success(res, { promo });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deletePromoCode = async (req, res, next) => {
+  try {
+    const promo = await PromoCode.findByIdAndDelete(req.params.id);
+    if (!promo) throw new AppError('NOT_FOUND', 404, 'Promo code not found');
+    audit('ADMIN_DELETE_PROMO', { userId: req.user.userId, ip: getIP(req), userAgent: getUA(req), meta: { promoId: req.params.id, code: promo.code } });
+    success(res, { message: 'Promo code deleted' });
   } catch (err) {
     next(err);
   }

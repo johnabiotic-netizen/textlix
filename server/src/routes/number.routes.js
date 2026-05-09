@@ -19,6 +19,7 @@ router.post('/order', numberController.orderNumber);
 router.post('/order/rental', numberController.orderRental);
 router.get('/active', numberController.getActiveOrders);
 router.get('/history', numberController.getOrderHistory);
+router.get('/:orderId', numberController.getOrder);
 router.post('/:orderId/cancel', numberController.cancelOrder);
 router.post('/:orderId/resend', numberController.resendSMS);
 

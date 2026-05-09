@@ -1,15 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { FiCheck, FiZap } from 'react-icons/fi';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import PublicLayout from '../../components/layout/PublicLayout';
-
-const PACKAGES = [
-  { label: 'Starter', usd: 2, credits: 200, bonus: 0 },
-  { label: 'Basic', usd: 5, credits: 500, bonus: 50 },
-  { label: 'Standard', usd: 10, credits: 1000, bonus: 150, popular: true },
-  { label: 'Pro', usd: 25, credits: 2500, bonus: 500 },
-  { label: 'Premium', usd: 50, credits: 5000, bonus: 1500 },
-];
 
 const FEATURES = [
   'Numbers from 1150+ countries',
@@ -23,6 +17,16 @@ const FEATURES = [
 ];
 
 export default function PricingPage() {
+  const { data: pkgResponse } = useQuery({
+    queryKey: ['publicPackages'],
+    queryFn: () => {
+      const base = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
+      return axios.get(`${base}/payments/packages`).then((r) => r.data.data);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const packages = pkgResponse?.packages || [];
+
   return (
     <PublicLayout>
       <Helmet>
@@ -48,25 +52,25 @@ export default function PricingPage() {
           <h2 className="font-display font-bold text-2xl text-gray-900 text-center mb-3">Credit packages</h2>
           <p className="text-gray-500 text-center mb-12">1 credit = $0.01 USD. Numbers cost 50–500 credits depending on country and service.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {PACKAGES.map((pkg) => (
-              <div key={pkg.label} className={`relative border rounded-2xl p-6 ${pkg.popular ? 'border-brand-500 shadow-lg shadow-brand-100' : 'border-gray-200'}`}>
+            {packages.map((pkg) => (
+              <div key={pkg.id || pkg.label} className={`relative border rounded-2xl p-6 ${pkg.popular ? 'border-brand-500 shadow-lg shadow-brand-100' : 'border-gray-200'}`}>
                 {pkg.popular && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
                     Most popular
                   </span>
                 )}
                 <p className="font-display font-bold text-lg text-gray-900 mb-1">{pkg.label}</p>
-                <p className="font-extrabold text-4xl text-gray-900 mb-1">${pkg.usd}</p>
-                <p className="text-brand-600 font-semibold mb-1">{(pkg.credits + pkg.bonus).toLocaleString()} credits</p>
-                {pkg.bonus > 0 && <p className="text-xs text-green-600 font-medium mb-4">+{pkg.bonus} bonus credits</p>}
-                {pkg.bonus === 0 && <p className="text-xs text-gray-400 mb-4">{pkg.credits} credits</p>}
+                <p className="font-extrabold text-4xl text-gray-900 mb-1">${pkg.amountUSD ?? pkg.usd}</p>
+                <p className="text-brand-600 font-semibold mb-1">{(pkg.totalCredits ?? (pkg.credits + (pkg.bonus || 0))).toLocaleString()} credits</p>
+                {(pkg.bonus ?? 0) > 0 && <p className="text-xs text-green-600 font-medium mb-4">+{pkg.bonus} bonus credits</p>}
+                {(pkg.bonus ?? 0) === 0 && <p className="text-xs text-gray-400 mb-4">{pkg.totalCredits ?? pkg.credits} credits</p>}
                 <Link to="/register" className={`block text-center text-sm font-semibold py-2.5 rounded-xl transition-colors ${pkg.popular ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
                   Get started
                 </Link>
               </div>
             ))}
           </div>
-          <p className="text-center text-sm text-gray-400 mt-8">Pay with Paystack (card, bank transfer) or CoinGate (USDT, BTC, ETH)</p>
+          <p className="text-center text-sm text-gray-400 mt-8">Pay with KoraPay (card, bank transfer in NGN) or 0xProcessing (USDT, BTC, ETH and more)</p>
         </div>
       </section>
 

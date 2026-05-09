@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
+const PromoCode = require('../models/PromoCode');
 const { addCredits } = require('../services/credit.service');
 const oxprocessingProvider = require('../providers/payment/0xprocessing.provider');
 const korapayProvider = require('../providers/payment/korapay.provider');
@@ -28,6 +29,52 @@ const calcCredits = (amountUSD, packageId) => {
   return { credits, amountUSD };
 };
 
+/**
+ * Atomically consume a promo code (if valid) and return bonus credits.
+ * Returns 0 if the code is missing, invalid, expired, or exhausted.
+ */
+async function applyPromo(code, amountUSD, baseCredits) {
+  if (!code) return 0;
+  const promo = await PromoCode.findOneAndUpdate(
+    {
+      code: code.toUpperCase().trim(),
+      isActive: true,
+      $and: [
+        { $or: [{ maxUses: null }, { $expr: { $lt: ['$usedCount', '$maxUses'] } }] },
+        { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
+        { minAmountUSD: { $lte: amountUSD } },
+      ],
+    },
+    { $inc: { usedCount: 1 } },
+    { new: false }
+  );
+  if (!promo) return 0;
+  return promo.type === 'FLAT_BONUS'
+    ? promo.value
+    : Math.floor(baseCredits * promo.value / 100);
+}
+
+exports.validatePromo = async (req, res, next) => {
+  try {
+    const { code, amountUSD } = req.body;
+    if (!code) throw new AppError('VALIDATION_ERROR', 400, 'Code required');
+    const promo = await PromoCode.findOne({ code: code.toUpperCase().trim(), isActive: true });
+    if (!promo) throw new AppError('NOT_FOUND', 404, 'Invalid promo code');
+    if (promo.maxUses !== null && promo.usedCount >= promo.maxUses) {
+      throw new AppError('VALIDATION_ERROR', 400, 'Promo code has reached its usage limit');
+    }
+    if (promo.expiresAt && promo.expiresAt < new Date()) {
+      throw new AppError('VALIDATION_ERROR', 400, 'Promo code has expired');
+    }
+    if (amountUSD && parseFloat(amountUSD) < promo.minAmountUSD) {
+      throw new AppError('VALIDATION_ERROR', 400, `Minimum $${promo.minAmountUSD} required for this code`);
+    }
+    success(res, { promo: { code: promo.code, type: promo.type, value: promo.value } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getPackages = (req, res) => {
   success(res, {
     packages: PACKAGES.map((p) => ({ ...p, totalCredits: p.credits + p.bonus })),
@@ -39,8 +86,10 @@ exports.getPackages = (req, res) => {
 
 exports.oxprocessingCreate = async (req, res, next) => {
   try {
-    const { amountUSD, currency, packageId } = req.body;
-    const { credits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
+    const { amountUSD, currency, packageId, promoCode } = req.body;
+    const { credits: baseCredits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
+    const promoBonus = await applyPromo(promoCode, finalAmount, baseCredits);
+    const credits = baseCredits + promoBonus;
 
     if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
 
@@ -123,8 +172,10 @@ exports.oxprocessingWebhook = async (req, res, next) => {
 
 exports.korapayInitialize = async (req, res, next) => {
   try {
-    const { amountUSD, packageId } = req.body;
-    const { credits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
+    const { amountUSD, packageId, promoCode } = req.body;
+    const { credits: baseCredits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
+    const promoBonus = await applyPromo(promoCode, finalAmount, baseCredits);
+    const credits = baseCredits + promoBonus;
 
     if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
 

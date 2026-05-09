@@ -194,6 +194,26 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
   );
 }
 
+function BigCopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success('Code copied!');
+    setTimeout(() => setCopied(false), 2500);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+        copied ? 'bg-green-600 text-white' : 'bg-brand-600 hover:bg-brand-700 text-white'
+      }`}
+    >
+      {copied ? <><FiCheck size={15} /> Copied!</> : <><FiCopy size={15} /> Copy Code</>}
+    </button>
+  );
+}
+
 function OtpSmsSection({ smsContent, smsCode }) {
   if (smsContent) {
     return (
@@ -201,10 +221,13 @@ function OtpSmsSection({ smsContent, smsCode }) {
         <p className="text-xs text-green-600 font-medium mb-2">SMS Received ✓</p>
         <p className="text-sm text-gray-700 mb-3">{smsContent}</p>
         {smsCode && (
-          <div className="flex items-center justify-between bg-white border border-green-200 rounded-lg px-4 py-3">
-            <span className="font-mono-num font-bold text-2xl text-gray-900 tracking-widest">{smsCode}</span>
-            <CopyButton text={smsCode} />
-          </div>
+          <>
+            <div className="bg-white border border-green-200 rounded-xl px-4 py-3 text-center mb-2">
+              <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Verification Code</p>
+              <span className="font-mono font-bold text-3xl text-gray-900 tracking-widest">{smsCode}</span>
+            </div>
+            <BigCopyButton text={smsCode} />
+          </>
         )}
       </div>
     );

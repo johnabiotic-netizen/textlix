@@ -19,3 +19,8 @@ export const getSettings = () => api.get('/admin/settings');
 export const updateSettings = (data) => api.patch('/admin/settings', data);
 export const getRevenueReport = (params) => api.get('/admin/revenue-report', { params });
 export const exportTransactions = () => api.get('/admin/transactions/export', { responseType: 'blob' });
+export const getProviderHealth = () => api.get('/admin/provider-health');
+export const getPromoCodes = () => api.get('/admin/promo-codes');
+export const createPromoCode = (data) => api.post('/admin/promo-codes', data);
+export const updatePromoCode = (id, data) => api.patch(`/admin/promo-codes/${id}`, data);
+export const deletePromoCode = (id) => api.delete(`/admin/promo-codes/${id}`);

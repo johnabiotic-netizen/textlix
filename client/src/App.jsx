@@ -38,6 +38,7 @@ const TransactionHistoryPage = lazy(() => import('./pages/dashboard/TransactionH
 const OrderHistoryPage = lazy(() => import('./pages/dashboard/OrderHistoryPage'));
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
 const PaymentVerifyPage = lazy(() => import('./pages/dashboard/PaymentVerifyPage'));
+const OrderDetailPage = lazy(() => import('./pages/dashboard/OrderDetailPage'));
 
 // Admin pages — lazy (recharts lives here, never hits regular users)
 const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'));
@@ -177,6 +178,7 @@ export default function App() {
             <Route path="/credits" element={<BuyCreditsPage />} />
             <Route path="/transactions" element={<TransactionHistoryPage />} />
             <Route path="/orders" element={<OrderHistoryPage />} />
+            <Route path="/orders/:orderId" element={<OrderDetailPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/payments/verify" element={<PaymentVerifyPage />} />
             <Route path="/payments/success" element={<PaymentVerifyPage />} />

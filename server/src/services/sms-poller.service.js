@@ -1,6 +1,7 @@
 const NumberOrder = require('../models/NumberOrder');
 const User = require('../models/User');
 const fivesim = require('../providers/sms/fivesim.provider');
+const smsactivate = require('../providers/sms/smsactivate.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
 const logger = require('../config/logger');
 
@@ -39,6 +40,14 @@ class SMSPollerService {
   }
 
   async _poll(order) {
+    if (order.provider === 'smsactivate') {
+      await this._pollSmsActivate(order);
+    } else {
+      await this._pollFiveSim(order);
+    }
+  }
+
+  async _pollFiveSim(order) {
     const result = await fivesim.checkOrder(order.providerOrderId);
 
     if (result.sms && result.sms.length > 0) {
@@ -53,6 +62,26 @@ class SMSPollerService {
     if (order.orderType !== 'RENTAL' && (result.status === 'TIMEOUT' || result.status === 'CANCELED')) {
       this.stopPolling(order._id.toString());
     }
+  }
+
+  async _pollSmsActivate(order) {
+    // SMSActivate status string format:
+    //   STATUS_WAIT_CODE          — waiting
+    //   STATUS_OK:<code>          — SMS received, code extracted
+    //   STATUS_CANCEL             — cancelled / no SMS
+    //   STATUS_WAIT_RESEND        — waiting for resend
+    //   STATUS_WAIT_RETRY:<code>  — retry, code present
+    const statusStr = await smsactivate.getStatus(order.providerOrderId);
+
+    if (statusStr.startsWith('STATUS_OK') || statusStr.startsWith('STATUS_WAIT_RETRY')) {
+      const parts = statusStr.split(':');
+      const code = parts[1] || null;
+      const fakeSms = { text: code ? `Your code: ${code}` : '', code };
+      await this._handleOtpSms(order, fakeSms);
+    } else if (statusStr === 'STATUS_CANCEL') {
+      this.stopPolling(order._id.toString());
+    }
+    // STATUS_WAIT_CODE / STATUS_WAIT_RESEND — keep polling
   }
 
   async _handleOtpSms(order, sms) {

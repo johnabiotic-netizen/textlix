@@ -8,6 +8,27 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 
+function BrowserNotifButton() {
+  const [permission, setPermission] = useState(
+    'Notification' in window ? Notification.permission : 'unsupported'
+  );
+
+  const handleEnable = async () => {
+    if (!('Notification' in window)) return;
+    const result = await Notification.requestPermission();
+    setPermission(result);
+    if (result === 'granted') toast.success('Browser notifications enabled!');
+    else toast.error('Notification permission denied');
+  };
+
+  if (permission === 'unsupported') return <span className="text-xs text-gray-400">Not supported</span>;
+  if (permission === 'granted') return <span className="text-xs text-green-600 font-medium">Enabled ✓</span>;
+  if (permission === 'denied') return <span className="text-xs text-red-500">Blocked — allow in browser settings</span>;
+  return (
+    <button onClick={handleEnable} className="text-sm font-medium text-brand-600 hover:underline">Enable</button>
+  );
+}
+
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const [profile, setProfile] = useState({ name: user?.name || '', avatar: user?.avatar || '' });
@@ -158,6 +179,13 @@ export default function SettingsPage() {
               className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${emailNotifications ? 'translate-x-6' : 'translate-x-1'}`}
             />
           </button>
+        </div>
+        <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Browser notifications</p>
+            <p className="text-xs text-gray-500 mt-0.5">Get notified when SMS arrives even if you're on another tab</p>
+          </div>
+          <BrowserNotifButton />
         </div>
       </Card>
 

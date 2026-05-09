@@ -1,8 +1,50 @@
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { getDashboard, getRevenueReport } from '../../api/admin';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { getDashboard, getRevenueReport, getProviderHealth } from '../../api/admin';
 import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
+
+dayjs.extend(relativeTime);
+
+function ProviderHealth() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['providerHealth'],
+    queryFn: () => getProviderHealth().then((r) => r.data.data),
+    refetchInterval: 60000,
+  });
+
+  if (isLoading) return <p className="text-sm text-gray-400">Loading...</p>;
+  const p = data?.fivesim;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-500">5sim balance</span>
+        <span className={`font-semibold ${p?.error ? 'text-red-500' : 'text-gray-900'}`}>
+          {p?.error ? 'API Error' : p?.balance != null ? `$${parseFloat(p.balance).toFixed(2)}` : '—'}
+        </span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-500">Success rate (1h)</span>
+        <span className="font-semibold">
+          {p?.successRateLastHour != null ? `${p.successRateLastHour}%` : '—'}
+        </span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-500">Last order</span>
+        <span className="text-gray-700">{p?.lastOrderAt ? dayjs(p.lastOrderAt).fromNow() : '—'}</span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-500">Errors (1h)</span>
+        <span className={`font-semibold ${p?.errorsLastHour > 5 ? 'text-red-500' : 'text-gray-900'}`}>
+          {p?.errorsLastHour ?? '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function StatCard({ label, value, sub, color = 'brand' }) {
   return (
@@ -90,6 +132,11 @@ export default function AdminOverviewPage() {
           </div>
         </Card>
       </div>
+
+      <Card className="p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Provider Health</h3>
+        <ProviderHealth />
+      </Card>
     </div>
   );
 }

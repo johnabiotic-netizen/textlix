@@ -1,13 +1,36 @@
 import { Link } from 'react-router-dom';
 import { FiZap, FiCalendar, FiArrowRight } from 'react-icons/fi';
+import { useRecentServices } from '../../hooks/useRecentServices';
+
+const SERVICE_EMOJI = { whatsapp:'💬', telegram:'✈️', google:'🔍', instagram:'📸', facebook:'📘', tiktok:'🎵', twitter:'🐦', discord:'🎮', snapchat:'👻', amazon:'📦' };
 
 export default function BrowseNumbersPage() {
+  const { recent } = useRecentServices();
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display font-bold text-2xl text-gray-900 mb-1">Get a Number</h1>
         <p className="text-gray-500 text-sm">Choose what type of number you need</p>
       </div>
+
+      {recent.length > 0 && (
+        <div>
+          <h2 className="font-semibold text-gray-700 text-sm mb-3">Recently Used</h2>
+          <div className="flex flex-wrap gap-2">
+            {recent.map((s) => (
+              <Link
+                key={s.slug}
+                to={`/numbers/otp/service/${s.slug}`}
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:border-brand-400 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-brand-700 transition-all"
+              >
+                <span>{s.emoji || SERVICE_EMOJI[s.slug] || '📱'}</span>
+                {s.name || s.slug}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6 max-w-3xl">
         {/* OTP Card */}

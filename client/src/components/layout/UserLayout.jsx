@@ -1,11 +1,32 @@
+import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import toast from 'react-hot-toast';
 import Navbar from './Navbar';
 import { useSocket } from '../../hooks/useSocket';
 import { playNotificationSound } from '../../hooks/useNotificationSound';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
+
+function AnnouncementBanner() {
+  const [dismissed, setDismissed] = useState(false);
+  const { data } = useQuery({
+    queryKey: ['publicSettings'],
+    queryFn: () => axios.get(`${import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1'}/public/settings`).then(r => r.data.data),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const banner = data?.announcementBanner;
+  if (!banner || dismissed) return null;
+
+  return (
+    <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-between gap-4">
+      <p className="text-sm text-amber-800 text-center flex-1">📢 {banner}</p>
+      <button onClick={() => setDismissed(true)} className="text-amber-500 hover:text-amber-700 shrink-0 text-lg leading-none">✕</button>
+    </div>
+  );
+}
 
 function GlobalSmsNotifier() {
   const queryClient = useQueryClient();
@@ -25,6 +46,13 @@ function GlobalSmsNotifier() {
         ) : 'New SMS received on your number!',
         { duration: 8000, id: `sms-${data.orderId}` }
       );
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('SMS received — TextLix', {
+          body: code ? `Your code: ${code}` : 'Check your active numbers',
+          icon: '/icons/icon-192.png',
+          tag: `sms-${data.orderId}`,
+        });
+      }
     },
     () => {},
     async (data) => {
@@ -43,6 +71,7 @@ export default function UserLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
       <GlobalSmsNotifier />
+      <AnnouncementBanner />
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <Outlet />
