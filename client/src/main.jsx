@@ -1,19 +1,34 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import * as Sentry from '@sentry/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './styles/index.css';
 
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false }),
+    ],
+    tracesSampleRate: 0.1,      // 10% of transactions for performance
+    replaysSessionSampleRate: 0, // no session replays by default
+    replaysOnErrorSampleRate: 1, // full replay on every error
+  });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 2 * 60 * 1000,          // treat data fresh for 2 min
-      gcTime: 10 * 60 * 1000,             // keep cache 10 min after unmount
-      refetchOnWindowFocus: false,         // don't refetch on tab switch
-      refetchIntervalInBackground: false,  // pause polling when tab is hidden
+      staleTime: 2 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchIntervalInBackground: false,
     },
   },
 });
