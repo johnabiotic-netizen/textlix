@@ -4,6 +4,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const GitHubStrategy = require('passport-github2').Strategy;
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const logger = require('./logger');
 
 passport.use(
   new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
@@ -51,6 +52,7 @@ const handleOAuth = async (accessToken, refreshToken, profile, done, provider) =
     });
     return done(null, user);
   } catch (err) {
+    logger.error('OAuth handleOAuth error:', { provider, message: err.message, stack: err.stack });
     return done(err);
   }
 };
