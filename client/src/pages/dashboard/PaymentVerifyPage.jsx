@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { verifyKorapay } from '../../api/payments';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
-import useSocket from '../../hooks/useSocket';
+import { useSocket } from '../../hooks/useSocket';
 
 export default function PaymentVerifyPage() {
   const [params] = useSearchParams();
@@ -25,23 +25,17 @@ export default function PaymentVerifyPage() {
   const [status, setStatus] = useState(getInitialStatus);
   const [countdown, setCountdown] = useState(5);
 
-  const socket = useSocket();
+  // Listen for payment:completed socket event while on the crypto pending screen
+  const handlePaymentCompleted = useCallback(async () => {
+    if (status !== 'crypto_pending') return;
+    try {
+      const meRes = await getMe();
+      useAuthStore.setState({ user: meRes.data.data.user });
+    } catch (_) {}
+    setStatus('success');
+  }, [status]);
 
-  // Listen for the payment:completed socket event on the crypto pending screen
-  useEffect(() => {
-    if (status !== 'crypto_pending' || !socket) return;
-
-    const handlePaymentCompleted = async () => {
-      try {
-        const meRes = await getMe();
-        useAuthStore.setState({ user: meRes.data.data.user });
-      } catch (_) {}
-      setStatus('success');
-    };
-
-    socket.on('payment:completed', handlePaymentCompleted);
-    return () => socket.off('payment:completed', handlePaymentCompleted);
-  }, [status, socket]);
+  useSocket(null, null, handlePaymentCompleted);
 
   // KoraPay verify flow (reference present)
   useEffect(() => {
