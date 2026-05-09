@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { FiCopy, FiCheck, FiUsers, FiGift } from 'react-icons/fi';
 import { updateMe, changePassword, getReferral } from '../../api/user';
 import useAuthStore from '../../store/authStore';
+import api from '../../api/axios';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
@@ -26,6 +27,102 @@ function BrowserNotifButton() {
   if (permission === 'denied') return <span className="text-xs text-red-500">Blocked — allow in browser settings</span>;
   return (
     <button onClick={handleEnable} className="text-sm font-medium text-brand-600 hover:underline">Enable</button>
+  );
+}
+
+function TwoFACard({ user }) {
+  const [phase, setPhase] = useState('idle'); // idle | setup | verifying | disabling
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [secret, setSecret] = useState('');
+  const [token, setToken] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const startSetup = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.post('/auth/2fa/setup');
+      setQrCodeDataUrl(data.data.qrCodeDataUrl);
+      setSecret(data.data.secret);
+      setPhase('setup');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Setup failed');
+    } finally { setLoading(false); }
+  };
+
+  const enableTwoFA = async () => {
+    setLoading(true);
+    try {
+      await api.post('/auth/2fa/enable', { token });
+      useAuthStore.setState({ user: { ...user, twoFAEnabled: true } });
+      toast.success('2FA enabled successfully!');
+      setPhase('idle');
+      setToken('');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Invalid code');
+    } finally { setLoading(false); }
+  };
+
+  const disableTwoFA = async () => {
+    setLoading(true);
+    try {
+      await api.post('/auth/2fa/disable', { token });
+      useAuthStore.setState({ user: { ...user, twoFAEnabled: false } });
+      toast.success('2FA disabled');
+      setPhase('idle');
+      setToken('');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Invalid code');
+    } finally { setLoading(false); }
+  };
+
+  if (user?.twoFAEnabled && phase === 'idle') return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-900">Two-factor authentication</p>
+        <p className="text-xs text-green-600 mt-0.5 font-medium">✓ Enabled — your account is protected</p>
+      </div>
+      <button onClick={() => setPhase('disabling')} className="text-sm text-red-500 hover:underline">Disable</button>
+    </div>
+  );
+
+  if (phase === 'disabling') return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium text-gray-900">Disable Two-Factor Authentication</p>
+      <p className="text-xs text-gray-500">Enter your 6-digit authenticator code to confirm</p>
+      <div className="flex gap-2">
+        <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="000000" maxLength={6}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono w-32 focus:ring-2 focus:ring-brand-500 outline-none" />
+        <Button size="sm" variant="outline" onClick={() => setPhase('idle')}>Cancel</Button>
+        <Button size="sm" loading={loading} onClick={disableTwoFA} className="bg-red-600 hover:bg-red-700 text-white border-red-600">Disable</Button>
+      </div>
+    </div>
+  );
+
+  if (phase === 'setup') return (
+    <div className="space-y-4">
+      <p className="text-sm font-medium text-gray-900">Scan with Google Authenticator or Authy</p>
+      {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="2FA QR Code" className="w-44 h-44 border border-gray-200 rounded-xl" />}
+      <details className="text-xs text-gray-500">
+        <summary className="cursor-pointer hover:text-gray-700">Can't scan? Enter key manually</summary>
+        <code className="block mt-2 bg-gray-50 px-3 py-2 rounded-lg font-mono text-xs break-all">{secret}</code>
+      </details>
+      <div className="flex gap-2">
+        <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="6-digit code"
+          maxLength={6} className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono w-36 focus:ring-2 focus:ring-brand-500 outline-none" />
+        <Button size="sm" loading={loading} onClick={enableTwoFA}>Verify & Enable</Button>
+        <Button size="sm" variant="outline" onClick={() => setPhase('idle')}>Cancel</Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-900">Two-factor authentication</p>
+        <p className="text-xs text-gray-500 mt-0.5">Add an extra layer of security to your account</p>
+      </div>
+      <Button size="sm" loading={loading} onClick={startSetup}>Enable 2FA</Button>
+    </div>
   );
 }
 
@@ -187,6 +284,12 @@ export default function SettingsPage() {
           </div>
           <BrowserNotifButton />
         </div>
+      </Card>
+
+      {/* Two-Factor Authentication */}
+      <Card className="p-6">
+        <h2 className="font-semibold text-gray-900 mb-4">Two-Factor Authentication</h2>
+        <TwoFACard user={user} />
       </Card>
 
       {/* Security */}

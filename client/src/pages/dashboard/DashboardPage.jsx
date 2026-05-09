@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { RiCoinLine, RiFileCopyLine, RiCheckLine } from 'react-icons/ri';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -24,11 +24,57 @@ const QUICK_SERVICES = [
   { slug: 'facebook',  label: 'Facebook',  emoji: '📘', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
 ];
 
+function OnboardingModal({ onDismiss }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl">
+        <div className="text-center mb-6">
+          <div className="text-5xl mb-3">👋</div>
+          <h2 className="font-display font-bold text-2xl text-gray-900 mb-2">Welcome to TextLix!</h2>
+          <p className="text-gray-500 text-sm">Get your first SMS verification number in 3 simple steps</p>
+        </div>
+        <div className="space-y-4 mb-8">
+          {[
+            { step: '1', icon: '💳', title: 'Buy Credits', desc: 'Start with $2 (200 credits). Credits never expire.' },
+            { step: '2', icon: '📱', title: 'Pick a Number', desc: 'Choose a service (WhatsApp, Google...) and a country.' },
+            { step: '3', icon: '📨', title: 'Receive Your Code', desc: 'The SMS arrives in your dashboard in seconds.' },
+          ].map((s) => (
+            <div key={s.step} className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-sm font-bold shrink-0">{s.step}</div>
+              <div>
+                <p className="font-semibold text-gray-900">{s.icon} {s.title}</p>
+                <p className="text-sm text-gray-500">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-3">
+          <Link to="/credits" onClick={onDismiss} className="flex-1 bg-brand-600 text-white text-center font-semibold py-3 rounded-xl hover:bg-brand-700 transition-colors">
+            Buy Credits
+          </Link>
+          <button onClick={onDismiss} className="px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors text-sm">
+            Skip
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [displayOrders, setDisplayOrders] = useState(null);
   const [copied, setCopied] = useState(false);
   const { dismiss, isDismissed } = useDismissedOrders();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem('textlix_onboarded');
+  });
+
+  const dismissOnboarding = () => {
+    localStorage.setItem('textlix_onboarded', '1');
+    setShowOnboarding(false);
+  };
 
   const { data: activeData, isLoading: loadingActive, refetch } = useQuery({
     queryKey: ['activeOrders'],
@@ -59,6 +105,13 @@ export default function DashboardPage() {
     setDisplayOrders(activeData.orders.filter((o) => !isDismissed(o._id?.toString())));
   }, [activeData, isDismissed]);
 
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      toast.success('Email verified! Welcome to TextLix. 🎉', { duration: 5000 });
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
+
   const handleCancel = useCallback((orderId) => {
     dismiss(orderId?.toString());
     setDisplayOrders((prev) => prev?.filter((o) => o._id?.toString() !== orderId?.toString()));
@@ -82,6 +135,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {showOnboarding && <OnboardingModal onDismiss={dismissOnboarding} />}
 
       {/* ── Welcome banner ─────────────────────────────────────────────────── */}
       <div className="bg-gradient-to-r from-brand-600 to-purple-600 rounded-2xl p-6 md:p-8 text-white">

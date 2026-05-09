@@ -130,6 +130,16 @@ exports.login = async (req, res, next) => {
 
     audit('LOGIN_SUCCESS', { userId: user._id, email: normalEmail, ip, userAgent: ua });
 
+    // If 2FA enabled, return a short-lived pending token instead of full auth
+    if (user.twoFAEnabled) {
+      const tempToken = jwt.sign(
+        { userId: user._id.toString(), type: '2fa_pending' },
+        process.env.JWT_ACCESS_SECRET,
+        { expiresIn: '5m' }
+      );
+      return success(res, { requiresTwoFA: true, tempToken });
+    }
+
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setRefreshCookie(res, refreshToken);
@@ -246,4 +256,99 @@ exports.verifyEmail = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
+
+exports.twoFASetup = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
+
+    const secret = speakeasy.generateSecret({
+      name: `TextLix (${user.email})`,
+      issuer: 'TextLix',
+    });
+
+    // Store secret temporarily (not enabled yet — user must confirm with a valid token)
+    await User.findByIdAndUpdate(user._id, { twoFASecret: secret.base32 });
+
+    const qrCodeDataUrl = await QRCode.toDataURL(secret.otpauth_url);
+    success(res, { qrCodeDataUrl, secret: secret.base32 });
+  } catch (err) { next(err); }
+};
+
+exports.twoFAEnable = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    const user = await User.findById(req.user.userId);
+    if (!user?.twoFASecret) throw new AppError('VALIDATION_ERROR', 400, '2FA setup not started');
+
+    const valid = speakeasy.totp.verify({
+      secret: user.twoFASecret,
+      encoding: 'base32',
+      token: String(token),
+      window: 1,
+    });
+    if (!valid) throw new AppError('UNAUTHORIZED', 401, 'Invalid authentication code');
+
+    await User.findByIdAndUpdate(user._id, { twoFAEnabled: true });
+    audit('2FA_ENABLED', { userId: user._id, email: user.email });
+    success(res, { message: '2FA enabled successfully' });
+  } catch (err) { next(err); }
+};
+
+exports.twoFADisable = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    const user = await User.findById(req.user.userId);
+    if (!user?.twoFAEnabled) throw new AppError('VALIDATION_ERROR', 400, '2FA is not enabled');
+
+    const valid = speakeasy.totp.verify({
+      secret: user.twoFASecret,
+      encoding: 'base32',
+      token: String(token),
+      window: 1,
+    });
+    if (!valid) throw new AppError('UNAUTHORIZED', 401, 'Invalid authentication code');
+
+    await User.findByIdAndUpdate(user._id, { twoFAEnabled: false, twoFASecret: null });
+    audit('2FA_DISABLED', { userId: user._id, email: user.email });
+    success(res, { message: '2FA disabled' });
+  } catch (err) { next(err); }
+};
+
+exports.twoFAComplete = async (req, res, next) => {
+  try {
+    const { tempToken, code } = req.body;
+    if (!tempToken || !code) throw new AppError('VALIDATION_ERROR', 400, 'tempToken and code required');
+
+    let payload;
+    try {
+      payload = jwt.verify(tempToken, process.env.JWT_ACCESS_SECRET);
+    } catch {
+      throw new AppError('UNAUTHORIZED', 401, 'Invalid or expired session');
+    }
+    if (payload.type !== '2fa_pending') throw new AppError('UNAUTHORIZED', 401, 'Invalid token type');
+
+    const user = await User.findById(payload.userId);
+    if (!user || !user.twoFAEnabled || !user.twoFASecret) {
+      throw new AppError('UNAUTHORIZED', 401, 'User or 2FA not found');
+    }
+
+    const valid = speakeasy.totp.verify({
+      secret: user.twoFASecret,
+      encoding: 'base32',
+      token: String(code),
+      window: 1,
+    });
+    if (!valid) throw new AppError('UNAUTHORIZED', 401, 'Invalid authentication code');
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+    setRefreshCookie(res, refreshToken);
+    audit('LOGIN_SUCCESS_2FA', { userId: user._id, email: user.email });
+    success(res, { user: formatUser(user), accessToken });
+  } catch (err) { next(err); }
 };

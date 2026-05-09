@@ -5,12 +5,52 @@ import toast from 'react-hot-toast';
 import { login } from '../../api/auth';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
+import api from '../../api/axios';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+
+function TwoFAStep({ tempToken, onSuccess }) {
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await api.post('/auth/2fa/complete', { tempToken, code });
+      onSuccess(data.data.user, data.data.accessToken);
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Invalid code');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="text-center mb-2">
+        <p className="text-2xl mb-2">🔐</p>
+        <h2 className="font-display font-bold text-xl text-gray-900">Two-Factor Authentication</h2>
+        <p className="text-sm text-gray-500 mt-1">Enter the 6-digit code from your authenticator app</p>
+      </div>
+      <input
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        placeholder="000000"
+        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-brand-500 outline-none"
+        autoFocus
+        maxLength={6}
+      />
+      {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+      <Button type="submit" loading={loading} className="w-full" disabled={code.length !== 6}>Verify</Button>
+    </form>
+  );
+}
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [twoFAState, setTwoFAState] = useState(null);
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
 
@@ -19,6 +59,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { data } = await login(form);
+      if (data.data.requiresTwoFA) {
+        setTwoFAState({ tempToken: data.data.tempToken });
+        return;
+      }
       const { user, accessToken } = data.data;
       setAuth(user, accessToken);
       toast.success(`Welcome back, ${user.name}!`);
@@ -41,25 +85,34 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required placeholder="you@example.com" />
-            <Input label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required placeholder="••••••••" />
-            <div className="flex justify-end">
-              <Link to="/forgot-password" className="text-sm text-brand-600 hover:underline">Forgot password?</Link>
-            </div>
-            <Button type="submit" loading={loading} className="w-full" size="lg">Sign in</Button>
-          </form>
+          {twoFAState ? (
+            <TwoFAStep
+              tempToken={twoFAState.tempToken}
+              onSuccess={(user, token) => { setAuth(user, token); navigate('/dashboard'); }}
+            />
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required placeholder="you@example.com" />
+                <Input label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required placeholder="••••••••" />
+                <div className="flex justify-end">
+                  <Link to="/forgot-password" className="text-sm text-brand-600 hover:underline">Forgot password?</Link>
+                </div>
+                <Button type="submit" loading={loading} className="w-full" size="lg">Sign in</Button>
+              </form>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
-            <div className="relative flex justify-center text-sm"><span className="bg-white px-3 text-gray-400">or continue with</span></div>
-          </div>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+                <div className="relative flex justify-center text-sm"><span className="bg-white px-3 text-gray-400">or continue with</span></div>
+              </div>
 
-          <div className="flex">
-            <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google`} className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <FcGoogle size={18} /> Continue with Google
-            </a>
-          </div>
+              <div className="flex">
+                <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google`} className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <FcGoogle size={18} /> Continue with Google
+                </a>
+              </div>
+            </>
+          )}
         </div>
 
         <p className="text-center mt-6 text-sm text-gray-500">

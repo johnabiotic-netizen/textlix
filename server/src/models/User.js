@@ -25,6 +25,8 @@ const userSchema = new mongoose.Schema(
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     referralBonusPaid: { type: Boolean, default: false },
     emailNotifications: { type: Boolean, default: true },
+    twoFASecret:  { type: String, default: null },
+    twoFAEnabled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const ApiKey = require('../models/ApiKey');
 const CreditTransaction = require('../models/CreditTransaction');
 const NumberOrder = require('../models/NumberOrder');
 const AppError = require('../utils/AppError');
@@ -114,4 +115,36 @@ exports.getStats = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+exports.getApiKeys = async (req, res, next) => {
+  try {
+    const keys = await ApiKey.find({ userId: req.user.userId, isActive: true })
+      .select('-keyHash').sort({ createdAt: -1 });
+    success(res, { keys });
+  } catch (err) { next(err); }
+};
+
+exports.createApiKey = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name?.trim()) throw new AppError('VALIDATION_ERROR', 400, 'Name is required');
+    const count = await ApiKey.countDocuments({ userId: req.user.userId, isActive: true });
+    if (count >= 5) throw new AppError('VALIDATION_ERROR', 400, 'Maximum 5 API keys allowed');
+
+    const { raw, hash, prefix } = ApiKey.generate();
+    const key = await ApiKey.create({ userId: req.user.userId, keyHash: hash, prefix, name: name.trim() });
+    success(res, { key: raw, id: key._id, prefix, name: key.name, createdAt: key.createdAt }, 201);
+  } catch (err) { next(err); }
+};
+
+exports.deleteApiKey = async (req, res, next) => {
+  try {
+    const key = await ApiKey.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { isActive: false }
+    );
+    if (!key) throw new AppError('NOT_FOUND', 404, 'API key not found');
+    success(res, { message: 'API key deleted' });
+  } catch (err) { next(err); }
 };

@@ -40,6 +40,10 @@ const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
 const PaymentVerifyPage = lazy(() => import('./pages/dashboard/PaymentVerifyPage'));
 const OrderDetailPage = lazy(() => import('./pages/dashboard/OrderDetailPage'));
 
+const AdminPromoCodesPage = lazy(() => import('./pages/admin/AdminPromoCodesPage'));
+const ApiKeysPage = lazy(() => import('./pages/dashboard/ApiKeysPage'));
+const VirtualNumberLandingPage = lazy(() => import('./pages/public/VirtualNumberLandingPage'));
+
 // Admin pages — lazy (recharts lives here, never hits regular users)
 const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
@@ -161,6 +165,7 @@ export default function App() {
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/virtual-numbers/:countryCode/:serviceSlug" element={<VirtualNumberLandingPage />} />
 
           {/* User dashboard */}
           <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
@@ -183,6 +188,7 @@ export default function App() {
             <Route path="/payments/verify" element={<PaymentVerifyPage />} />
             <Route path="/payments/success" element={<PaymentVerifyPage />} />
             <Route path="/payments/cancel" element={<PaymentVerifyPage />} />
+            <Route path="/api-keys" element={<ApiKeysPage />} />
           </Route>
 
           {/* Admin */}
@@ -196,6 +202,7 @@ export default function App() {
             <Route path="catalog" element={<AdminCatalogPage />} />
             <Route path="pricing" element={<AdminPricingPage />} />
             <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="promo-codes" element={<AdminPromoCodesPage />} />
             <Route path="reports" element={<AdminReportsPage />} />
           </Route>
 

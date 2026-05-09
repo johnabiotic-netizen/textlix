@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { FiDownload, FiPrinter, FiChevronDown, FiChevronUp } from 'react-icons/fi';
@@ -141,6 +142,7 @@ export default function OrderHistoryPage() {
                   <th className="text-left px-4 py-3">Status</th>
                   <th className="text-right px-4 py-3">Credits</th>
                   <th className="text-center px-4 py-3">Code</th>
+                  <th className="text-left px-4 py-3"></th>
                   <th className="text-center px-4 py-3 w-8"></th>
                 </tr>
               </thead>
@@ -177,6 +179,17 @@ export default function OrderHistoryPage() {
                           <span className="text-gray-300">—</span>
                         )}
                       </td>
+                      <td className="px-4 py-3">
+                        {order.status === 'COMPLETED' && order.orderType !== 'RENTAL' && order.countryId?._id && order.serviceId?.slug && (
+                          <Link
+                            to={`/numbers/otp/${order.countryId._id}?service=${order.serviceId.slug}`}
+                            className="text-xs text-brand-600 hover:underline font-medium whitespace-nowrap"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Get again →
+                          </Link>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-center text-gray-400">
                         {order.smsContent && order.smsContent !== '[deleted]' && (
                           expanded === order._id ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />
@@ -185,7 +198,7 @@ export default function OrderHistoryPage() {
                     </tr>
                     {expanded === order._id && order.smsContent && (
                       <tr className="bg-indigo-50">
-                        <td colSpan="8" className="px-4 py-4">
+                        <td colSpan="9" className="px-4 py-4">
                           <div className="space-y-2">
                             {order.smsCode && (
                               <div className="flex items-center gap-3">

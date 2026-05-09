@@ -41,9 +41,12 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link to="/credits" className="hidden md:flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-full text-sm font-semibold hover:bg-amber-100 transition-colors">
+            <Link to="/credits" className="hidden md:flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-full text-sm font-semibold hover:bg-amber-100 transition-colors relative">
               <RiCoinLine size={16} className="text-credit" />
               {user?.creditBalance?.toLocaleString() ?? '0'}
+              {(user?.creditBalance ?? 0) < 100 && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+              )}
             </Link>
 
             <div className="relative">

@@ -49,4 +49,10 @@ router.get('/github/callback',
   (req, res) => authController.oauthCallback(req.user, res)
 );
 
+// 2FA routes — setup/enable/disable require auth; complete is pre-auth
+router.post('/2fa/setup',    authenticate, authController.twoFASetup);
+router.post('/2fa/enable',   authenticate, authController.twoFAEnable);
+router.post('/2fa/disable',  authenticate, authController.twoFADisable);
+router.post('/2fa/complete',              authController.twoFAComplete);
+
 module.exports = router;

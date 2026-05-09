@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const logger = require('../config/logger');
 const AppError = require('../utils/AppError');
 
@@ -7,6 +8,10 @@ const errorMiddleware = (err, req, res, next) => {
       success: false,
       error: { code: err.code, message: err.message },
     });
+  }
+
+  if (process.env.SENTRY_DSN && (!err.statusCode || err.statusCode >= 500)) {
+    Sentry.captureException(err);
   }
 
   logger.error('Unhandled error:', err);
