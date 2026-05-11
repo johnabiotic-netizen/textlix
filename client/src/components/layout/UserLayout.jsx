@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -80,9 +80,9 @@ export default function UserLayout() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-gray-500">© {new Date().getFullYear()} TextLix. All rights reserved.</p>
           <div className="flex gap-6 text-sm text-gray-500">
-            <a href="#" className="hover:text-gray-700">Terms</a>
-            <a href="#" className="hover:text-gray-700">Privacy</a>
-            <a href="#" className="hover:text-gray-700">Support</a>
+            <Link to="/terms" className="hover:text-gray-700">Terms</Link>
+            <Link to="/privacy" className="hover:text-gray-700">Privacy</Link>
+            <Link to="/support" className="hover:text-gray-700">Support</Link>
           </div>
         </div>
       </footer>
