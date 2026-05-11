@@ -92,7 +92,7 @@ async function getMaxPrices(serviceSlug) {
 }
 
 /** Warm price cache for the most popular services on server startup */
-const TOP_SERVICES = ['whatsapp', 'telegram', 'google', 'instagram', 'facebook', 'tiktok', 'twitter'];
+const TOP_SERVICES = ['whatsapp', 'telegram', 'google'];
 exports.warmPriceCache = async function warmPriceCache() {
   for (const slug of TOP_SERVICES) {
     try {

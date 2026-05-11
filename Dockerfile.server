@@ -4,4 +4,4 @@ COPY server/package*.json ./
 RUN npm ci --production
 COPY server/ .
 EXPOSE 5000
-CMD ["node", "src/server.js"]
+CMD ["node", "--max-old-space-size=256", "src/server.js"]
