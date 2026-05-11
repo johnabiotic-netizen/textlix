@@ -16,7 +16,12 @@ export const getActiveOrders = () => api.get('/numbers/active');
 export const getOrderHistory = (params) => api.get('/numbers/history', { params });
 export const cancelOrder = (orderId) => api.post(`/numbers/${orderId}/cancel`);
 export const resendSMS = (orderId) => api.post(`/numbers/${orderId}/resend`);
-export const getRentalPrice = (countryId) => api.get(`/numbers/countries/${countryId}/rental-price`);
+export const getRentalPrice = (countryId, opts = {}) => {
+  const params = {};
+  if (opts.serviceId) params.serviceId = opts.serviceId;
+  if (opts.serviceSlug) params.serviceSlug = opts.serviceSlug;
+  return api.get(`/numbers/countries/${countryId}/rental-price`, { params });
+};
 export const orderRental = (data) => api.post('/numbers/order/rental', data);
 export const getRecommendations = (serviceSlug) => api.get(`/numbers/services/${serviceSlug}/recommendations`);
 export const getOrder = (orderId) => api.get(`/numbers/${orderId}`);

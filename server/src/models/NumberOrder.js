@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const smsMessageSchema = new mongoose.Schema(
   {
-    fivesimId: { type: String, default: null }, // dedup: don't save the same SMS twice
+    messageId: { type: String, default: null }, // generic dedup key (hash or provider ID)
+    fivesimId: { type: String, default: null }, // legacy: kept for existing 5sim rental orders
     text: { type: String, required: true },
     code: { type: String, default: null },
     receivedAt: { type: Date, default: Date.now },
@@ -38,6 +39,10 @@ const numberOrderSchema = new mongoose.Schema(
 
     // RENTAL: all received messages
     smsMessages: { type: [smsMessageSchema], default: [] },
+
+    // RENTAL metadata (needed by poller without extra DB lookups)
+    rentalServiceSlug: { type: String, default: null }, // e.g. 'whatsapp'
+    countryCode: { type: String, default: null },       // ISO code, e.g. 'US'
   },
   { timestamps: true }
 );

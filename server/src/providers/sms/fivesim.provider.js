@@ -74,4 +74,16 @@ const getProfile = async () => {
   return res.data;
 };
 
-module.exports = { getCountries, getProducts, getPrices, buyNumber, buyHostingNumber, getHostingPrices, checkOrder, cancelOrder, finishOrder, getProfile };
+// Retrieve all SMS messages received on a hosting (rental) number.
+// Only works for hosting orders; returns [] for activation orders.
+const getHostingInbox = async (orderId) => {
+  try {
+    const res = await api.get(`/user/sms/inbox/${orderId}`);
+    return Array.isArray(res.data) ? res.data : [];
+  } catch (err) {
+    logger.warn(`getHostingInbox failed for order ${orderId}:`, err.message);
+    return [];
+  }
+};
+
+module.exports = { getCountries, getProducts, getPrices, buyNumber, buyHostingNumber, getHostingPrices, getHostingInbox, checkOrder, cancelOrder, finishOrder, getProfile };

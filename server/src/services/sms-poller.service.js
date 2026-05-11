@@ -1,7 +1,11 @@
+const crypto = require('crypto');
 const NumberOrder = require('../models/NumberOrder');
 const User = require('../models/User');
 const fivesim = require('../providers/sms/fivesim.provider');
 const smsactivate = require('../providers/sms/smsactivate.provider');
+const grizzlysms = require('../providers/sms/grizzlysms.provider');
+const onlinesimRent = require('../providers/sms/onlinesim-rent.provider');
+const smspool = require('../providers/sms/smspool.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
 const logger = require('../config/logger');
 
@@ -40,28 +44,72 @@ class SMSPollerService {
   }
 
   async _poll(order) {
-    if (order.provider === 'smsactivate') {
+    if (order.provider === 'smspool') {
+      await this._pollSmsPool(order);
+    } else if (order.provider === 'smsactivate') {
       await this._pollSmsActivate(order);
+    } else if (order.provider === 'grizzlysms') {
+      await this._pollGrizzly(order);
+    } else if (order.provider === 'onlinesim') {
+      await this._pollOnlinesim(order);
     } else {
       await this._pollFiveSim(order);
     }
   }
 
   async _pollFiveSim(order) {
-    const result = await fivesim.checkOrder(order.providerOrderId);
-
-    if (result.sms && result.sms.length > 0) {
-      if (order.orderType === 'RENTAL') {
-        await this._handleRentalSms(order, result.sms);
-      } else {
-        await this._handleOtpSms(order, result.sms[0]);
+    if (order.orderType === 'RENTAL') {
+      // Hosting orders: use the dedicated inbox endpoint which returns all received SMS
+      const smsList = await fivesim.getHostingInbox(order.providerOrderId);
+      if (smsList.length > 0) {
+        await this._handleRentalSms(order, smsList);
       }
+      return;
     }
 
-    // Stop polling on terminal provider statuses (OTP only — rental uses expiry cron)
-    if (order.orderType !== 'RENTAL' && (result.status === 'TIMEOUT' || result.status === 'CANCELED')) {
+    // OTP activation
+    const result = await fivesim.checkOrder(order.providerOrderId);
+    if (result.sms && result.sms.length > 0) {
+      await this._handleOtpSms(order, result.sms[0]);
+    }
+    if (result.status === 'TIMEOUT' || result.status === 'CANCELED') {
       this.stopPolling(order._id.toString());
     }
+  }
+
+  async _pollGrizzly(order) {
+    if (order.orderType === 'RENTAL') {
+      const messages = await grizzlysms.getRentStatus(order.providerOrderId);
+      if (!messages.length) return;
+      const smsList = messages.map((m) => ({
+        id: crypto.createHash('md5').update(`${m.text}|${m.date}`).digest('hex'),
+        text: m.text,
+        code: extractCode(m.text),
+      }));
+      await this._handleRentalSms(order, smsList);
+    } else {
+      // OTP activation — same status string format as SMS-Activate
+      const statusStr = await grizzlysms.getStatus(order.providerOrderId);
+      if (statusStr.startsWith('STATUS_OK') || statusStr.startsWith('STATUS_WAIT_RETRY')) {
+        const parts = statusStr.split(':');
+        const code = parts[1] || null;
+        const fakeSms = { text: code ? `Your code: ${code}` : '', code };
+        await this._handleOtpSms(order, fakeSms);
+      } else if (statusStr === 'STATUS_CANCEL') {
+        this.stopPolling(order._id.toString());
+      }
+    }
+  }
+
+  async _pollOnlinesim(order) {
+    const messages = await onlinesimRent.getRentState(order.providerOrderId);
+    if (!messages.length) return;
+    const smsList = messages.map((m) => ({
+      id: crypto.createHash('md5').update(`${m.text}|${m.date}`).digest('hex'),
+      text: m.text,
+      code: extractCode(m.text),
+    }));
+    await this._handleRentalSms(order, smsList);
   }
 
   async _pollSmsActivate(order) {
@@ -82,6 +130,22 @@ class SMSPollerService {
       this.stopPolling(order._id.toString());
     }
     // STATUS_WAIT_CODE / STATUS_WAIT_RESEND — keep polling
+  }
+
+  async _pollSmsPool(order) {
+    const messages = await smspool.getRentalMessages(order.providerOrderId);
+    if (!messages.length) return;
+
+    const smsList = messages.map((m) => {
+      const text = m.sms_content || m.message || m.text || '';
+      const date = m.time || m.date || '';
+      return {
+        id: crypto.createHash('md5').update(`${text}|${date}`).digest('hex'),
+        text,
+        code: m.sms_code || extractCode(text),
+      };
+    });
+    await this._handleRentalSms(order, smsList);
   }
 
   async _handleOtpSms(order, sms) {
@@ -121,14 +185,18 @@ class SMSPollerService {
   }
 
   async _handleRentalSms(order, smsList) {
-    // Load existing message IDs to avoid saving duplicates
+    // Load existing message IDs to avoid saving duplicates.
+    // Check both messageId (new generic field) and fivesimId (legacy 5sim field).
     const existing = await NumberOrder.findById(order._id, 'smsMessages');
-    const seenIds = new Set((existing?.smsMessages || []).map((m) => m.fivesimId));
+    const seenIds = new Set(
+      (existing?.smsMessages || []).flatMap((m) => [m.messageId, m.fivesimId].filter(Boolean))
+    );
 
     const newMessages = smsList
       .filter((sms) => sms.id && !seenIds.has(String(sms.id)))
       .map((sms) => ({
-        fivesimId: String(sms.id),
+        messageId: String(sms.id),
+        fivesimId: String(sms.id), // kept for backwards-compat with existing 5sim rental orders
         text: sms.text,
         code: sms.code || extractCode(sms.text),
         receivedAt: new Date(),

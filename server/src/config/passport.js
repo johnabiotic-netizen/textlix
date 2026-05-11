@@ -3,7 +3,10 @@ const LocalStrategy = require('passport-local').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const GitHubStrategy = require('passport-github2').Strategy;
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const User = require('../models/User');
+
+const genReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 
 passport.use(
   new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
@@ -48,6 +51,7 @@ const handleOAuth = async (accessToken, refreshToken, profile, done, provider) =
       provider,
       providerId: profile.id,
       isEmailVerified: !!email,
+      referralCode: genReferralCode(),
     });
     return done(null, user);
   } catch (err) {

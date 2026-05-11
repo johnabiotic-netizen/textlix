@@ -2,6 +2,9 @@ const cron = require('node-cron');
 const NumberOrder = require('../models/NumberOrder');
 const { refundCredits } = require('../services/credit.service');
 const fivesim = require('../providers/sms/fivesim.provider');
+const grizzlysms = require('../providers/sms/grizzlysms.provider');
+const onlinesimRent = require('../providers/sms/onlinesim-rent.provider');
+const smspool = require('../providers/sms/smspool.provider');
 const smsPoller = require('../services/sms-poller.service');
 const logger = require('../config/logger');
 
@@ -25,7 +28,16 @@ const runExpiryCheck = async () => {
         // Rentals: no refund — user paid for time, not SMS count
         await NumberOrder.findByIdAndUpdate(order._id, { status: 'RENTAL_EXPIRED' });
 
-        try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
+        if (order.provider === 'smspool') {
+          // SMSPool rentals expire on the provider side automatically — no API call needed
+        } else if (order.provider === 'grizzlysms') {
+          try { await grizzlysms.setRentStatus(order.providerOrderId, 1); } catch (_) {}
+        } else if (order.provider === 'onlinesim') {
+          try { await onlinesimRent.closeRentNum(order.providerOrderId); } catch (_) {}
+        } else {
+          // fivesim hosting: cancel to release number back to the pool
+          try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
+        }
 
         if (io) {
           io.to(`user:${order.userId}`).emit('number:expired', {
@@ -38,7 +50,11 @@ const runExpiryCheck = async () => {
         // OTP: refund if no SMS received
         if (!order.smsContent) {
           try {
-            await fivesim.cancelOrder(order.providerOrderId);
+            if (order.provider === 'grizzlysms') {
+              await grizzlysms.setStatus(order.providerOrderId, 8);
+            } else {
+              await fivesim.cancelOrder(order.providerOrderId);
+            }
           } catch (_) {}
         }
 
