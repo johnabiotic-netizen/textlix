@@ -1,5 +1,7 @@
+// SMS-Activate shut down December 22, 2024. This file is kept for backward
+// compatibility with existing OTP orders in the DB but new orders will always
+// fail — remove this fallback once all legacy orders are drained.
 const axios = require('axios');
-const logger = require('../../config/logger');
 
 const BASE_URL = 'https://api.sms-activate.org/stubs/handler_api.php';
 
@@ -11,7 +13,6 @@ const call = async (params) => {
   return res.data;
 };
 
-// status: 1=waiting, 2=received, 3=cancelled, 4=refunded
 const getNumber = async (service, country) => {
   const data = await call({ action: 'getNumber', service, country });
   if (!data.startsWith('ACCESS_NUMBER')) {
