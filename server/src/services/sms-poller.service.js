@@ -4,7 +4,6 @@ const User = require('../models/User');
 const fivesim = require('../providers/sms/fivesim.provider');
 const smsactivate = require('../providers/sms/smsactivate.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
-const onlinesimRent = require('../providers/sms/onlinesim-rent.provider');
 const smspool = require('../providers/sms/smspool.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
 const logger = require('../config/logger');
@@ -50,8 +49,6 @@ class SMSPollerService {
       await this._pollSmsActivate(order);
     } else if (order.provider === 'grizzlysms') {
       await this._pollGrizzly(order);
-    } else if (order.provider === 'onlinesim') {
-      await this._pollOnlinesim(order);
     } else {
       await this._pollFiveSim(order);
     }
@@ -99,17 +96,6 @@ class SMSPollerService {
         this.stopPolling(order._id.toString());
       }
     }
-  }
-
-  async _pollOnlinesim(order) {
-    const messages = await onlinesimRent.getRentState(order.providerOrderId);
-    if (!messages.length) return;
-    const smsList = messages.map((m) => ({
-      id: crypto.createHash('md5').update(`${m.text}|${m.date}`).digest('hex'),
-      text: m.text,
-      code: extractCode(m.text),
-    }));
-    await this._handleRentalSms(order, smsList);
   }
 
   async _pollSmsActivate(order) {

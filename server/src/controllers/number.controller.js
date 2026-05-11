@@ -8,7 +8,6 @@ const { spendCredits, refundCredits } = require('../services/credit.service');
 const smsPoller = require('../services/sms-poller.service');
 const fivesim = require('../providers/sms/fivesim.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
-const onlinesimRent = require('../providers/sms/onlinesim-rent.provider');
 const smspool = require('../providers/sms/smspool.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
@@ -813,8 +812,6 @@ exports.cancelOrder = async (req, res, next) => {
       } else {
         try { await grizzlysms.setStatus(order.providerOrderId, 8); } catch (_) {}
       }
-    } else if (order.provider === 'onlinesim') {
-      try { await onlinesimRent.closeRentNum(order.providerOrderId); } catch (_) {}
     } else if (order.provider !== 'smsactivate') {
       try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
     }
