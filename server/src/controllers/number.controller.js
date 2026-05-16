@@ -627,7 +627,7 @@ exports.getServices = async (req, res, next) => {
       const fivesimRate = liveData?.bestRate != null ? Math.min(100, Math.round(liveData.bestRate * 1000) / 10) : null;
       const svcId = p.serviceId._id.toString();
       const lix1Rate = fivesimRate ?? providerRates[svcId]?.fivesim ?? serviceRates[svcId] ?? null;
-      const lix2Rate = providerRates[svcId]?.grizzlysms ?? null;
+      const lix2Rate = providerRates[svcId]?.grizzlysms ?? serviceRates[svcId] ?? null;
       const lix1Price = priceResults[i];
       const lix2Price = grizzlyPriceMaps[i]?.[country.code] ?? null;
       return {
