@@ -69,18 +69,16 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: verify Get-SMS API — country list + sample pricing
+// Temporary debug: verify Get-SMS API — pricing structure
 app.get('/api/v1/debug/getsms', async (req, res) => {
   const axios = require('axios');
   const KEY = process.env.GETSMS_API_KEY;
   const BASE = 'https://get-sms.com/api/v2/rent/';
   const call = (params) => axios.get(BASE, { params: { userkey: KEY, ...params }, timeout: 12000 }).then(r => r.data);
   try {
-    const [balance, usaPrices] = await Promise.all([
-      call({ method: 'getbalance' }).catch(e => ({ error: e.message })),
-      call({ method: 'getcountprices', country: 'usa', service: 'wa' }).catch(e => ({ error: e.message })),
-    ]);
-    res.json({ key_set: !!KEY, balance, usaPrices_wa: usaPrices });
+    const usaPrices = await call({ method: 'getcountprices', country: 'usa', service: 'wa' }).catch(e => ({ error: e.message }));
+    const ukPrices = await call({ method: 'getcountprices', country: 'england', service: 'wa' }).catch(e => ({ error: e.message }));
+    res.json({ key_set: !!KEY, usa_wa: usaPrices, uk_wa: ukPrices });
   } catch (err) {
     res.json({ error: err.message });
   }
