@@ -14,7 +14,7 @@ const SLUG_TO_CODE = {
   instagram: 'ig',
   facebook: 'fb',
   twitter: 'tw',
-  tiktok: 'tiktok',
+  tiktok: 'tt',
   discord: 'ds',
   snapchat: 'sc',
   amazon: 'am',

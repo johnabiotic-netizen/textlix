@@ -69,34 +69,6 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: test which service codes GrizzlySMS recognises
-app.get('/api/v1/debug/grizzly-services', async (req, res) => {
-  const axios = require('axios');
-  const CODES = [
-    ['whatsapp','wa'],['telegram','tg'],['google','go'],['instagram','ig'],
-    ['facebook','fb'],['twitter','tw'],['tiktok','tiktok'],['tiktok_alt','tt'],
-    ['discord','ds'],['snapchat','sc'],['amazon','am'],['netflix','nf'],
-    ['uber','ub'],['linkedin','li'],['paypal','pp'],['microsoft','ms'],
-    ['viber','vi'],['steam','st'],['spotify','sp'],['yahoo','ya'],['apple','ap'],
-  ];
-  const results = {};
-  for (const [label, code] of CODES) {
-    try {
-      const { data } = await axios.get('https://api.grizzlysms.com/stubs/handler_api.php', {
-        params: { api_key: process.env.GRIZZLYSMS_API_KEY, action: 'getPrices', service: code },
-        timeout: 10000,
-      });
-      const entries = typeof data === 'object' ? Object.keys(data).length : 0;
-      const totalCount = typeof data === 'object'
-        ? Object.values(data).reduce((s, v) => s + (v?.[code]?.count || 0), 0)
-        : 0;
-      results[`${label}(${code})`] = { countries: entries, totalCount };
-    } catch (e) {
-      results[`${label}(${code})`] = { error: e.message };
-    }
-  }
-  res.json(results);
-});
 
 
 
