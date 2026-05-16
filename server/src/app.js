@@ -69,6 +69,31 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
+// Temporary debug: inspect getServices success rate fields
+app.get('/api/v1/debug/services/:countryId', async (req, res) => {
+  try {
+    const Country = require('./models/Country');
+    const NumberPricing = require('./models/NumberPricing');
+    const fivesim = require('./providers/sms/fivesim.provider');
+    const grizzlysms = require('./providers/sms/grizzlysms.provider');
+    const ISO_TO_SLUG = { US:'usa',GB:'england',IN:'india',NG:'nigeria',RU:'russia',BR:'brazil',DE:'germany',FR:'france',CA:'canada',AU:'australia',PH:'philippines' };
+    const country = await Country.findById(req.params.countryId);
+    if (!country) return res.json({ error: 'country not found' });
+    const fivesimSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
+    const pricing = await NumberPricing.findOne({ countryId: country._id, isAvailable: true }).populate('serviceId');
+    if (!pricing) return res.json({ error: 'no pricing', fivesimSlug });
+    const slug = pricing.serviceId.slug;
+    const [priceData, grizzlyData] = await Promise.all([
+      fivesim.getPrices(slug).catch((e) => ({ error: e.message })),
+      grizzlysms.getOtpPrices(slug).catch((e) => ({ error: e.message })),
+    ]);
+    const countryEntry = priceData?.[slug]?.[fivesimSlug];
+    res.json({ fivesimSlug, slug, countryEntry, grizzlyForCountry: grizzlyData?.[country.code], sampleFivesimKeys: priceData?.[slug] ? Object.keys(priceData[slug]).slice(0, 5) : null });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 
 // Public settings (announcement banner, etc.) — no auth required
 app.get('/api/v1/public/settings', async (req, res) => {
