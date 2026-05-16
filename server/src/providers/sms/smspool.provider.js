@@ -11,14 +11,23 @@ const call = async (path, params = {}) => {
   return res.data;
 };
 
-// Get all extendable rental listings (no auth needed).
+// Get all rental listings.
 // Returns [{ id, name, region, pricing: { '1': usd, '7': usd, '28': usd, ... } }]
 const getRentals = async () => {
   const res = await axios.get(`${BASE_URL}/rental/retrieve_all`, {
-    params: { type: 1 },
+    params: { key: process.env.SMSPOOL_API_KEY, type: 1 },
     timeout: 15000,
   });
-  return Array.isArray(res.data) ? res.data : [];
+  // Response shape: { success: 1, data: [...] }
+  const raw = res.data?.data ?? res.data;
+  const list = Array.isArray(raw) ? raw : [];
+  return list.map((r) => ({
+    id: r.ID,
+    name: r.name,
+    tag: r.tag,
+    region: r.region,
+    pricing: r.pricing,
+  }));
 };
 
 // Purchase a rental number.

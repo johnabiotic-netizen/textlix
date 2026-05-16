@@ -69,31 +69,6 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: verify SMSPool rental listings load
-app.get('/api/v1/debug/smspool-rentals', async (req, res) => {
-  const axios = require('axios');
-  const KEY = process.env.SMSPOOL_API_KEY;
-  const BASE = 'https://api.smspool.net';
-  const results = {};
-  const endpoints = [
-    '/rental/retrieve_all',
-    '/rental/retrieve_all?type=1',
-    '/phone/retrieveAll',
-    '/rental',
-  ];
-  for (const path of endpoints) {
-    try {
-      const { data } = await axios.get(`${BASE}${path}`, {
-        params: { key: KEY },
-        timeout: 10000,
-      });
-      results[path] = { type: typeof data, isArray: Array.isArray(data), length: Array.isArray(data) ? data.length : null, sample: JSON.stringify(data).slice(0, 300) };
-    } catch (e) {
-      results[path] = { error: e.message, status: e.response?.status };
-    }
-  }
-  res.json({ key_set: !!KEY, results });
-});
 
 
 
