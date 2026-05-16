@@ -71,11 +71,20 @@ app.get('/api/v1/stats', getPublicStats);
 
 // Temporary debug: inspect raw GrizzlySMS getPrices response
 app.get('/api/v1/debug/grizzly-prices', async (req, res) => {
-  const grizzlysms = require('./providers/sms/grizzlysms.provider');
+  const axios = require('axios');
   const service = req.query.service || 'wa';
   try {
-    const data = await grizzlysms.getOtpPrices(service);
-    res.json({ success: true, service, data });
+    const { data } = await axios.get('https://api.grizzlysms.com/stubs/handler_api.php', {
+      params: { api_key: process.env.GRIZZLYSMS_API_KEY, action: 'getPrices', service },
+      timeout: 15000,
+    });
+    res.json({
+      success: true,
+      service,
+      dataType: typeof data,
+      keys: typeof data === 'object' && data ? Object.keys(data).slice(0, 10) : null,
+      raw: typeof data === 'string' ? data.substring(0, 500) : data,
+    });
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
