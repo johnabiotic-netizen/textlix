@@ -450,7 +450,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   </p>
                   {selectedService.servers?.lix2?.successRate != null
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix2.successRate)}`}>{selectedService.servers.lix2.successRate}% success</p>
-                    : <p className="text-xs text-gray-400 mt-0.5">Server 2</p>}
+                    : <span className="text-xs mt-0.5 bg-purple-100 text-purple-700 font-semibold px-1.5 py-0.5 rounded">New</span>}
                 </button>
               </div>
             </div>
