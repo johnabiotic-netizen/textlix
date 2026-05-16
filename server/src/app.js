@@ -69,29 +69,38 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: get all GrizzlySMS service codes for USA + all our DB slugs
+// Temporary debug: get all GrizzlySMS service codes (no country filter)
 app.get('/api/v1/debug/grizzly-all-services', async (req, res) => {
   const axios = require('axios');
-  const Service = require('./models/Service');
   const KEY = process.env.GRIZZLYSMS_API_KEY;
   const BASE = 'https://api.grizzlysms.com/stubs/handler_api.php';
 
-  // Get ALL services GrizzlySMS offers in USA (country 187) — no service filter
-  const { data: usaData } = await axios.get(BASE, {
-    params: { api_key: KEY, action: 'getPrices', country: 187 },
-    timeout: 20000,
+  // Call getPrices with no service/country — get ALL services across all countries
+  const { data } = await axios.get(BASE, {
+    params: { api_key: KEY, action: 'getPrices' },
+    timeout: 30000,
   });
 
-  // usaData shape: { serviceCode: { count, cost, retry } }
-  const grizzlyCodes = typeof usaData === 'object'
-    ? Object.entries(usaData).map(([code, v]) => ({ code, count: v?.count || 0 })).filter(x => x.count > 0).sort((a,b) => b.count - a.count)
-    : [];
+  // data shape could be: { countryId: { serviceCode: { count, cost } } }
+  // Collect all unique service codes and their total counts
+  const codeCounts = {};
+  if (typeof data === 'object') {
+    for (const countryEntry of Object.values(data)) {
+      if (typeof countryEntry === 'object') {
+        for (const [code, svcData] of Object.entries(countryEntry)) {
+          if (!codeCounts[code]) codeCounts[code] = 0;
+          codeCounts[code] += svcData?.count || 0;
+        }
+      }
+    }
+  }
 
-  // Our DB slugs
-  const services = await Service.find({}, 'slug name').lean();
-  const ourSlugs = services.map(s => s.slug);
+  const sorted = Object.entries(codeCounts)
+    .map(([code, total]) => ({ code, total }))
+    .filter(x => x.total > 0)
+    .sort((a, b) => b.total - a.total);
 
-  res.json({ grizzlyCodesInUSA: grizzlyCodes, ourSlugCount: ourSlugs.length, ourSlugs });
+  res.json({ totalCodes: sorted.length, codes: sorted });
 });
 
 
