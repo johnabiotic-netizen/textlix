@@ -69,51 +69,6 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: check successRate computation for a country
-app.get('/api/v1/debug/services/:countryId', async (req, res) => {
-  try {
-    const Country = require('./models/Country');
-    const NumberPricing = require('./models/NumberPricing');
-    const fivesim = require('./providers/sms/fivesim.provider');
-    const grizzlysms = require('./providers/sms/grizzlysms.provider');
-    const MARGIN = 0.60;
-    const ISO_TO_SLUG = { US:'usa',GB:'england',IN:'india',NG:'nigeria',RU:'russia',BR:'brazil',DE:'germany',FR:'france',CA:'canada',AU:'australia',PH:'philippines',NG:'nigeria' };
-
-    const country = await Country.findById(req.params.countryId);
-    if (!country) return res.json({ error: 'country not found' });
-    const fivesimSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
-
-    const pricing = await NumberPricing.findOne({ countryId: country._id, isAvailable: true }).populate('serviceId');
-    if (!pricing) return res.json({ error: 'no pricing', fivesimSlug });
-    const slug = pricing.serviceId.slug;
-
-    const [raw, grizzlyRaw] = await Promise.all([
-      fivesim.getPrices(slug).catch((e) => null),
-      grizzlysms.getOtpPrices(slug).catch((e) => null),
-    ]);
-
-    const byCountry = raw?.[slug] || {};
-    const operators = byCountry[fivesimSlug] || {};
-    let maxPrice = 0, bestRate = 0;
-    for (const opData of Object.values(operators)) {
-      if (opData.cost > maxPrice) maxPrice = opData.cost;
-      const rawRate = opData.rate || 0;
-      const normRate = rawRate > 1 ? rawRate / 100 : rawRate;
-      if (normRate > bestRate) bestRate = normRate;
-    }
-    const fivesimRate = maxPrice > 0 ? Math.min(100, Math.round(bestRate * 1000) / 10) : null;
-
-    // Grizzly for this country
-    const grizzlyCountryData = grizzlyRaw
-      ? Object.entries(grizzlyRaw).find(([, v]) => v)?.[1]
-      : null;
-    const grizzlyRate = grizzlyCountryData ? Math.ceil(Math.ceil(grizzlyCountryData.cost * 100) * (1 + MARGIN)) : null;
-
-    res.json({ fivesimSlug, slug, maxPrice, bestRate, fivesimRate, grizzlyRateForAnyCountry: grizzlyRate, lix1SuccessRateWillBe: fivesimRate });
-  } catch (err) {
-    res.json({ error: err.message });
-  }
-});
 
 
 // Public settings (announcement banner, etc.) — no auth required
