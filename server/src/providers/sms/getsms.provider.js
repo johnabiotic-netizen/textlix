@@ -11,26 +11,37 @@ const DURATION_MAP = {
   30: { type: 'month', period: 1 },
 };
 
-// ISO-2 → Get-SMS country name (lowercase English)
+// ISO-2 → Get-SMS country name (exact names from their live API)
 const ISO_TO_COUNTRY = {
-  US: 'usa',      GB: 'england',     IN: 'india',       CA: 'canada',
-  DE: 'germany',  FR: 'france',      BR: 'brazil',      AU: 'australia',
-  PH: 'philippines', ID: 'indonesia', VN: 'vietnam',    TH: 'thailand',
-  MY: 'malaysia', PK: 'pakistan',    BD: 'bangladesh',  NG: 'nigeria',
-  KE: 'kenya',    ZA: 'southafrica', EG: 'egypt',       UA: 'ukraine',
-  RU: 'russia',   PL: 'poland',      RO: 'romania',     KZ: 'kazakhstan',
-  MX: 'mexico',   AR: 'argentina',   CO: 'colombia',    TR: 'turkey',
-  ES: 'spain',    IT: 'italy',       NL: 'netherlands', SE: 'sweden',
-  NO: 'norway',   DK: 'denmark',     FI: 'finland',     BE: 'belgium',
-  AT: 'austria',  CH: 'switzerland', PT: 'portugal',    GR: 'greece',
-  CZ: 'czech',    HU: 'hungary',     SK: 'slovakia',    HR: 'croatia',
-  RS: 'serbia',   BG: 'bulgaria',    LT: 'lithuania',   LV: 'latvia',
-  EE: 'estonia',  IE: 'ireland',     IL: 'israel',      SA: 'saudiarabia',
-  AE: 'uae',      TW: 'taiwan',      HK: 'hongkong',    JP: 'japan',
-  KR: 'southkorea', SG: 'singapore', CN: 'china',       UZ: 'uzbekistan',
-  AZ: 'azerbaijan', GE: 'georgia',   AM: 'armenia',     KG: 'kyrgyzstan',
-  ET: 'ethiopia', TZ: 'tanzania',    UG: 'uganda',      CM: 'cameroon',
-  GH: 'ghana',    MA: 'morocco',     TN: 'tunisia',     DZ: 'algeria',
+  US: 'ssha',             GB: 'england',          CA: 'canada',
+  DE: 'germany',          FR: 'france',           BR: 'brazil',
+  EE: 'estonia',          KZ: 'kazakhstan',       ID: 'indonesia',
+  KG: 'kyrgyzstan',       LA: 'laos',             LT: 'lithuania',
+  NL: 'netherlands',      PL: 'poland',           RO: 'romania',
+  SE: 'sweden',           IN: 'indiia',           MY: 'malaiziia',
+  VN: 'vetnam',           PH: 'filippiny',        TR: 'turtsiia',
+  MD: 'moldova',          UZ: 'uzbekistan',       GE: 'gruziia',
+  IE: 'irlandiia',        PT: 'portugaliia',      ES: 'ispaniia',
+  CZ: 'chekhiia',         BD: 'bangladesh',       HK: 'gonkong',
+  TH: 'tailand',          MX: 'meksika',          LV: 'latviia',
+  PK: 'pakistan',         GR: 'gretsiia',         NI: 'nikaragua',
+  AR: 'argentina',        HT: 'gaiti',            UA: 'ukr',
+  MN: 'mongoliia',        IL: 'izrail',           EG: 'egipet',
+  GT: 'gvatemala',        LY: 'liviia',           IR: 'iran',
+  YE: 'iemen',            TJ: 'tadzhikistan',     CN: 'kitai',
+  LK: 'shrilanka',        SY: 'siriia',           LB: 'livan',
+  BO: 'boliviia',         RS: 'serbiia',          CO: 'kolumbiia',
+  AT: 'avstriia',         DZ: 'alzhir',           PE: 'peru',
+  HN: 'gonduras',         MA: 'marokko',          VE: 'venesuela',
+  NG: 'nigeriia',         SV: 'salvador',         PY: 'paragvai',
+  NP: 'nepal',            IQ: 'irak',             MM: 'mianma',
+  KH: 'kambodzha',        BY: 'belarus',          CI: 'kotdivuar',
+  SA: 'saudaraviia',      AE: 'oae',              HR: 'khorvatiia',
+  TZ: 'tanzaniia',        DK: 'daniia',           DO: 'dominikanskaiarespublika',
+  EC: 'ekvador',          AF: 'afganistan',       NZ: 'novaiazelandiia',
+  TW: 'taivan',           CY: 'kipr',             CL: 'chili',
+  FI: 'finliandiia',      IT: 'italiia',          BG: 'bolgariia',
+  HU: 'vengriia',         SI: 'sloveniia',
 };
 
 // Service slug → Get-SMS service code (SMS-Activate format)
@@ -60,12 +71,14 @@ const call = async (params) => {
   return data;
 };
 
-// Get pricing for a country + service across all durations
+// Get rental pricing for a country + service (all durations)
+// Response shape from rental API: { '3day': {count, price}, '7day': {count, price}, '1week': {...}, '1month': {...} }
 const getPrices = async (countryIso, serviceSlug) => {
   const country = ISO_TO_COUNTRY[countryIso?.toUpperCase()];
   if (!country) return null;
   try {
     const data = await call({ method: 'getcountprices', country, service: toServiceCode(serviceSlug) });
+    if (!data || typeof data !== 'object' || data.error) return null;
     return data;
   } catch (err) {
     logger.warn(`GetSMS getPrices failed (${countryIso}/${serviceSlug}):`, err.message);

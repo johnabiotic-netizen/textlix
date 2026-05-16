@@ -9,6 +9,7 @@ const smsPoller = require('../services/sms-poller.service');
 const fivesim = require('../providers/sms/fivesim.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const smspool = require('../providers/sms/smspool.provider');
+const getsms = require('../providers/sms/getsms.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const { getSettingNum } = require('../utils/settings');
@@ -312,43 +313,51 @@ async function getGrizzlyOtpPrices(serviceSlug) {
 const SERVER_LABEL = {
   fivesim: 'LIX 1',
   grizzlysms: 'LIX 2',
-  smspool: 'LIX 2', // rental
+  smspool: 'LIX 2',
+  getsms: 'LIX 1',
 };
 
-// ─── SMSPool rental cache (any-service, 7/28 days, US/UK/CA) ─────────────────
-// Stored as: { rentals, nameToRental: { nameLower: rental } }
-let _smsPoolRentals = null;
-let _smsPoolRentalsExpiry = 0;
+// ─── Get-SMS rental price cache (countryIso:serviceSlug → { days: creditCost }) ─
+const getSmsPriceCache = new Map();
 
-async function getSmsPoolRentals() {
-  if (_smsPoolRentals && Date.now() < _smsPoolRentalsExpiry) return _smsPoolRentals;
+// Duration key maps from Get-SMS API response keys to days
+const GETSMS_DURATION_KEY_MAP = {
+  '3day': 3, '7day': 7, '14day': 14, '30day': 30,
+  '1week': 7, '2week': 14, '4week': 28,
+  '1month': 30,
+};
+
+const RENTAL_DURATION_OPTIONS = [3, 7, 14, 30];
+
+const RENTAL_DURATION_LABELS = { 3: '3 Days', 7: '7 Days', 14: '14 Days', 30: '30 Days' };
+
+async function getGetSmsRentalPrices(countryIso, serviceSlug) {
+  const key = `${countryIso}:${serviceSlug}`;
+  const cached = getSmsPriceCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
   try {
-    const rentals = await smspool.getRentals();
-    const nameToRental = {};
-    for (const r of rentals) {
-      if (r.name) nameToRental[r.name.toLowerCase()] = r;
+    const raw = await getsms.getPrices(countryIso, serviceSlug);
+    if (!raw || typeof raw !== 'object') return null;
+
+    const result = {};
+    for (const [k, val] of Object.entries(raw)) {
+      const days = GETSMS_DURATION_KEY_MAP[k];
+      if (days && RENTAL_DURATION_OPTIONS.includes(days) && val?.price) {
+        const usd = parseFloat(val.price);
+        if (usd > 0) result[days] = Math.ceil(Math.ceil(usd * 100) * (1 + MARGIN));
+      }
     }
-    _smsPoolRentals = { rentals, nameToRental };
-    _smsPoolRentalsExpiry = Date.now() + CACHE_TTL;
-    return _smsPoolRentals;
+    if (Object.keys(result).length > 0) {
+      getSmsPriceCache.set(key, { data: result, expiresAt: Date.now() + CACHE_TTL });
+      return result;
+    }
+    return null;
   } catch (err) {
-    logger.warn('getSmsPoolRentals failed:', err.message);
+    logger.warn(`getGetSmsRentalPrices(${countryIso}/${serviceSlug}) failed:`, err.message);
     return null;
   }
 }
-
-// Services available for 1-day service-specific rental via 5sim hosting
-const HOSTING_SERVICES = ['whatsapp', 'telegram', 'google', 'instagram', 'facebook', 'tiktok', 'twitter', 'discord', 'snapchat', 'amazon'];
-
-// 1-day → 5sim hosting (service-specific, 150+ countries)
-// 7/28-day → SMSPool (any-service, US/UK/CA only)
-const RENTAL_DURATION_OPTIONS = [1, 7, 28];
-
-const SERVICE_LABELS = {
-  whatsapp: 'WhatsApp', telegram: 'Telegram', google: 'Google', instagram: 'Instagram',
-  facebook: 'Facebook', tiktok: 'TikTok', twitter: 'Twitter / X', discord: 'Discord',
-  snapchat: 'Snapchat', amazon: 'Amazon',
-};
 
 /** List all enabled services with country counts */
 exports.getServiceList = async (req, res, next) => {
@@ -356,26 +365,13 @@ exports.getServiceList = async (req, res, next) => {
     const { mode = 'otp' } = req.query;
 
     if (mode === 'rental') {
-      // Fetch service docs for IDs + hosting prices in parallel
-      const [serviceDocs, ...priceResults] = await Promise.all([
-        Service.find({ slug: { $in: HOSTING_SERVICES } }, 'slug _id'),
-        ...HOSTING_SERVICES.map((slug) => get5simHostingPrices(slug)),
-      ]);
-      const slugToId = {};
-      for (const s of serviceDocs) slugToId[s.slug] = s._id;
-
-      const serviceData = HOSTING_SERVICES.map((slug, i) => {
-        const prices = priceResults[i];
-        const vals = prices ? Object.values(prices) : [];
-        return {
-          id: slugToId[slug] || null,
-          slug,
-          name: SERVICE_LABELS[slug] || slug,
-          countryCount: vals.length,
-          minPrice: vals.length > 0 ? Math.min(...vals) : 0,
-        };
-      });
-      return success(res, { services: serviceData.filter((s) => s.countryCount > 0) });
+      // Return all enabled services that Get-SMS supports (have a known service code)
+      const services = await Service.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
+      const supportedSlugs = new Set(Object.keys(getsms.SERVICE_CODE));
+      const result = services
+        .filter((s) => supportedSlugs.has(s.slug))
+        .map((s) => ({ id: s._id, slug: s.slug, name: s.name, icon: s.icon }));
+      return success(res, { services: result });
     }
 
     // OTP mode — query from Service + NumberPricing, enrich with per-server live prices
@@ -470,31 +466,12 @@ exports.getCountriesForService = async (req, res, next) => {
     const { mode = 'otp' } = req.query;
 
     if (mode === 'rental') {
-      // 1-day prices from 5sim hosting for this specific service
-      const hostingPrices = await get5simHostingPrices(serviceSlug);
-      if (!hostingPrices) return success(res, { countries: [] });
-
+      const supportedIsos = new Set(Object.keys(getsms.ISO_TO_COUNTRY));
       const allCountries = await Country.find({ isEnabled: true });
-      const smsPoolData = await getSmsPoolRentals();
-
-      const result = [];
-      for (const c of allCountries) {
-        const slug = c.fivesimSlug || ISO_TO_SLUG[c.code] || c.code.toLowerCase();
-        const price1d = hostingPrices[slug];
-        if (!price1d) continue;
-        const smsPoolListing = smsPoolData?.nameToRental?.[c.name.toLowerCase()];
-        result.push({
-          id: c._id,
-          name: c.name,
-          code: c.code,
-          flagEmoji: c.flagEmoji,
-          price1Day: price1d,
-          minPrice: price1d,
-          hasLongTerm: !!smsPoolListing,
-          successRate: null,
-        });
-      }
-      result.sort((a, b) => a.name.localeCompare(b.name));
+      const result = allCountries
+        .filter((c) => supportedIsos.has(c.code))
+        .map((c) => ({ id: c._id, name: c.name, code: c.code, flagEmoji: c.flagEmoji }))
+        .sort((a, b) => a.name.localeCompare(b.name));
       return success(res, { countries: result });
     }
 
@@ -542,29 +519,13 @@ exports.getCountries = async (req, res, next) => {
     const countries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
 
     if (mode === 'rental') {
-      // Use WhatsApp hosting prices as representative coverage (largest country set)
-      const hostingPrices = await get5simHostingPrices('whatsapp');
-      if (!hostingPrices) return success(res, { countries: [] });
-
+      const supportedIsos = new Set(Object.keys(getsms.ISO_TO_COUNTRY));
       const allCountries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
-      const smsPoolData = await getSmsPoolRentals();
-
-      const result = [];
-      for (const c of allCountries) {
-        const slug = c.fivesimSlug || ISO_TO_SLUG[c.code] || c.code.toLowerCase();
-        const price1d = hostingPrices[slug];
-        if (!price1d) continue;
-        const smsPoolListing = smsPoolData?.nameToRental?.[c.name.toLowerCase()];
-        result.push({
-          id: c._id,
-          name: c.name,
-          code: c.code,
-          flagEmoji: c.flagEmoji,
-          serviceCount: HOSTING_SERVICES.length,
-          minPrice: price1d,
-          hasLongTerm: !!smsPoolListing,
-        });
-      }
+      const result = allCountries
+        .filter((c) => supportedIsos.has(c.code))
+        .map((c) => ({
+          id: c._id, name: c.name, code: c.code, flagEmoji: c.flagEmoji,
+        }));
       return success(res, { countries: result });
     }
 
@@ -936,54 +897,28 @@ exports.getRentalPrice = async (req, res, next) => {
     const country = await Country.findById(countryId);
     if (!country || !country.isEnabled) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
+    if (!getsms.ISO_TO_COUNTRY[country.code]) return success(res, { available: false });
+
     const service = serviceId
       ? await Service.findById(serviceId)
       : slugParam
         ? await Service.findOne({ slug: slugParam })
         : null;
     const serviceSlug = service?.slug || slugParam || 'whatsapp';
-    const countrySlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
-    const [hostingPrices, smsPoolData] = await Promise.all([
-      get5simHostingPrices(serviceSlug),
-      getSmsPoolRentals(),
-    ]);
+    const prices = await getGetSmsRentalPrices(country.code, serviceSlug);
 
-    // LIX 1 — 5sim hosting: service-specific, 150+ countries, 24 hours only
-    const price1d = hostingPrices?.[countrySlug];
-    const lix1 = price1d ? {
-      available: true,
-      server: 'LIX 1',
-      notice: 'Active for 24 hours only. Number is dedicated to the selected service.',
-      options: [{ days: 1, price: price1d, label: '24 Hours' }],
-    } : { available: false, server: 'LIX 1' };
-
-    // LIX 2 — SMSPool: any-service, US/UK/CA, 7 or 28 days
-    const listing = smsPoolData?.nameToRental?.[country.name.toLowerCase()];
-    let lix2;
-    if (listing) {
-      const opts = [];
-      const p7  = listing.pricing['7'];
-      const p28 = listing.pricing['28'];
-      if (p7)  opts.push({ days: 7,  price: Math.ceil(Math.ceil(p7  * 100) * (1 + MARGIN)), label: '7 Days' });
-      if (p28) opts.push({ days: 28, price: Math.ceil(Math.ceil(p28 * 100) * (1 + MARGIN)), label: '28 Days' });
-      lix2 = opts.length ? {
-        available: true,
-        server: 'LIX 2',
-        notice: 'Receives SMS from any platform — WhatsApp, Telegram, Google, and more.',
-        options: opts,
-      } : { available: false, server: 'LIX 2' };
-    } else {
-      lix2 = { available: false, server: 'LIX 2' };
-    }
-
-    if (!lix1.available && !lix2.available) return success(res, { available: false });
+    const options = RENTAL_DURATION_OPTIONS.map((days) => ({
+      days,
+      label: RENTAL_DURATION_LABELS[days],
+      price: prices?.[days] ?? null,
+    }));
 
     success(res, {
       available: true,
       country: { name: country.name, flagEmoji: country.flagEmoji },
       service: service ? { name: service.name, slug: service.slug } : null,
-      servers: { lix1, lix2 },
+      options,
     });
   } catch (err) {
     next(err);
@@ -992,19 +927,12 @@ exports.getRentalPrice = async (req, res, next) => {
 
 exports.orderRental = async (req, res, next) => {
   try {
-    const { countryId, serviceId, days, server = 'lix1' } = req.body;
+    const { countryId, serviceId, days } = req.body;
     const userId = req.user.userId;
 
-    let numDays;
-    if (server === 'lix1') {
-      numDays = 1; // LIX 1 is always 24 hours via 5sim hosting
-    } else if (server === 'lix2') {
-      numDays = Number(days);
-      if (![7, 28].includes(numDays)) {
-        throw new AppError('VALIDATION_ERROR', 400, 'LIX 2 rentals must be 7 or 28 days');
-      }
-    } else {
-      throw new AppError('VALIDATION_ERROR', 400, 'server must be lix1 or lix2');
+    const numDays = Number(days);
+    if (!RENTAL_DURATION_OPTIONS.includes(numDays)) {
+      throw new AppError('VALIDATION_ERROR', 400, `days must be one of ${RENTAL_DURATION_OPTIONS.join(', ')}`);
     }
 
     const user = await User.findById(userId);
@@ -1018,93 +946,58 @@ exports.orderRental = async (req, res, next) => {
     const country = await Country.findById(countryId);
     if (!country) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
-    let chargeCredits, usedProvider, phoneNumber, expiresAt, providerOrderId, usedServiceId, rentalNote;
-    const countrySlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
-
-    if (numDays === 1) {
-      // ── 1-day: 5sim hosting, service-specific ──────────────────────────────
-      const service = serviceId ? await Service.findById(serviceId) : null;
-      if (!service) throw new AppError('VALIDATION_ERROR', 400, 'serviceId is required for 1-day rental');
-
-      const hostingPrices = await get5simHostingPrices(service.slug);
-      chargeCredits = hostingPrices?.[countrySlug];
-      if (!chargeCredits) {
-        throw new AppError('NOT_FOUND', 404, `1-day rental not available in ${country.name} for ${service.name}`);
-      }
-
-      if (user.creditBalance < chargeCredits) {
-        throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
-      }
-
-      const r5 = await fivesim.buyHostingNumber(countrySlug, 'any', service.slug);
-      usedProvider = 'fivesim';
-      phoneNumber = r5.phone;
-      expiresAt = r5.expires ? new Date(r5.expires) : new Date(Date.now() + 24 * 60 * 60 * 1000);
-      providerOrderId = String(r5.id);
-      usedServiceId = service._id;
-      rentalNote = `Dedicated ${service.name} number — receives ${service.name} SMS only.`;
-
-      logger.info(`Rental 1-day ${country.code}/${service.slug} via fivesim: ${chargeCredits}cr`);
-
-    } else {
-      // ── 7/28-day: SMSPool, any-service, US/UK/CA only ──────────────────────
-      const smsPoolData = await getSmsPoolRentals();
-      const listing = smsPoolData?.nameToRental?.[country.name.toLowerCase()];
-      if (!listing) {
-        throw new AppError('NOT_FOUND', 404, `${numDays}-day rental is only available for US, UK, and Canada`);
-      }
-
-      const providerPrice = listing.pricing[String(numDays)];
-      if (!providerPrice) throw new AppError('NOT_FOUND', 404, `${numDays}-day option not available`);
-
-      chargeCredits = Math.ceil(Math.ceil(providerPrice * 100) * (1 + MARGIN));
-
-      if (user.creditBalance < chargeCredits) {
-        throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
-      }
-
-      const purchase = await smspool.purchaseRental(listing.id, numDays);
-      usedProvider = 'smspool';
-      phoneNumber = purchase.phonenumber;
-      expiresAt = new Date(Number(purchase.expiry) * 1000);
-      providerOrderId = purchase.rental_code;
-      usedServiceId = serviceId || null;
-      rentalNote = 'This number receives SMS from any service — WhatsApp, Telegram, Google, and more.';
-
-      logger.info(`Rental ${numDays}-day ${country.code} via smspool: ${chargeCredits}cr`);
+    if (!getsms.ISO_TO_COUNTRY[country.code]) {
+      throw new AppError('NOT_FOUND', 404, `Rental not available in ${country.name}`);
     }
 
-    await spendCredits(userId, chargeCredits, `${numDays}-day rental: ${country.flagEmoji} ${country.name}`);
+    const service = serviceId ? await Service.findById(serviceId) : null;
+    if (!service) throw new AppError('VALIDATION_ERROR', 400, 'serviceId is required for rental');
+
+    const prices = await getGetSmsRentalPrices(country.code, service.slug);
+    const chargeCredits = prices?.[numDays];
+    if (!chargeCredits) {
+      throw new AppError('NOT_FOUND', 404, `${numDays}-day rental not available for ${service.name} in ${country.name}`);
+    }
+
+    if (user.creditBalance < chargeCredits) {
+      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
+    }
+
+    const result = await getsms.getNumber(country.code, service.slug, numDays);
+
+    await spendCredits(userId, chargeCredits, `${numDays}-day rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
 
     const order = await NumberOrder.create({
       userId,
       countryId,
-      serviceId: usedServiceId,
-      phoneNumber,
-      providerOrderId,
-      provider: usedProvider,
+      serviceId: service._id,
+      phoneNumber: result.phone,
+      providerOrderId: result.id,
+      provider: 'getsms',
       creditsCharged: chargeCredits,
       orderType: 'RENTAL',
       rentalDays: numDays,
       countryCode: country.code,
       status: 'ACTIVE',
-      expiresAt,
+      expiresAt: result.expiresAt,
     });
 
     smsPoller.startPolling(order);
 
+    logger.info(`Rental ${numDays}-day ${country.code}/${service.slug} via GetSMS: ${chargeCredits}cr`);
+
     success(res, {
       order: {
         id: order._id,
-        phoneNumber,
+        phoneNumber: result.phone,
         country: { name: country.name, flagEmoji: country.flagEmoji },
+        service: { name: service.name },
         expiresAt: order.expiresAt,
         creditsCharged: chargeCredits,
         rentalDays: numDays,
         orderType: 'RENTAL',
         status: order.status,
-        server: SERVER_LABEL[usedProvider] || 'LIX 1',
-        note: rentalNote,
+        note: `Dedicated ${service.name} number — active for ${numDays} days.`,
       },
     }, 201);
   } catch (err) {

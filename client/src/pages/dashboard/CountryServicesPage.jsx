@@ -25,10 +25,10 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const [selectedServer, setSelectedServer] = useState('lix1');
   const [search, setSearch] = useState('');
 
-  // Rental state — default slug so pricing query starts immediately
-  const [lix1Service, setLix1Service] = useState({ id: null, slug: preselectedService || 'whatsapp', name: null });
-  const [lix2Days, setLix2Days] = useState(7);
-  const [rentalModal, setRentalModal] = useState(null); // 'lix1' | 'lix2' | null
+  // Rental state
+  const [rentalService, setRentalService] = useState({ id: null, slug: preselectedService || 'whatsapp', name: null });
+  const [rentalDays, setRentalDays] = useState(7);
+  const [showRentalModal, setShowRentalModal] = useState(false);
   const [ordering, setOrdering] = useState(false);
 
   // ── Queries ────────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Rental: list of hosting services (with IDs) for LIX 1 service picker
+  // Rental: service list from Get-SMS
   const { data: rentalServicesData } = useQuery({
     queryKey: ['serviceList', 'rental'],
     queryFn: () => getServiceList('rental').then((r) => r.data.data),
@@ -54,21 +54,21 @@ export default function CountryServicesPage({ mode: modeProp }) {
     staleTime: 60 * 60 * 1000,
   });
 
-  // Populate lix1Service ID once the service list loads
+  // Populate rentalService ID once the service list loads
   useEffect(() => {
     if (!rentalServicesData?.services?.length) return;
     const services = rentalServicesData.services;
     const match = preselectedService ? services.find((s) => s.slug === preselectedService) : null;
     const target = match || services[0];
-    if (target && (!lix1Service.id || lix1Service.slug !== target.slug)) {
-      setLix1Service({ id: target.id, slug: target.slug, name: target.name });
+    if (target && (!rentalService.id || rentalService.slug !== target.slug)) {
+      setRentalService({ id: target.id, slug: target.slug, name: target.name });
     }
   }, [rentalServicesData]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Rental: pricing (re-fetches when LIX 1 service slug changes)
+  // Rental: pricing (re-fetches when selected service changes)
   const { data: rentalData, isLoading: rentalLoading } = useQuery({
-    queryKey: ['rentalPrice', countryId, lix1Service.slug],
-    queryFn: () => getRentalPrice(countryId, { serviceSlug: lix1Service.slug }).then((r) => r.data.data),
+    queryKey: ['rentalPrice', countryId, rentalService.slug],
+    queryFn: () => getRentalPrice(countryId, { serviceSlug: rentalService.slug }).then((r) => r.data.data),
     enabled: mode === 'rental',
     staleTime: 5 * 60 * 1000,
   });
@@ -80,10 +80,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const isTopCountry = topCountryIds.has(String(countryId));
   const myRec = (recData?.recommendations || []).find((r) => String(r.id) === String(countryId));
 
-  const lix1Data = rentalData?.servers?.lix1;
-  const lix2Data = rentalData?.servers?.lix2;
-  const lix1Price = lix1Data?.options?.[0]?.price || 0;
-  const lix2Price = lix2Data?.options?.find((o) => o.days === lix2Days)?.price || 0;
+  const rentalOptions = rentalData?.options || [];
+  const selectedRentalOption = rentalOptions.find((o) => o.days === rentalDays);
+  const rentalPrice = selectedRentalOption?.price || 0;
 
   const otpPrice = selectedService
     ? (selectedServer === 'lix2'
@@ -97,7 +96,6 @@ export default function CountryServicesPage({ mode: modeProp }) {
       s.slug.toLowerCase().includes(search.toLowerCase())
   );
 
-  const rentalHostingServices = rentalServicesData?.services || [];
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleOtpOrder = async () => {
@@ -117,32 +115,15 @@ export default function CountryServicesPage({ mode: modeProp }) {
     }
   };
 
-  const handleLix1RentalOrder = async () => {
+  const handleRentalOrder = async () => {
     setOrdering(true);
     try {
-      const { data: res } = await orderRental({ countryId, serviceId: lix1Service.id, server: 'lix1' });
+      const { data: res } = await orderRental({ countryId, serviceId: rentalService.id, days: rentalDays });
       const actualCharge = res.data.order.creditsCharged;
       toast.success(`Rental number: ${res.data.order.phoneNumber} — ${actualCharge} credits charged`);
       useAuthStore.setState((s) => ({ user: { ...s.user, creditBalance: s.user.creditBalance - actualCharge } }));
       qc.invalidateQueries(['activeOrders']);
-      setRentalModal(null);
-      navigate('/numbers/active');
-    } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'Could not get rental number');
-    } finally {
-      setOrdering(false);
-    }
-  };
-
-  const handleLix2RentalOrder = async () => {
-    setOrdering(true);
-    try {
-      const { data: res } = await orderRental({ countryId, server: 'lix2', days: lix2Days });
-      const actualCharge = res.data.order.creditsCharged;
-      toast.success(`Rental number: ${res.data.order.phoneNumber} — ${actualCharge} credits charged`);
-      useAuthStore.setState((s) => ({ user: { ...s.user, creditBalance: s.user.creditBalance - actualCharge } }));
-      qc.invalidateQueries(['activeOrders']);
-      setRentalModal(null);
+      setShowRentalModal(false);
       navigate('/numbers/active');
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Could not get rental number');
@@ -185,10 +166,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
       {mode === 'rental' && (
         <>
           {rentalLoading ? (
-            <div className="grid md:grid-cols-2 gap-5">
-              <SkeletonCard className="h-64" />
-              <SkeletonCard className="h-64" />
-            </div>
+            <SkeletonCard className="h-80" />
           ) : !rentalData?.available ? (
             <div className="text-center py-16 text-gray-400">
               <p className="text-4xl mb-3">📅</p>
@@ -197,128 +175,76 @@ export default function CountryServicesPage({ mode: modeProp }) {
               <Link to="/numbers/otp" className="text-brand-600 text-sm hover:underline mt-3 inline-block">Browse OTP numbers →</Link>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-5">
-
-              {/* LIX 1 card */}
-              <div className={`border-2 rounded-2xl p-5 ${lix1Data?.available ? 'border-brand-200 bg-gradient-to-b from-brand-50 to-white' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold bg-brand-600 text-white px-2 py-0.5 rounded-full">LIX 1</span>
-                    <span className="font-semibold text-gray-900">Service-Specific</span>
-                  </div>
-                  {lix1Data?.available
-                    ? <span className="text-xs text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full" />Available</span>
-                    : <span className="text-xs text-gray-400">Unavailable</span>}
-                </div>
-                <p className="text-xs text-gray-500 mb-4">
-                  {lix1Data?.notice || 'Active for 24 hours. Dedicated to one platform only.'}
-                </p>
-
-                {/* Service picker */}
-                {rentalHostingServices.length > 0 && (
-                  <>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Platform</p>
-                    <div className="flex gap-1.5 flex-wrap mb-4">
-                      {rentalHostingServices.map((svc) => (
-                        <button
-                          key={svc.slug}
-                          onClick={() => setLix1Service({ id: svc.id, slug: svc.slug, name: svc.name })}
-                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-all ${
-                            lix1Service.slug === svc.slug
-                              ? 'bg-brand-600 border-brand-600 text-white'
-                              : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
-                          }`}
-                        >
-                          {serviceEmoji(svc.slug)} {svc.name}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                <div className="flex items-end justify-between mt-2">
-                  <div>
-                    <p className="text-xs text-gray-400">24 Hours</p>
-                    <p className="font-mono-num font-bold text-xl text-brand-700">
-                      {lix1Price} <span className="text-sm font-normal text-gray-500">credits</span>
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => setRentalModal('lix1')}
-                    disabled={!lix1Data?.available || !lix1Service.id || (user?.creditBalance || 0) < lix1Price}
-                    size="sm"
-                  >
-                    <FiCalendar size={14} /> Rent LIX 1
-                  </Button>
-                </div>
-                {lix1Data?.available && (user?.creditBalance || 0) < lix1Price && (
-                  <p className="text-xs text-red-600 mt-2">
-                    Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link>
-                  </p>
-                )}
+            <div className="border-2 border-brand-200 bg-gradient-to-b from-brand-50 to-white rounded-2xl p-6 max-w-lg">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-semibold text-gray-900">Rent a Number</h3>
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />Available
+                </span>
               </div>
+              <p className="text-xs text-gray-500 mb-5">Dedicated to one platform. Active for your chosen duration.</p>
 
-              {/* LIX 2 card */}
-              <div className={`border-2 rounded-2xl p-5 ${lix2Data?.available ? 'border-purple-200 bg-gradient-to-b from-purple-50 to-white' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold bg-purple-600 text-white px-2 py-0.5 rounded-full">LIX 2</span>
-                    <span className="font-semibold text-gray-900">Any Platform</span>
-                  </div>
-                  {lix2Data?.available
-                    ? <span className="text-xs text-green-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full" />Available</span>
-                    : <span className="text-xs text-gray-400">Unavailable</span>}
-                </div>
-                <p className="text-xs text-gray-500 mb-4">
-                  {lix2Data?.notice || 'Receives SMS from any platform — WhatsApp, Telegram, Google, and more.'}
-                </p>
-
-                {lix2Data?.available ? (
-                  <>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Duration</p>
-                    <div className="flex gap-2 flex-wrap mb-4">
-                      {(lix2Data.options || []).map((opt) => (
-                        <button
-                          key={opt.days}
-                          onClick={() => setLix2Days(opt.days)}
-                          className={`px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${
-                            lix2Days === opt.days
-                              ? 'bg-purple-600 border-purple-600 text-white shadow-sm'
-                              : 'bg-white border-gray-200 text-gray-700 hover:border-purple-300'
-                          }`}
-                        >
-                          {opt.label} <span className="font-mono-num ml-1">{opt.price} cr</span>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex items-end justify-between mt-2">
-                      <div>
-                        <p className="text-xs text-gray-400">{lix2Days} Days</p>
-                        <p className="font-mono-num font-bold text-xl text-purple-700">
-                          {lix2Price} <span className="text-sm font-normal text-gray-500">credits</span>
-                        </p>
-                      </div>
-                      <Button
-                        onClick={() => setRentalModal('lix2')}
-                        disabled={(user?.creditBalance || 0) < lix2Price}
-                        size="sm"
-                        className="bg-purple-600 hover:bg-purple-700"
+              {/* Service picker */}
+              {rentalServicesData?.services?.length > 0 && (
+                <>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Platform</p>
+                  <div className="flex gap-1.5 flex-wrap mb-5">
+                    {rentalServicesData.services.map((svc) => (
+                      <button
+                        key={svc.slug}
+                        onClick={() => setRentalService({ id: svc.id, slug: svc.slug, name: svc.name })}
+                        className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-all ${
+                          rentalService.slug === svc.slug
+                            ? 'bg-brand-600 border-brand-600 text-white'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
+                        }`}
                       >
-                        <FiCalendar size={14} /> Rent LIX 2
-                      </Button>
-                    </div>
-                    {(user?.creditBalance || 0) < lix2Price && (
-                      <p className="text-xs text-red-600 mt-2">
-                        Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link>
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-400 mt-2">
-                    Long-term rental (7/28 days) is currently available for US, UK, and Canada only.
-                  </p>
-                )}
+                        {serviceEmoji(svc.slug)} {svc.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Duration picker */}
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Duration</p>
+              <div className="flex gap-2 flex-wrap mb-5">
+                {rentalOptions.map((opt) => (
+                  <button
+                    key={opt.days}
+                    onClick={() => setRentalDays(opt.days)}
+                    className={`px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${
+                      rentalDays === opt.days
+                        ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
+                    }`}
+                  >
+                    {opt.label}
+                    {opt.price && <span className="font-mono-num ml-1.5 opacity-80">{opt.price} cr</span>}
+                  </button>
+                ))}
               </div>
+
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">{rentalDays} Days</p>
+                  <p className="font-mono-num font-bold text-xl text-brand-700">
+                    {rentalPrice > 0 ? <>{rentalPrice} <span className="text-sm font-normal text-gray-500">credits</span></> : '— credits'}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setShowRentalModal(true)}
+                  disabled={!rentalService.id || rentalPrice === 0 || (user?.creditBalance || 0) < rentalPrice}
+                  size="sm"
+                >
+                  <FiCalendar size={14} /> Rent Now
+                </Button>
+              </div>
+              {rentalPrice > 0 && (user?.creditBalance || 0) < rentalPrice && (
+                <p className="text-xs text-red-600 mt-2">
+                  Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link>
+                </p>
+              )}
             </div>
           )}
         </>
@@ -508,11 +434,11 @@ export default function CountryServicesPage({ mode: modeProp }) {
         )}
       </Modal>
 
-      {/* ─── RENTAL LIX 1 CONFIRM MODAL ─────────────────────────────────────── */}
+      {/* ─── RENTAL CONFIRM MODAL ───────────────────────────────────────────── */}
       <Modal
-        isOpen={rentalModal === 'lix1'}
-        onClose={() => !ordering && setRentalModal(null)}
-        title="Confirm LIX 1 Rental"
+        isOpen={showRentalModal}
+        onClose={() => !ordering && setShowRentalModal(false)}
+        title="Confirm Rental"
       >
         <div className="space-y-4">
           <div className="bg-gray-50 rounded-xl p-4 space-y-3">
@@ -522,80 +448,29 @@ export default function CountryServicesPage({ mode: modeProp }) {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Platform</span>
-              <span className="font-medium text-brand-700">{lix1Service.name || lix1Service.slug}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Server</span>
-              <span className="font-medium text-brand-600">LIX 1</span>
+              <span className="font-medium text-brand-700">{rentalService.name || rentalService.slug}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Duration</span>
-              <span className="font-medium">24 Hours</span>
+              <span className="font-medium">{rentalDays} Days</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Total cost</span>
-              <span className="font-mono-num font-bold text-brand-600">{lix1Price} credits</span>
+              <span className="font-mono-num font-bold text-brand-600">{rentalPrice} credits</span>
             </div>
             <div className="flex justify-between text-sm border-t border-gray-200 pt-3">
               <span className="text-gray-500">Balance after</span>
-              <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - lix1Price < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                {(user?.creditBalance || 0) - lix1Price} credits
+              <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - rentalPrice < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                {(user?.creditBalance || 0) - rentalPrice} credits
               </span>
             </div>
           </div>
           <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-            Number is dedicated to {lix1Service.name || lix1Service.slug} only and expires after 24 hours.
+            Number is dedicated to {rentalService.name || rentalService.slug} and expires after {rentalDays} days.
           </p>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setRentalModal(null)} disabled={ordering} className="flex-1">Cancel</Button>
-            <Button onClick={handleLix1RentalOrder} loading={ordering} disabled={(user?.creditBalance || 0) < lix1Price} className="flex-1">
-              <FiCalendar size={16} /> Confirm Rental
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ─── RENTAL LIX 2 CONFIRM MODAL ─────────────────────────────────────── */}
-      <Modal
-        isOpen={rentalModal === 'lix2'}
-        onClose={() => !ordering && setRentalModal(null)}
-        title="Confirm LIX 2 Rental"
-      >
-        <div className="space-y-4">
-          <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Country</span>
-              <span className="font-medium">{country?.flagEmoji} {country?.name}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Platform</span>
-              <span className="font-medium text-purple-700">Any Service</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Server</span>
-              <span className="font-medium text-purple-600">LIX 2</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Duration</span>
-              <span className="font-medium">{lix2Days} Days</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Total cost</span>
-              <span className="font-mono-num font-bold text-purple-600">{lix2Price} credits</span>
-            </div>
-            <div className="flex justify-between text-sm border-t border-gray-200 pt-3">
-              <span className="text-gray-500">Balance after</span>
-              <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - lix2Price < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                {(user?.creditBalance || 0) - lix2Price} credits
-              </span>
-            </div>
-          </div>
-          <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-            No refund if cancelled early — rental credits cover the full {lix2Days}-day duration.
-          </p>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setRentalModal(null)} disabled={ordering} className="flex-1">Cancel</Button>
-            <Button onClick={handleLix2RentalOrder} loading={ordering} disabled={(user?.creditBalance || 0) < lix2Price} className="flex-1 bg-purple-600 hover:bg-purple-700">
+            <Button variant="outline" onClick={() => setShowRentalModal(false)} disabled={ordering} className="flex-1">Cancel</Button>
+            <Button onClick={handleRentalOrder} loading={ordering} disabled={(user?.creditBalance || 0) < rentalPrice} className="flex-1">
               <FiCalendar size={16} /> Confirm Rental
             </Button>
           </div>
