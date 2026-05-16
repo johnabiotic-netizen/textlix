@@ -133,9 +133,15 @@ const setRentStatus = async (rentId, status = 1) => {
 const getOtpPrices = async (service) => {
   const code = toCode(service);
   const data = await call({ action: 'getPrices', service: code });
-  if (typeof data === 'string') return null; // BAD_ACTION or unsupported
-  const serviceData = data?.[code];
-  return serviceData || null;
+  if (typeof data === 'string') return null;
+  // GrizzlySMS returns { [countryId]: { [serviceCode]: { count, cost, retry } } }
+  // Reshape to { [countryId]: { count, cost } } to match downstream expectations
+  const result = {};
+  for (const [countryId, services] of Object.entries(data || {})) {
+    const svc = services[code];
+    if (svc) result[countryId] = svc;
+  }
+  return Object.keys(result).length > 0 ? result : null;
 };
 
 // ─── OTP activation methods ───────────────────────────────────────────────────
