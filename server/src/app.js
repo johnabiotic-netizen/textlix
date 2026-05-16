@@ -69,27 +69,6 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: test GrizzlySMS rental API
-app.get('/api/v1/debug/grizzly-rent', async (req, res) => {
-  const axios = require('axios');
-  const KEY = process.env.GRIZZLYSMS_API_KEY;
-  const BASE = 'https://api.grizzlysms.com/stubs/handler_api.php';
-  const results = {};
-  for (const days of [3, 7, 14, 30]) {
-    const rent_time = days * 24;
-    try {
-      const { data } = await axios.get(BASE, {
-        params: { api_key: KEY, action: 'getRentPrices', service: 'full', rent_time },
-        timeout: 10000,
-      });
-      const entries = typeof data === 'object' && data.values ? Object.keys(data.values).length : 0;
-      results[`${days}days`] = { status: 'ok', countries: entries, sample: typeof data === 'object' ? JSON.stringify(data).slice(0, 200) : data };
-    } catch (e) {
-      results[`${days}days`] = { status: 'error', error: e.message };
-    }
-  }
-  res.json(results);
-});
 
 
 
