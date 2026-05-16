@@ -35,7 +35,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const { data: servicesData, isLoading: servicesLoading } = useQuery({
     queryKey: ['services', countryId],
     queryFn: () => getServices(countryId).then((r) => r.data.data),
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0,
     enabled: mode === 'otp',
   });
 

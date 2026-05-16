@@ -77,6 +77,16 @@ const start = async () => {
     logger.info(`TextLix server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
+    // Background warm of price cache — non-blocking, staggered to avoid hammering APIs
+    setTimeout(async () => {
+      try {
+        const { warmPriceCache } = require('./controllers/number.controller');
+        await warmPriceCache();
+        logger.info('Price cache warmed');
+      } catch (err) {
+        logger.warn('Price cache warm failed:', err.message);
+      }
+    }, 5000);
   });
 };
 
