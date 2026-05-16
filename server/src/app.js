@@ -69,30 +69,6 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: test Get-SMS v1 rental methods + getnumber
-app.get('/api/v1/debug/getsms', async (req, res) => {
-  const axios = require('axios');
-  const KEY = process.env.GETSMS_API_KEY;
-  const V1 = 'https://get-sms.com/api/v1/';
-  const RENT = 'https://get-sms.com/api/v2/rent/';
-  const get = (url, params) => axios.get(url, { params: { userkey: KEY, ...params }, timeout: 8000 }).then(r => r.data).catch(e => ({ err: e.response?.data || e.message }));
-  const results = await Promise.all([
-    get(V1,   { method: 'getnumber',      service: 'wa', country: 'england' }),
-    get(V1,   { method: 'getrentcount',   country: 'england', service: 'wa' }),
-    get(V1,   { method: 'getrentprices',  country: 'england', service: 'wa' }),
-    get(V1,   { method: 'getallcount',    service: 'wa', country: 'england' }),
-    get(RENT, { method: 'getrentals' }),
-    get(RENT, { method: 'getavailable', country: 'england', service: 'wa' }),
-  ]);
-  res.json({
-    'v1/getnumber_england_wa':       results[0],
-    'v1/getrentcount_england_wa':    results[1],
-    'v1/getrentprices_england_wa':   results[2],
-    'v1/getallcount_england_wa':     results[3],
-    'rent/getrentals':               results[4],
-    'rent/getavailable_england_wa':  results[5],
-  });
-});
 
 
 
