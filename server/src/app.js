@@ -69,16 +69,24 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: verify Get-SMS API — pricing structure
+// Temporary debug: verify Get-SMS API
 app.get('/api/v1/debug/getsms', async (req, res) => {
   const axios = require('axios');
   const KEY = process.env.GETSMS_API_KEY;
-  const BASE = 'https://get-sms.com/api/v2/rent/';
-  const call = (params) => axios.get(BASE, { params: { userkey: KEY, ...params }, timeout: 12000 }).then(r => r.data);
+  // Show all env vars starting with GETSMS or GET_SMS
+  const envKeys = Object.keys(process.env).filter(k => k.includes('GETSMS') || k.includes('GET_SMS') || k.includes('SMSGET'));
   try {
-    const usaPrices = await call({ method: 'getcountprices', country: 'usa', service: 'wa' }).catch(e => ({ error: e.message }));
-    const ukPrices = await call({ method: 'getcountprices', country: 'england', service: 'wa' }).catch(e => ({ error: e.message }));
-    res.json({ key_set: !!KEY, usa_wa: usaPrices, uk_wa: ukPrices });
+    // Test balance on primary API
+    const balance = await axios.get('https://get-sms.com/api/v1/', {
+      params: { method: 'getbalance', userkey: KEY },
+      timeout: 10000,
+    }).then(r => r.data).catch(e => ({ error: e.message, status: e.response?.status }));
+    // Test rental pricing
+    const prices = await axios.get('https://get-sms.com/api/v2/rent/', {
+      params: { method: 'getcountprices', userkey: KEY, country: 'usa', service: 'wa' },
+      timeout: 10000,
+    }).then(r => r.data).catch(e => ({ error: e.message, status: e.response?.status }));
+    res.json({ key_set: !!KEY, key_preview: KEY ? KEY.slice(0, 6) + '...' : null, env_vars_found: envKeys, balance, prices });
   } catch (err) {
     res.json({ error: err.message });
   }
