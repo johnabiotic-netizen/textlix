@@ -69,27 +69,29 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: verify Get-SMS API
+// Temporary debug: find correct Get-SMS rental API methods
 app.get('/api/v1/debug/getsms', async (req, res) => {
   const axios = require('axios');
   const KEY = process.env.GETSMS_API_KEY;
-  // Show all env vars starting with GETSMS or GET_SMS
-  const envKeys = Object.keys(process.env).filter(k => k.includes('GETSMS') || k.includes('GET_SMS') || k.includes('SMSGET'));
-  try {
-    // Test balance on primary API
-    const balance = await axios.get('https://get-sms.com/api/v1/', {
-      params: { method: 'getbalance', userkey: KEY },
-      timeout: 10000,
-    }).then(r => r.data).catch(e => ({ error: e.message, status: e.response?.status }));
-    // Test rental pricing
-    const prices = await axios.get('https://get-sms.com/api/v2/rent/', {
-      params: { method: 'getcountprices', userkey: KEY, country: 'usa', service: 'wa' },
-      timeout: 10000,
-    }).then(r => r.data).catch(e => ({ error: e.message, status: e.response?.status }));
-    res.json({ key_set: !!KEY, key_preview: KEY ? KEY.slice(0, 6) + '...' : null, env_vars_found: envKeys, balance, prices });
-  } catch (err) {
-    res.json({ error: err.message });
-  }
+  const RENT = 'https://get-sms.com/api/v2/rent/';
+  const V1 = 'https://get-sms.com/api/v1/';
+  const get = (url, params) => axios.get(url, { params: { userkey: KEY, ...params }, timeout: 8000 }).then(r => r.data).catch(e => ({ err: e.response?.data || e.message }));
+  const results = await Promise.all([
+    get(RENT, { method: 'getcountprices', country: 'usa', service: 'wa' }),
+    get(RENT, { method: 'getcount', country: 'usa', service: 'wa' }),
+    get(RENT, { method: 'getprices', country: 'usa', service: 'wa' }),
+    get(RENT, { method: 'getorders' }),
+    get(V1,   { method: 'getcount', country: 'usa' }),
+    get(V1,   { method: 'getallcount', service: 'wa' }),
+  ]);
+  res.json({
+    'rent/getcountprices': results[0],
+    'rent/getcount':       results[1],
+    'rent/getprices':      results[2],
+    'rent/getorders':      results[3],
+    'v1/getcount':         results[4],
+    'v1/getallcount':      results[5],
+  });
 });
 
 
