@@ -69,6 +69,18 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
+// Temporary debug: inspect raw GrizzlySMS getPrices response
+app.get('/api/v1/debug/grizzly-prices', async (req, res) => {
+  const grizzlysms = require('./providers/sms/grizzlysms.provider');
+  const service = req.query.service || 'wa';
+  try {
+    const data = await grizzlysms.getOtpPrices(service);
+    res.json({ success: true, service, data });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
 // Public settings (announcement banner, etc.) — no auth required
 app.get('/api/v1/public/settings', async (req, res) => {
   try {
