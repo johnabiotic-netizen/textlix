@@ -15,6 +15,7 @@ const SLUG_TO_CODE = {
   facebook: 'fb',
   twitter: 'tw',
   tiktok: 'tt',
+  fiverr: 'fi',
   discord: 'ds',
   snapchat: 'sc',
   amazon: 'am',
@@ -33,15 +34,34 @@ const SLUG_TO_CODE = {
 
 const toCode = (slug) => SLUG_TO_CODE[slug] || slug;
 
-// ISO-2 → GrizzlySMS numeric country ID (compatible with SMS-Activate ID system)
+// ISO-2 → GrizzlySMS numeric country ID (from live getCountries API response)
 const ISO_TO_COUNTRY_ID = {
-  US: 187, GB: 16,  IN: 22,  BR: 73,  UA: 1,   RU: 0,   PH: 12,  ID: 68,
-  VN: 56,  TH: 166, MY: 130, KZ: 6,   CN: 2,   DE: 43,  FR: 78,  IT: 65,
-  NG: 31,  KE: 39,  GH: 36,  ZA: 60,  EG: 86,  PK: 162, BD: 10,  MX: 44,
-  CO: 28,  AR: 4,   TR: 169, PL: 15,  RO: 54,  NL: 134, SE: 156, NO: 135,
-  DK: 57,  FI: 102, BE: 21,  AT: 38,  CH: 196, ES: 26,  PT: 103, GR: 30,
-  CZ: 56,  HU: 32,  SK: 143, HR: 58,  BG: 33,  RS: 193, IE: 33,  LT: 44,
-  LV: 44,  EE: 45,  SA: 155, IL: 34,  NG: 31,  TZ: 207, UG: 208, CM: 209,
+  UA: 1,   KZ: 2,   CN: 3,   PH: 4,   MM: 5,   ID: 6,   MY: 7,   KE: 8,
+  TZ: 9,   VN: 10,  KG: 11,  IL: 13,  HK: 14,  PL: 15,  GB: 16,  MG: 17,
+  CD: 18,  NG: 19,  MO: 20,  EG: 21,  IN: 22,  IE: 23,  KH: 24,  LA: 25,
+  HT: 26,  CI: 27,  GM: 28,  RS: 29,  YE: 30,  ZA: 31,  RO: 32,  CO: 33,
+  EE: 34,  AZ: 35,  CA: 36,  MA: 37,  GH: 38,  AR: 39,  UZ: 40,  CM: 41,
+  TD: 42,  DE: 43,  LT: 44,  HR: 45,  SE: 46,  IQ: 47,  NL: 48,  LV: 49,
+  AT: 50,  BY: 51,  TH: 52,  SA: 53,  MX: 54,  TW: 55,  ES: 56,  DZ: 58,
+  SI: 59,  BD: 60,  SN: 61,  TR: 62,  CZ: 63,  LK: 64,  PE: 65,  PK: 66,
+  NZ: 67,  GN: 68,  ML: 69,  VE: 70,  ET: 71,  MN: 72,  BR: 73,  AF: 74,
+  UG: 75,  AO: 76,  CY: 77,  FR: 78,  PG: 79,  MZ: 80,  NP: 81,  BE: 82,
+  BG: 83,  HU: 84,  MD: 85,  IT: 86,  PY: 87,  HN: 88,  TN: 89,  NI: 90,
+  TL: 91,  BO: 92,  CR: 93,  GT: 94,  AE: 95,  ZW: 96,  PR: 97,  TG: 99,
+  KW: 100, SV: 101, LY: 102, JM: 103, TT: 104, EC: 105, SZ: 106, OM: 107,
+  BA: 108, DO: 109, SY: 110, QA: 111, PA: 112, CU: 113, MR: 114, SL: 115,
+  JO: 116, PT: 117, BB: 118, BI: 119, BJ: 120, BN: 121, BS: 122, BW: 123,
+  BZ: 124, CF: 125, DM: 126, GD: 127, GE: 128, GR: 129, GW: 130, GY: 131,
+  IS: 132, KM: 133, KN: 134, LR: 135, LS: 136, MW: 137, NA: 138, NE: 139,
+  RW: 140, SK: 141, SR: 142, TJ: 143, MC: 144, BH: 145, RE: 146, ZM: 147,
+  AM: 148, SO: 149, CG: 150, CL: 151, BF: 152, LB: 153, GA: 154, AL: 155,
+  UY: 156, MU: 157, BT: 158, MV: 159, GP: 160, TM: 161, GF: 162, FI: 163,
+  LC: 164, LU: 165, VC: 166, GQ: 167, DJ: 168, AG: 169, KY: 170, ME: 171,
+  DK: 172, CH: 173, NO: 174, AU: 175, ER: 176, SS: 177, ST: 178, AW: 179,
+  MS: 180, AI: 181, JP: 182, MK: 183, SC: 184, NC: 185, CV: 186, US: 187,
+  PS: 188, GI: 201, XK: 203, NU: 204, BM: 1003, VU: 1007, GL: 1008,
+  AD: 1062, IR: 10016, AS: 10161, TO: 10227, WS: 10231, LI: 10348,
+  SX: 10349, KR: 10350, SG: 10351,
 };
 
 // Reverse map: GrizzlySMS numeric country ID → ISO-2

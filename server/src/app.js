@@ -69,32 +69,6 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: find Fiverr code + get real GrizzlySMS country list
-app.get('/api/v1/debug/grizzly-meta', async (req, res) => {
-  const axios = require('axios');
-  const KEY = process.env.GRIZZLYSMS_API_KEY;
-  const BASE = 'https://api.grizzlysms.com/stubs/handler_api.php';
-  const call = (params) => axios.get(BASE, { params: { api_key: KEY, ...params }, timeout: 12000 }).then(r => r.data);
-
-  // Test Fiverr codes
-  const fiverCodes = ['fv', 'fiver', 'fiverr', 'fi'];
-  const fiverResults = {};
-  for (const code of fiverCodes) {
-    try {
-      const data = await call({ action: 'getPrices', service: code });
-      const total = typeof data === 'object' ? Object.values(data).reduce((s, v) => s + (v?.[code]?.count || 0), 0) : 0;
-      fiverResults[code] = { countries: typeof data === 'object' ? Object.keys(data).length : 0, total };
-    } catch (e) { fiverResults[code] = { error: e.message }; }
-  }
-
-  // Get real country list from GrizzlySMS
-  let countries = null;
-  try {
-    countries = await call({ action: 'getCountries' });
-  } catch (e) { countries = { error: e.message }; }
-
-  res.json({ fiverr: fiverResults, countries });
-});
 
 
 
