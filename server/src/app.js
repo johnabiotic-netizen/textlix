@@ -69,26 +69,21 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: inspect getServices success rate fields
+// Temporary debug: check live getServices API output for a country
 app.get('/api/v1/debug/services/:countryId', async (req, res) => {
   try {
-    const Country = require('./models/Country');
-    const NumberPricing = require('./models/NumberPricing');
-    const fivesim = require('./providers/sms/fivesim.provider');
-    const grizzlysms = require('./providers/sms/grizzlysms.provider');
-    const ISO_TO_SLUG = { US:'usa',GB:'england',IN:'india',NG:'nigeria',RU:'russia',BR:'brazil',DE:'germany',FR:'france',CA:'canada',AU:'australia',PH:'philippines' };
-    const country = await Country.findById(req.params.countryId);
-    if (!country) return res.json({ error: 'country not found' });
-    const fivesimSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
-    const pricing = await NumberPricing.findOne({ countryId: country._id, isAvailable: true }).populate('serviceId');
-    if (!pricing) return res.json({ error: 'no pricing', fivesimSlug });
-    const slug = pricing.serviceId.slug;
-    const [priceData, grizzlyData] = await Promise.all([
-      fivesim.getPrices(slug).catch((e) => ({ error: e.message })),
-      grizzlysms.getOtpPrices(slug).catch((e) => ({ error: e.message })),
-    ]);
-    const countryEntry = priceData?.[slug]?.[fivesimSlug];
-    res.json({ fivesimSlug, slug, countryEntry, grizzlyForCountry: grizzlyData?.[country.code], sampleFivesimKeys: priceData?.[slug] ? Object.keys(priceData[slug]).slice(0, 5) : null });
+    const axios = require('axios');
+    const base = `http://localhost:${process.env.PORT || 3000}`;
+    const { data } = await axios.get(`${base}/api/v1/numbers/${req.params.countryId}/services`, {
+      headers: { Authorization: req.headers.authorization || '' },
+    });
+    const sample = (data.data?.services || []).slice(0, 2).map((s) => ({
+      slug: s.slug,
+      successRate: s.successRate,
+      lix1: s.servers?.lix1,
+      lix2: s.servers?.lix2,
+    }));
+    res.json({ sample });
   } catch (err) {
     res.json({ error: err.message });
   }
