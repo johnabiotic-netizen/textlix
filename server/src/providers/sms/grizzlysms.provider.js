@@ -6,6 +6,33 @@ const BASE_URL = 'https://api.grizzlysms.com/stubs/handler_api.php';
 // Supported rental durations in days → hours (GrizzlySMS rent_time is in hours)
 const RENT_DAYS = { 1: 24, 7: 168, 28: 672 };
 
+// Map our 5sim-style slugs to GrizzlySMS/SMS-Activate service codes
+const SLUG_TO_CODE = {
+  whatsapp: 'wa',
+  telegram: 'tg',
+  google: 'go',
+  instagram: 'ig',
+  facebook: 'fb',
+  twitter: 'tw',
+  tiktok: 'tiktok',
+  discord: 'ds',
+  snapchat: 'sc',
+  amazon: 'am',
+  netflix: 'nf',
+  uber: 'ub',
+  linkedin: 'li',
+  paypal: 'pp',
+  microsoft: 'ms',
+  viber: 'vi',
+  steam: 'st',
+  spotify: 'sp',
+  yahoo: 'ya',
+  apple: 'ap',
+  line: 'ln',
+};
+
+const toCode = (slug) => SLUG_TO_CODE[slug] || slug;
+
 // ISO-2 → GrizzlySMS numeric country ID (compatible with SMS-Activate ID system)
 const ISO_TO_COUNTRY_ID = {
   US: 187, GB: 16,  IN: 22,  BR: 73,  UA: 1,   RU: 0,   PH: 12,  ID: 68,
@@ -104,9 +131,10 @@ const setRentStatus = async (rentId, status = 1) => {
  * Returns { [numericCountryId]: { cost (USD), count } } or null if API unsupported.
  */
 const getOtpPrices = async (service) => {
-  const data = await call({ action: 'getPrices', service });
+  const code = toCode(service);
+  const data = await call({ action: 'getPrices', service: code });
   if (typeof data === 'string') return null; // BAD_ACTION or unsupported
-  const serviceData = data?.[service];
+  const serviceData = data?.[code];
   return serviceData || null;
 };
 
@@ -119,7 +147,7 @@ const getOtpPrices = async (service) => {
  */
 const getNumber = async (service, countryIso) => {
   const country = ISO_TO_COUNTRY_ID[countryIso?.toUpperCase()] ?? 0;
-  const data = await call({ action: 'getNumber', service, country });
+  const data = await call({ action: 'getNumber', service: toCode(service), country });
   if (typeof data !== 'string' || !data.startsWith('ACCESS_NUMBER')) {
     throw new Error(`GrizzlySMS getNumber: ${data}`);
   }
