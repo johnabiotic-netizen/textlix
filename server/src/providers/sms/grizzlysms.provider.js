@@ -8,6 +8,7 @@ const RENT_DAYS = { 1: 24, 7: 168, 28: 672 };
 
 // Map our 5sim-style slugs to GrizzlySMS/SMS-Activate service codes
 const SLUG_TO_CODE = {
+  // Confirmed working
   whatsapp: 'wa',
   telegram: 'tg',
   google: 'go',
@@ -15,7 +16,6 @@ const SLUG_TO_CODE = {
   facebook: 'fb',
   twitter: 'tw',
   tiktok: 'tt',
-  fiverr: 'fi',
   discord: 'ds',
   snapchat: 'sc',
   amazon: 'am',
@@ -23,13 +23,31 @@ const SLUG_TO_CODE = {
   uber: 'ub',
   linkedin: 'li',
   paypal: 'pp',
-  microsoft: 'ms',
   viber: 'vi',
-  steam: 'st',
   spotify: 'sp',
-  yahoo: 'ya',
-  apple: 'ap',
   line: 'ln',
+  fiverr: 'fi',
+  aol: 'aol',
+  microsoft: 'ms',
+  // High-confidence additions from GrizzlySMS code list
+  tinder: 'ti',
+  signal: 'si',
+  ebay: 'eb',
+  tencentqq: 'qq',
+  wechat: 'wc',
+  weibo: 'wb',
+  kakaotalk: 'ka',
+  naver: 'nv',
+  zalo: 'zl',
+  iqiyi: 'iq',
+  lyft: 'lf',
+  badoo: 'bd',
+  twitch: 'tv',
+  grindr: 'gr',
+  airbnb: 'ai',
+  doordash: 'dp',
+  kwai: 'kw',
+  bilibili: 'bi',
 };
 
 const toCode = (slug) => SLUG_TO_CODE[slug] || slug;
