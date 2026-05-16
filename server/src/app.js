@@ -69,6 +69,17 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
+// Temporary debug: verify SMSPool rental listings load
+app.get('/api/v1/debug/smspool-rentals', async (req, res) => {
+  try {
+    const smspool = require('./providers/sms/smspool.provider');
+    const rentals = await smspool.getRentals();
+    res.json({ count: rentals.length, rentals: rentals.slice(0, 10) });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 
 
 
