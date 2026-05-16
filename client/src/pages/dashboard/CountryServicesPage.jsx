@@ -429,7 +429,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   <p className="font-mono-num font-bold text-brand-700">
                     {selectedService.servers?.lix1?.price ?? '—'} <span className="text-xs font-normal text-gray-500">cr</span>
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">5sim network</p>
+                  {selectedService.servers?.lix1?.successRate != null
+                    ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix1.successRate)}`}>{selectedService.servers.lix1.successRate}% success</p>
+                    : <p className="text-xs text-gray-400 mt-0.5">Server 1</p>}
                 </button>
 
                 <button
@@ -446,7 +448,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   <p className="font-mono-num font-bold text-purple-700">
                     {selectedService.servers?.lix2?.price ?? '—'} <span className="text-xs font-normal text-gray-500">cr</span>
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">GrizzlySMS network</p>
+                  {selectedService.servers?.lix2?.successRate != null
+                    ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix2.successRate)}`}>{selectedService.servers.lix2.successRate}% success</p>
+                    : <p className="text-xs text-gray-400 mt-0.5">Server 2</p>}
                 </button>
               </div>
             </div>
@@ -599,6 +603,12 @@ export default function CountryServicesPage({ mode: modeProp }) {
       </Modal>
     </div>
   );
+}
+
+function rateColor(rate) {
+  if (rate >= 90) return 'text-green-600';
+  if (rate >= 75) return 'text-yellow-600';
+  return 'text-red-500';
 }
 
 function serviceEmoji(slug) {

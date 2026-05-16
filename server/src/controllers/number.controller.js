@@ -208,6 +208,47 @@ async function getServiceSuccessRates() {
   return rates;
 }
 
+// ─── Per-provider success rate cache (30 min) ────────────────────────────────
+let _providerRatesCache = null;
+let _providerRatesCacheExpiry = 0;
+
+async function getServiceRatesByProvider() {
+  if (_providerRatesCache && Date.now() < _providerRatesCacheExpiry) return _providerRatesCache;
+
+  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const agg = await NumberOrder.aggregate([
+    {
+      $match: {
+        serviceId: { $ne: null },
+        createdAt: { $gte: since7d },
+        status: { $in: ['COMPLETED', 'EXPIRED', 'REFUNDED'] },
+        orderType: { $ne: 'RENTAL' },
+      },
+    },
+    {
+      $group: {
+        _id: { serviceId: '$serviceId', provider: '$provider' },
+        completed: { $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] } },
+        total: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const rates = {};
+  for (const row of agg) {
+    if (row.total >= 5) {
+      const svcId = row._id.serviceId.toString();
+      const provider = row._id.provider || 'fivesim';
+      if (!rates[svcId]) rates[svcId] = {};
+      rates[svcId][provider] = Math.round((row.completed / row.total) * 1000) / 10;
+    }
+  }
+
+  _providerRatesCache = rates;
+  _providerRatesCacheExpiry = Date.now() + 30 * 60 * 1000;
+  return rates;
+}
+
 // ─── 5sim hosting price cache (rental, service-specific, 1-day) ──────────────
 // Key: serviceSlug → { expiresAt, data: { [5simCountrySlug]: creditCost } }
 const hostingPriceCache = new Map();
@@ -572,18 +613,21 @@ exports.getServices = async (req, res, next) => {
       .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder);
 
     // Fetch live prices, raw max-price maps, GrizzlySMS prices, and success rates in parallel
-    const [priceResults, liveMaxMaps, grizzlyPriceMaps, serviceRates] = await Promise.all([
+    const [priceResults, liveMaxMaps, grizzlyPriceMaps, serviceRates, providerRates] = await Promise.all([
       Promise.all(enabledPricing.map((p) => getChargeCredits(fivesimSlug, p.serviceId.slug, p.finalPrice))),
       Promise.all(enabledPricing.map((p) => getMaxPrices(p.serviceId.slug))),
       Promise.all(enabledPricing.map((p) => getGrizzlyOtpPrices(p.serviceId.slug))),
       getServiceSuccessRates(),
+      getServiceRatesByProvider(),
     ]);
 
     const services = enabledPricing.map((p, i) => {
       const liveData = liveMaxMaps[i]?.[fivesimSlug];
       const available = liveMaxMaps[i] != null ? (liveData?.maxPrice > 0) : p.isAvailable;
       const fivesimRate = liveData?.bestRate != null ? Math.min(100, Math.round(liveData.bestRate * 1000) / 10) : null;
-      const successRate = fivesimRate ?? serviceRates[p.serviceId._id.toString()] ?? null;
+      const svcId = p.serviceId._id.toString();
+      const lix1Rate = fivesimRate ?? providerRates[svcId]?.fivesim ?? serviceRates[svcId] ?? null;
+      const lix2Rate = providerRates[svcId]?.grizzlysms ?? null;
       const lix1Price = priceResults[i];
       const lix2Price = grizzlyPriceMaps[i]?.[country.code] ?? null;
       return {
@@ -594,11 +638,11 @@ exports.getServices = async (req, res, next) => {
         price: lix1Price,
         available,
         pricingId: p._id,
-        successRate,
+        successRate: lix1Rate,
         availableCount: liveData?.totalCount ?? null,
         servers: {
-          lix1: { price: lix1Price, available },
-          lix2: { price: lix2Price, available: !!lix2Price },
+          lix1: { price: lix1Price, available, successRate: lix1Rate },
+          lix2: { price: lix2Price, available: !!lix2Price, successRate: lix2Rate },
         },
       };
     });
