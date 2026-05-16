@@ -69,6 +69,35 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
+// Temporary debug: test every service in our DB against GrizzlySMS
+app.get('/api/v1/debug/grizzly-all-services', async (req, res) => {
+  const axios = require('axios');
+  const Service = require('./models/Service');
+  const grizzlysms = require('./providers/sms/grizzlysms.provider');
+  const KEY = process.env.GRIZZLYSMS_API_KEY;
+  const BASE = 'https://api.grizzlysms.com/stubs/handler_api.php';
+
+  const services = await Service.find({}, 'slug name').lean();
+  const results = {};
+
+  for (const svc of services) {
+    const code = grizzlysms.toCode ? grizzlysms.toCode(svc.slug) : svc.slug;
+    try {
+      const { data } = await axios.get(BASE, {
+        params: { api_key: KEY, action: 'getPrices', service: code },
+        timeout: 10000,
+      });
+      const total = typeof data === 'object'
+        ? Object.values(data).reduce((s, v) => s + (v?.[code]?.count || 0), 0)
+        : 0;
+      results[svc.slug] = { code, countries: typeof data === 'object' ? Object.keys(data).length : 0, total, works: total > 0 };
+    } catch (e) {
+      results[svc.slug] = { code, error: e.message };
+    }
+  }
+  res.json(results);
+});
+
 
 
 

@@ -204,4 +204,4 @@ const setStatus = async (id, status) => {
   }
 };
 
-module.exports = { getRentPrices, getRentNumber, getRentStatus, setRentStatus, getNumber, getStatus, setStatus, getOtpPrices, COUNTRY_ID_TO_ISO, RENT_DAYS };
+module.exports = { getRentPrices, getRentNumber, getRentStatus, setRentStatus, getNumber, getStatus, setStatus, getOtpPrices, COUNTRY_ID_TO_ISO, RENT_DAYS, toCode };
