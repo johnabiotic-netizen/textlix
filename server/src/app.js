@@ -69,35 +69,28 @@ app.use('/api', generalLimiter);
 // Public stats — no auth required
 app.get('/api/v1/stats', getPublicStats);
 
-// Temporary debug: find correct Get-SMS rental API format
+// Temporary debug: test Get-SMS v1 rental methods + getnumber
 app.get('/api/v1/debug/getsms', async (req, res) => {
   const axios = require('axios');
   const KEY = process.env.GETSMS_API_KEY;
-  const RENT = 'https://get-sms.com/api/v2/rent/';
   const V1 = 'https://get-sms.com/api/v1/';
+  const RENT = 'https://get-sms.com/api/v2/rent/';
   const get = (url, params) => axios.get(url, { params: { userkey: KEY, ...params }, timeout: 8000 }).then(r => r.data).catch(e => ({ err: e.response?.data || e.message }));
   const results = await Promise.all([
-    // Try correct Russian country names
-    get(RENT, { method: 'getcountprices', country: 'ssha', service: 'wa' }),
-    get(RENT, { method: 'getcountprices', country: 'england', service: 'wa' }),
-    // Try without country param
-    get(RENT, { method: 'getcountprices', service: 'wa' }),
-    // Try 'action' instead of 'method'
-    get(RENT, { action: 'getcountprices', country: 'ssha', service: 'wa' }),
-    // Try getnumber with correct country
-    get(RENT, { method: 'getnumber', country: 'england', service: 'wa', type: 'day', period: 3 }),
-    // v1 getcount with Russian country name
-    get(V1, { method: 'getcount', country: 'ssha' }),
-    get(V1, { method: 'getcount', country: 'england' }),
+    get(V1,   { method: 'getnumber',      service: 'wa', country: 'england' }),
+    get(V1,   { method: 'getrentcount',   country: 'england', service: 'wa' }),
+    get(V1,   { method: 'getrentprices',  country: 'england', service: 'wa' }),
+    get(V1,   { method: 'getallcount',    service: 'wa', country: 'england' }),
+    get(RENT, { method: 'getrentals' }),
+    get(RENT, { method: 'getavailable', country: 'england', service: 'wa' }),
   ]);
   res.json({
-    'rent/getcountprices_ssha':    results[0],
-    'rent/getcountprices_england': results[1],
-    'rent/getcountprices_noCountry': results[2],
-    'rent/action=getcountprices':  results[3],
-    'rent/getnumber_england_3day': results[4],
-    'v1/getcount_ssha':            results[5],
-    'v1/getcount_england':         results[6],
+    'v1/getnumber_england_wa':       results[0],
+    'v1/getrentcount_england_wa':    results[1],
+    'v1/getrentprices_england_wa':   results[2],
+    'v1/getallcount_england_wa':     results[3],
+    'rent/getrentals':               results[4],
+    'rent/getavailable_england_wa':  results[5],
   });
 });
 
