@@ -65,24 +65,32 @@ const call = async (params) => {
     params: { userkey: process.env.GETSMS_API_KEY, ...params },
     timeout: 15000,
   });
-  if (data && typeof data === 'object' && data.error) {
-    throw new Error(`GetSMS: ${data.error}`);
+  // Error envelope: { status: 4xx, data: { msg: '...' } }
+  if (data && typeof data === 'object') {
+    if (data.error) throw new Error(`GetSMS: ${data.error}`);
+    if (data.status && data.status >= 400) throw new Error(`GetSMS: ${data.data?.msg || data.status}`);
   }
   return data;
 };
 
-// Get rental pricing for a country + service (all durations)
-// Response shape from rental API: { '3day': {count, price}, '7day': {count, price}, '1week': {...}, '1month': {...} }
+// Get rental pricing for a country + service (all durations).
+// getcountprices takes only `country` — returns { serviceCode: { durationKey: { count, price } } }
+// We filter to the requested service after receiving the full response.
 const getPrices = async (countryIso, serviceSlug) => {
   const country = ISO_TO_COUNTRY[countryIso?.toUpperCase()];
   if (!country) return null;
   try {
-    const data = await call({ method: 'getcountprices', country, service: toServiceCode(serviceSlug) });
-    logger.info(`GetSMS getcountprices raw (${countryIso}/${serviceSlug}): ${JSON.stringify(data)}`);
-    if (!data || typeof data !== 'object' || data.error) return null;
-    return data;
+    const data = await call({ method: 'getcountprices', country });
+    logger.info(`GetSMS getcountprices raw (${countryIso}): ${JSON.stringify(data)}`);
+    // Their error envelope: { status: 4xx, data: { msg: '...' } }
+    if (!data || typeof data !== 'object') return null;
+    if (data.status && data.status >= 400) return null;
+    const code = toServiceCode(serviceSlug);
+    const svcData = data[code];
+    if (!svcData || typeof svcData !== 'object') return null;
+    return svcData;
   } catch (err) {
-    logger.warn(`GetSMS getPrices failed (${countryIso}/${serviceSlug}):`, err.message);
+    logger.warn(`GetSMS getPrices failed (${countryIso}/${serviceSlug}): ${err.message}`);
     return null;
   }
 };
