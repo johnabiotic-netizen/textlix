@@ -51,6 +51,22 @@ router.post('/promo-codes', adminController.createPromoCode);
 router.patch('/promo-codes/:id', adminController.updatePromoCode);
 router.delete('/promo-codes/:id', adminController.deletePromoCode);
 
+// Debug: raw Get-SMS API response for diagnosing price parsing
+router.get('/debug/getsms-prices', async (req, res, next) => {
+  try {
+    const axios = require('axios');
+    const country = req.query.country || 'ssha'; // default = US
+    const service = req.query.service || 'wa';   // default = WhatsApp
+    const { data } = await axios.get('https://get-sms.com/api/v2/rent/', {
+      params: { userkey: process.env.GETSMS_API_KEY, method: 'getcountprices', country, service },
+      timeout: 15000,
+    });
+    success(res, { country, service, raw: data });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Audit log viewer
 router.get('/audit-logs', async (req, res, next) => {
   try {
