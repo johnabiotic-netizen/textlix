@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiCheckCircle, FiSearch, FiCalendar, FiStar } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { getServices, getServiceList, getRentalPrice, orderNumber, orderRental, getRecommendations } from '../../api/numbers';
+import { getServices, getServiceList, getCountries, getRentalPrice, orderNumber, orderRental, getRecommendations } from '../../api/numbers';
 import useAuthStore from '../../store/authStore';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -26,9 +26,10 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const [search, setSearch] = useState('');
 
   // Rental state
-  const [rentalService, setRentalService] = useState({ id: null, slug: preselectedService || 'whatsapp', name: null });
+  const [rentalService, setRentalService] = useState({ id: null, slug: preselectedService || null, name: null });
   const [rentalDays, setRentalDays] = useState(7);
   const [showRentalModal, setShowRentalModal] = useState(false);
+  const [rentalSearch, setRentalSearch] = useState('');
   const [ordering, setOrdering] = useState(false);
 
   // ── Queries ────────────────────────────────────────────────────────────────
@@ -54,6 +55,14 @@ export default function CountryServicesPage({ mode: modeProp }) {
     staleTime: 60 * 60 * 1000,
   });
 
+  // Rental: countries list — used to get country name/flag for the header before a service is selected
+  const { data: rentalCountriesData } = useQuery({
+    queryKey: ['countries', 'rental'],
+    queryFn: () => getCountries('rental').then((r) => r.data.data),
+    enabled: mode === 'rental',
+    staleTime: 60 * 60 * 1000,
+  });
+
   // Populate rentalService ID once the service list loads
   useEffect(() => {
     if (!rentalServicesData?.services?.length) return;
@@ -69,12 +78,13 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const { data: rentalData, isLoading: rentalLoading } = useQuery({
     queryKey: ['rentalPrice', countryId, rentalService.slug],
     queryFn: () => getRentalPrice(countryId, { serviceSlug: rentalService.slug }).then((r) => r.data.data),
-    enabled: mode === 'rental',
+    enabled: mode === 'rental' && !!rentalService.slug,
     staleTime: 5 * 60 * 1000,
   });
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const country = mode === 'otp' ? servicesData?.country : rentalData?.country;
+  const rentalCountryFallback = (rentalCountriesData?.countries || []).find((c) => String(c.id) === String(countryId));
+  const country = mode === 'otp' ? servicesData?.country : (rentalData?.country || rentalCountryFallback);
 
   const topCountryIds = new Set((recData?.recommendations || []).map((r) => String(r.id)));
   const isTopCountry = topCountryIds.has(String(countryId));
@@ -94,6 +104,12 @@ export default function CountryServicesPage({ mode: modeProp }) {
     (s) =>
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.slug.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredRentalServices = (rentalServicesData?.services || []).filter(
+    (s) =>
+      s.name.toLowerCase().includes(rentalSearch.toLowerCase()) ||
+      s.slug.toLowerCase().includes(rentalSearch.toLowerCase())
   );
 
 
@@ -164,90 +180,53 @@ export default function CountryServicesPage({ mode: modeProp }) {
 
       {/* ─── RENTAL MODE ────────────────────────────────────────────────────── */}
       {mode === 'rental' && (
-        <>
-          {rentalLoading ? (
-            <SkeletonCard className="h-80" />
-          ) : !rentalData?.available ? (
-            <div className="text-center py-16 text-gray-400">
-              <p className="text-4xl mb-3">📅</p>
-              <p className="font-medium text-gray-600">Rental not available for this country</p>
-              <p className="text-sm mt-1">Try a different country or use one-time OTP instead.</p>
-              <Link to="/numbers/otp" className="text-brand-600 text-sm hover:underline mt-3 inline-block">Browse OTP numbers →</Link>
+        <div>
+          <p className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wide">Choose a platform</p>
+          <Input
+            type="search"
+            placeholder="Search platforms (e.g. WhatsApp, Telegram...)"
+            value={rentalSearch}
+            onChange={(e) => setRentalSearch(e.target.value)}
+            className="max-w-sm mb-4"
+          />
+
+          {!rentalServicesData ? (
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : filteredRentalServices.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <FiSearch size={32} className="mx-auto mb-3 opacity-40" />
+              <p className="font-medium">No platforms found{rentalSearch ? ` for "${rentalSearch}"` : ''}</p>
             </div>
           ) : (
-            <div className="border-2 border-brand-200 bg-gradient-to-b from-brand-50 to-white rounded-2xl p-6 max-w-lg">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-gray-900">Rent a Number</h3>
-                <span className="text-xs text-green-600 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />Available
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mb-5">Dedicated to one platform. Active for your chosen duration.</p>
-
-              {/* Service picker */}
-              {rentalServicesData?.services?.length > 0 && (
-                <>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Platform</p>
-                  <div className="flex gap-1.5 flex-wrap mb-5">
-                    {rentalServicesData.services.map((svc) => (
-                      <button
-                        key={svc.slug}
-                        onClick={() => setRentalService({ id: svc.id, slug: svc.slug, name: svc.name })}
-                        className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-all ${
-                          rentalService.slug === svc.slug
-                            ? 'bg-brand-600 border-brand-600 text-white'
-                            : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
-                        }`}
-                      >
-                        {serviceEmoji(svc.slug)} {svc.name}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {/* Duration picker */}
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Duration</p>
-              <div className="flex gap-2 flex-wrap mb-5">
-                {rentalOptions.map((opt) => (
-                  <button
-                    key={opt.days}
-                    onClick={() => setRentalDays(opt.days)}
-                    className={`px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${
-                      rentalDays === opt.days
-                        ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
-                    }`}
-                  >
-                    {opt.label}
-                    {opt.price && <span className="font-mono-num ml-1.5 opacity-80">{opt.price} cr</span>}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-end justify-between">
-                <div>
-                  <p className="text-xs text-gray-400">{rentalDays} Days</p>
-                  <p className="font-mono-num font-bold text-xl text-brand-700">
-                    {rentalPrice > 0 ? <>{rentalPrice} <span className="text-sm font-normal text-gray-500">credits</span></> : '— credits'}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => setShowRentalModal(true)}
-                  disabled={!rentalService.id || rentalPrice === 0 || (user?.creditBalance || 0) < rentalPrice}
-                  size="sm"
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {filteredRentalServices.map((svc) => (
+                <Card
+                  key={svc.slug}
+                  hover
+                  onClick={() => {
+                    setRentalService({ id: svc.id, slug: svc.slug, name: svc.name });
+                    setRentalDays(7);
+                    setShowRentalModal(true);
+                  }}
+                  className="p-5 cursor-pointer"
                 >
-                  <FiCalendar size={14} /> Rent Now
-                </Button>
-              </div>
-              {rentalPrice > 0 && (user?.creditBalance || 0) < rentalPrice && (
-                <p className="text-xs text-red-600 mt-2">
-                  Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link>
-                </p>
-              )}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-xl">
+                      {serviceEmoji(svc.slug)}
+                    </div>
+                    <span className="flex items-center gap-1 text-xs text-brand-600">
+                      <FiCalendar size={11} />Multi-day
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1">{svc.name}</h3>
+                  <p className="text-xs text-gray-400">3 / 7 / 14 / 30 days</p>
+                </Card>
+              ))}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* ─── OTP MODE ───────────────────────────────────────────────────────── */}
@@ -438,43 +417,95 @@ export default function CountryServicesPage({ mode: modeProp }) {
       <Modal
         isOpen={showRentalModal}
         onClose={() => !ordering && setShowRentalModal(false)}
-        title="Confirm Rental"
+        title={`Rent ${rentalService.name || ''} Number`}
       >
-        <div className="space-y-4">
-          <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Country</span>
-              <span className="font-medium">{country?.flagEmoji} {country?.name}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Platform</span>
-              <span className="font-medium text-brand-700">{rentalService.name || rentalService.slug}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Duration</span>
-              <span className="font-medium">{rentalDays} Days</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Total cost</span>
-              <span className="font-mono-num font-bold text-brand-600">{rentalPrice} credits</span>
-            </div>
-            <div className="flex justify-between text-sm border-t border-gray-200 pt-3">
-              <span className="text-gray-500">Balance after</span>
-              <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - rentalPrice < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                {(user?.creditBalance || 0) - rentalPrice} credits
-              </span>
-            </div>
+        {rentalLoading ? (
+          <div className="text-center py-10 text-gray-400">
+            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm">Loading pricing…</p>
           </div>
-          <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-            Number is dedicated to {rentalService.name || rentalService.slug} and expires after {rentalDays} days.
-          </p>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setShowRentalModal(false)} disabled={ordering} className="flex-1">Cancel</Button>
-            <Button onClick={handleRentalOrder} loading={ordering} disabled={(user?.creditBalance || 0) < rentalPrice} className="flex-1">
-              <FiCalendar size={16} /> Confirm Rental
-            </Button>
+        ) : !rentalData?.available ? (
+          <div className="text-center py-8">
+            <p className="text-4xl mb-3">📅</p>
+            <p className="font-medium text-gray-700">Not available for this country</p>
+            <p className="text-sm text-gray-400 mt-1">Try a different platform or country.</p>
+            <Button variant="outline" onClick={() => setShowRentalModal(false)} className="mt-4">Close</Button>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Duration picker */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Duration</p>
+              <div className="grid grid-cols-4 gap-2">
+                {rentalOptions.map((opt) => (
+                  <button
+                    key={opt.days}
+                    onClick={() => setRentalDays(opt.days)}
+                    className={`p-2.5 rounded-xl border-2 text-center transition-all ${
+                      rentalDays === opt.days
+                        ? 'border-brand-600 bg-brand-50'
+                        : 'border-gray-200 hover:border-brand-300'
+                    }`}
+                  >
+                    <div className="font-semibold text-sm text-gray-900">{opt.label}</div>
+                    {opt.price && <div className="font-mono-num text-xs text-brand-700 mt-0.5">{opt.price} cr</div>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Country</span>
+                <span className="font-medium">{country?.flagEmoji} {country?.name}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Platform</span>
+                <span className="font-medium text-brand-700">{rentalService.name}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Duration</span>
+                <span className="font-medium">{rentalDays} Days</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Total cost</span>
+                <span className="font-mono-num font-bold text-brand-600">
+                  {rentalPrice > 0 ? `${rentalPrice} credits` : '— credits'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm border-t border-gray-200 pt-3">
+                <span className="text-gray-500">Balance after</span>
+                <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - rentalPrice < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                  {(user?.creditBalance || 0) - rentalPrice} credits
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+              Number is dedicated to {rentalService.name} and expires after {rentalDays} days.
+            </p>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowRentalModal(false)} disabled={ordering} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRentalOrder}
+                loading={ordering}
+                disabled={rentalPrice === 0 || (user?.creditBalance || 0) < rentalPrice || ordering}
+                className="flex-1"
+              >
+                <FiCalendar size={16} /> Confirm Rental
+              </Button>
+            </div>
+            {rentalPrice > 0 && (user?.creditBalance || 0) < rentalPrice && (
+              <p className="text-xs text-red-600 text-center">
+                Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link>
+              </p>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );
