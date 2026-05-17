@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\GJ Projects\\\\verifynow-spec\\\\verify-now\" -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules|\\\\.git\" } | ForEach-Object { $_.FullName })",
+      "Bash(npm uninstall *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('nodemailer' in p.dependencies, 'crypto' in p.dependencies\\)\")",
+      "Bash(node *)",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git revert *)",
+      "Bash(del *)",
+      "Bash(git commit --allow-empty -m ' *)"
+    ]
+  }
+}

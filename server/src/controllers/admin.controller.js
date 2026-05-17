@@ -358,6 +358,10 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   'referralBonusPercent',
   'minTopupUSD',
   'announcementBanner',
+  'rental_price_3day',
+  'rental_price_7day',
+  'rental_price_14day',
+  'rental_price_30day',
 ]);
 
 exports.updateSettings = async (req, res, next) => {

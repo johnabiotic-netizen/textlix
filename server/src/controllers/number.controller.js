@@ -317,46 +317,31 @@ const SERVER_LABEL = {
   getsms: 'LIX 1',
 };
 
-// ─── Get-SMS rental price cache (countryIso:serviceSlug → { days: creditCost }) ─
-const getSmsPriceCache = new Map();
-
-// Duration key maps from Get-SMS API response keys to days
-const GETSMS_DURATION_KEY_MAP = {
-  '3day': 3, '7day': 7, '14day': 14, '30day': 30,
-  '1week': 7, '2week': 14, '4week': 28,
-  '1month': 30,
-};
-
 const RENTAL_DURATION_OPTIONS = [3, 7, 14, 30];
-
 const RENTAL_DURATION_LABELS = { 3: '3 Days', 7: '7 Days', 14: '14 Days', 30: '30 Days' };
 
-async function getGetSmsRentalPrices(countryIso, serviceSlug) {
-  const key = `${countryIso}:${serviceSlug}`;
-  const cached = getSmsPriceCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.data;
+// Admin-configured rental prices (credits per duration), cached 5 min
+let _rentalPriceSettingsCache = null;
+let _rentalPriceSettingsCacheExpiry = 0;
 
-  try {
-    const raw = await getsms.getPrices(countryIso, serviceSlug);
-    if (!raw || typeof raw !== 'object') return null;
-
-    const result = {};
-    for (const [k, val] of Object.entries(raw)) {
-      const days = GETSMS_DURATION_KEY_MAP[k];
-      if (days && RENTAL_DURATION_OPTIONS.includes(days) && val?.price) {
-        const usd = parseFloat(val.price);
-        if (usd > 0) result[days] = Math.ceil(Math.ceil(usd * 100) * (1 + MARGIN));
-      }
-    }
-    if (Object.keys(result).length > 0) {
-      getSmsPriceCache.set(key, { data: result, expiresAt: Date.now() + CACHE_TTL });
-      return result;
-    }
-    return null;
-  } catch (err) {
-    logger.warn(`getGetSmsRentalPrices(${countryIso}/${serviceSlug}) failed:`, err.message);
-    return null;
+async function getGetSmsRentalPrices() {
+  if (_rentalPriceSettingsCache && Date.now() < _rentalPriceSettingsCacheExpiry) {
+    return _rentalPriceSettingsCache;
   }
+  const [p3, p7, p14, p30] = await Promise.all([
+    getSettingNum('rental_price_3day', 0),
+    getSettingNum('rental_price_7day', 0),
+    getSettingNum('rental_price_14day', 0),
+    getSettingNum('rental_price_30day', 0),
+  ]);
+  const result = {};
+  if (p3 > 0)  result[3]  = Math.round(p3);
+  if (p7 > 0)  result[7]  = Math.round(p7);
+  if (p14 > 0) result[14] = Math.round(p14);
+  if (p30 > 0) result[30] = Math.round(p30);
+  _rentalPriceSettingsCache = Object.keys(result).length > 0 ? result : null;
+  _rentalPriceSettingsCacheExpiry = Date.now() + 5 * 60 * 1000;
+  return _rentalPriceSettingsCache;
 }
 
 /** List all enabled services with country counts */

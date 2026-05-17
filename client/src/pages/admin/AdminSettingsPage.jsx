@@ -162,6 +162,43 @@ export default function AdminSettingsPage() {
           onChange={set('coingate_environment')}
         />
       </Card>
+
+      <Card className="px-6 py-2">
+        <h2 className="font-semibold text-gray-900 pt-4 mb-2">Rental Pricing</h2>
+        <p className="text-xs text-gray-400 mb-2">Set the credit cost for each rental duration. 100 credits = $1.00. Applies to all countries and platforms.</p>
+        <SettingField
+          label="3-Day Rental (credits)"
+          description={form.rental_price_3day > 0 ? `≈ $${(form.rental_price_3day / 100).toFixed(2)} USD` : 'Not set — duration hidden from users'}
+          value={form.rental_price_3day ?? 0}
+          onChange={set('rental_price_3day')}
+          type="number"
+          min={0}
+        />
+        <SettingField
+          label="7-Day Rental (credits)"
+          description={form.rental_price_7day > 0 ? `≈ $${(form.rental_price_7day / 100).toFixed(2)} USD` : 'Not set — duration hidden from users'}
+          value={form.rental_price_7day ?? 0}
+          onChange={set('rental_price_7day')}
+          type="number"
+          min={0}
+        />
+        <SettingField
+          label="14-Day Rental (credits)"
+          description={form.rental_price_14day > 0 ? `≈ $${(form.rental_price_14day / 100).toFixed(2)} USD` : 'Not set — duration hidden from users'}
+          value={form.rental_price_14day ?? 0}
+          onChange={set('rental_price_14day')}
+          type="number"
+          min={0}
+        />
+        <SettingField
+          label="30-Day Rental (credits)"
+          description={form.rental_price_30day > 0 ? `≈ $${(form.rental_price_30day / 100).toFixed(2)} USD` : 'Not set — duration hidden from users'}
+          value={form.rental_price_30day ?? 0}
+          onChange={set('rental_price_30day')}
+          type="number"
+          min={0}
+        />
+      </Card>
     </div>
   );
 }
