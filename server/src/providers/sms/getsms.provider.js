@@ -78,7 +78,7 @@ const getPrices = async (countryIso, serviceSlug) => {
   if (!country) return null;
   try {
     const data = await call({ method: 'getcountprices', country, service: toServiceCode(serviceSlug) });
-    logger.info(`GetSMS getcountprices raw (${countryIso}/${serviceSlug}):`, JSON.stringify(data));
+    logger.info(`GetSMS getcountprices raw (${countryIso}/${serviceSlug}): ${JSON.stringify(data)}`);
     if (!data || typeof data !== 'object' || data.error) return null;
     return data;
   } catch (err) {
