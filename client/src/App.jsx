@@ -8,6 +8,7 @@ import { getMe } from './api/user';
 // Layouts (small, load eagerly)
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
+const CreatorApp = lazy(() => import('./pages/creator/CreatorApp'));
 
 // Public pages — lazy
 const LandingPage = lazy(() => import('./pages/public/LandingPage'));
@@ -55,6 +56,7 @@ const AdminCatalogPage = lazy(() => import('./pages/admin/AdminCatalogPage'));
 const AdminPricingPage = lazy(() => import('./pages/admin/AdminPricingPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
+const AdminCreatorsPage = lazy(() => import('./pages/admin/AdminCreatorsPage'));
 
 const PageSpinner = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -109,6 +111,8 @@ function scheduleProactiveRefresh(token, refreshFn) {
   }
 }
 
+const isCreatorSubdomain = window.location.hostname.startsWith('creator.');
+
 export default function App() {
   const { setAuth, setLoading, accessToken } = useAuthStore();
 
@@ -144,6 +148,16 @@ export default function App() {
     initAuth();
     return () => { if (_refreshTimer) clearTimeout(_refreshTimer); };
   }, []);
+
+  if (isCreatorSubdomain) {
+    return (
+      <BrowserRouter>
+        <Suspense fallback={<PageSpinner />}>
+          <CreatorApp />
+        </Suspense>
+      </BrowserRouter>
+    );
+  }
 
   return (
     <BrowserRouter>
@@ -204,6 +218,7 @@ export default function App() {
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="promo-codes" element={<AdminPromoCodesPage />} />
             <Route path="reports" element={<AdminReportsPage />} />
+            <Route path="creators" element={<AdminCreatorsPage />} />
           </Route>
 
           <Route path="*" element={<div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4"><h1 className="text-3xl font-bold text-gray-900">404 — Page not found</h1><a href="/dashboard" className="text-brand-600 hover:underline">Go to Dashboard</a></div>} />

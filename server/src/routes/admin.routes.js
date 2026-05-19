@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const adminController = require('../controllers/admin.controller');
+const adminCreatorController = require('../controllers/admin.creator.controller');
 const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
 const AuditLog = require('../models/AuditLog');
 const { success } = require('../utils/response');
@@ -79,6 +80,15 @@ router.get('/debug/getsms-orders', async (req, res, next) => {
     next(err);
   }
 });
+
+// Creator / affiliate management
+router.get('/creators', adminCreatorController.getCreators);
+router.get('/creators/applications', adminCreatorController.getApplications);
+router.post('/creators/:id/approve', adminCreatorController.approveCreator);
+router.post('/creators/:id/reject', adminCreatorController.rejectCreator);
+router.get('/creators/withdrawals', adminCreatorController.getWithdrawals);
+router.post('/creators/withdrawals/:id/pay', adminCreatorController.markWithdrawalPaid);
+router.post('/creators/withdrawals/:id/reject', adminCreatorController.rejectWithdrawal);
 
 // Audit log viewer
 router.get('/audit-logs', async (req, res, next) => {

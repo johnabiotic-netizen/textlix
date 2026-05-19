@@ -9,11 +9,12 @@ import Input from '../../components/common/Input';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const [manualRef, setManualRef] = useState('');
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const refCode = searchParams.get('ref');
+  const refCode = searchParams.get('ref') || manualRef.trim() || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,6 +64,14 @@ export default function RegisterPage() {
             <Input label="Email" type="email" value={form.email} onChange={f('email')} required placeholder="you@example.com" />
             <Input label="Password" type="password" value={form.password} onChange={f('password')} required placeholder="Min. 8 characters" />
             <Input label="Confirm password" type="password" value={form.confirm} onChange={f('confirm')} required placeholder="Repeat password" />
+            {!searchParams.get('ref') && (
+              <Input
+                label="Referral code (optional)"
+                value={manualRef}
+                onChange={(e) => setManualRef(e.target.value.toUpperCase())}
+                placeholder="e.g. ABC12345"
+              />
+            )}
             <Button type="submit" loading={loading} className="w-full" size="lg">Create Account</Button>
           </form>
 

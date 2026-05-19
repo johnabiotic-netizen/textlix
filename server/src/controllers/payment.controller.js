@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
 const PromoCode = require('../models/PromoCode');
+const CreatorEarning = require('../models/CreatorEarning');
 const { addCredits } = require('../services/credit.service');
 const oxprocessingProvider = require('../providers/payment/0xprocessing.provider');
 const korapayProvider = require('../providers/payment/korapay.provider');
@@ -9,6 +10,7 @@ const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const logger = require('../config/logger');
 const { getIO } = require('../config/io');
+const { getUsdToNgnRate } = require('../utils/exchangerate');
 
 const getNgnRate = () => parseFloat(process.env.KORAPAY_NGN_RATE) || 1600;
 
@@ -152,6 +154,7 @@ exports.oxprocessingWebhook = async (req, res, next) => {
             payment._id.toString()
           );
           await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+          await maybeAwardCreatorCommission(payment.userId, payment.amountUSD, payment._id);
           const io = getIO();
           if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: payment.creditsAdded });
         } catch (err) {
@@ -306,6 +309,38 @@ async function maybeAwardReferralBonus(userId, creditsAdded, referenceId) {
     logger.info(`Referral bonus of ${bonus} credits awarded to ${user.referredBy} for referring ${userId}`);
   } catch (err) {
     logger.error('Referral bonus error:', err.message);
+  }
+}
+
+async function maybeAwardCreatorCommission(userId, amountUSD, paymentId) {
+  try {
+    const user = await User.findById(userId, 'creatorReferredBy email');
+    if (!user?.creatorReferredBy) return;
+
+    const creator = await User.findById(user.creatorReferredBy, 'isCreator email');
+    if (!creator?.isCreator) return;
+
+    const rate = await getUsdToNgnRate();
+    const commissionNaira = Math.floor(amountUSD * rate * 0.1);
+    if (commissionNaira < 1) return;
+
+    await Promise.all([
+      CreatorEarning.create({
+        creatorId: creator._id,
+        referredUserId: userId,
+        paymentId,
+        amountUSD,
+        usdNgnRate: rate,
+        commissionNaira,
+      }),
+      User.findByIdAndUpdate(creator._id, {
+        $inc: { pendingEarningsNaira: commissionNaira, totalEarningsNaira: commissionNaira },
+      }),
+    ]);
+
+    logger.info(`Creator commission ₦${commissionNaira} awarded to ${creator._id} for referral ${userId}`);
+  } catch (err) {
+    logger.error(`Creator commission error: ${err.message}`);
   }
 }
 

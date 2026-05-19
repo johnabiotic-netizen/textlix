@@ -44,11 +44,15 @@ exports.register = async (req, res, next) => {
     const emailVerifyToken = generateRandomToken();
     const referralCode = generateReferralCode();
 
-    // Look up referrer if a code was passed
+    // Look up referrer — creator codes earn Naira commissions; regular codes earn credits
     let referredBy = null;
+    let creatorReferredBy = null;
     if (refCode) {
       const referrer = await User.findOne({ referralCode: refCode.toUpperCase() });
-      if (referrer) referredBy = referrer._id;
+      if (referrer) {
+        if (referrer.isCreator) creatorReferredBy = referrer._id;
+        else referredBy = referrer._id;
+      }
     }
 
     const user = await User.create({
@@ -59,6 +63,7 @@ exports.register = async (req, res, next) => {
       emailVerifyToken,
       referralCode,
       referredBy,
+      creatorReferredBy,
     });
 
     sendVerificationEmail(user.email, emailVerifyToken).catch((err) => {
