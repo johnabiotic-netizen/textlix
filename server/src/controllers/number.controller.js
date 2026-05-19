@@ -317,31 +317,37 @@ const SERVER_LABEL = {
   getsms: 'LIX 1',
 };
 
-const RENTAL_DURATION_OPTIONS = [3, 7, 14, 30];
-const RENTAL_DURATION_LABELS = { 3: '3 Days', 7: '7 Days', 14: '14 Days', 30: '30 Days' };
+const RENTAL_DURATION_OPTIONS = [1, 3, 7];
+const RENTAL_DURATION_LABELS = { 1: '1 Day', 3: '3 Days', 7: '7 Days' };
 
-// Admin-configured rental prices (credits per duration), cached 5 min
-let _rentalPriceSettingsCache = null;
-let _rentalPriceSettingsCacheExpiry = 0;
+// Cache: `${countryIso}/${serviceSlug}` → { expiresAt, data: { 1: credits, 3: credits, 7: credits } }
+const rentalPriceCache = new Map();
 
-async function getGetSmsRentalPrices() {
-  if (_rentalPriceSettingsCache && Date.now() < _rentalPriceSettingsCacheExpiry) {
-    return _rentalPriceSettingsCache;
+async function getGetSmsRentalPrices(countryIso, serviceSlug) {
+  const cacheKey = `${countryIso}/${serviceSlug}`;
+  const cached = rentalPriceCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  try {
+    const raw = await getsms.getPrices(countryIso, serviceSlug);
+    if (!raw?.prices) {
+      rentalPriceCache.set(cacheKey, { data: null, expiresAt: Date.now() + 5 * 60 * 1000 });
+      return null;
+    }
+    const result = {};
+    for (const [days, usdPrice] of Object.entries(raw.prices)) {
+      const numDays = Number(days);
+      if (RENTAL_DURATION_OPTIONS.includes(numDays)) {
+        result[numDays] = Math.ceil(usdPrice * 100 * (1 + MARGIN));
+      }
+    }
+    const data = Object.keys(result).length > 0 ? result : null;
+    rentalPriceCache.set(cacheKey, { data, expiresAt: Date.now() + 30 * 60 * 1000 });
+    return data;
+  } catch (err) {
+    logger.warn(`getGetSmsRentalPrices(${countryIso}/${serviceSlug}) failed: ${err.message}`);
+    return null;
   }
-  const [p3, p7, p14, p30] = await Promise.all([
-    getSettingNum('rental_price_3day', 0),
-    getSettingNum('rental_price_7day', 0),
-    getSettingNum('rental_price_14day', 0),
-    getSettingNum('rental_price_30day', 0),
-  ]);
-  const result = {};
-  if (p3 > 0)  result[3]  = Math.round(p3);
-  if (p7 > 0)  result[7]  = Math.round(p7);
-  if (p14 > 0) result[14] = Math.round(p14);
-  if (p30 > 0) result[30] = Math.round(p30);
-  _rentalPriceSettingsCache = Object.keys(result).length > 0 ? result : null;
-  _rentalPriceSettingsCacheExpiry = Date.now() + 5 * 60 * 1000;
-  return _rentalPriceSettingsCache;
 }
 
 /** List all enabled services with country counts */

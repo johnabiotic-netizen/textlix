@@ -3,12 +3,11 @@ const logger = require('../../config/logger');
 
 const BASE_URL = 'https://get-sms.com/api/v2/rent/';
 
-// Duration options → Get-SMS type/period params
+// Duration options → Get-SMS type/period params (API supports max 7 days)
 const DURATION_MAP = {
-  3:  { type: 'day',   period: 3 },
-  7:  { type: 'week',  period: 1 },
-  14: { type: 'week',  period: 2 },
-  30: { type: 'month', period: 1 },
+  1: { type: 'day',  period: 1 },
+  3: { type: 'day',  period: 3 },
+  7: { type: 'week', period: 1 },
 };
 
 // ISO-2 → Get-SMS country name (exact names from their live API)
@@ -73,22 +72,25 @@ const call = async (params) => {
   return data;
 };
 
-// Get rental pricing for a country + service (all durations).
-// getcountprices takes only `country` — returns { serviceCode: { durationKey: { count, price } } }
-// We filter to the requested service after receiving the full response.
+// Get rental pricing for a country + service.
+// Response: { status:200, data: { [serviceCode]: { count: N, price: { "1day": X, "3day": X, "7day": X, ... } } } }
+// Returns: { count: N, prices: { 1: X, 3: X, 7: X } } with USD prices
 const getPrices = async (countryIso, serviceSlug) => {
   const country = ISO_TO_COUNTRY[countryIso?.toUpperCase()];
   if (!country) return null;
   try {
-    const data = await call({ method: 'getcountprices', country });
-    logger.info(`GetSMS getcountprices raw (${countryIso}): ${JSON.stringify(data)}`);
-    // Their error envelope: { status: 4xx, data: { msg: '...' } }
-    if (!data || typeof data !== 'object') return null;
-    if (data.status && data.status >= 400) return null;
+    const raw = await call({ method: 'getcountprices', country });
+    if (!raw?.data || typeof raw.data !== 'object') return null;
     const code = toServiceCode(serviceSlug);
-    const svcData = data[code];
-    if (!svcData || typeof svcData !== 'object') return null;
-    return svcData;
+    const svcData = raw.data[code];
+    if (!svcData?.price) return null;
+    // Map "Nday" keys to day numbers: { "1day": 2.5 } → { 1: 2.5 }
+    const prices = {};
+    for (const [key, price] of Object.entries(svcData.price)) {
+      const days = parseInt(key, 10);
+      if (!isNaN(days) && Number(price) > 0) prices[days] = Number(price);
+    }
+    return { count: Number(svcData.count) || 0, prices };
   } catch (err) {
     logger.warn(`GetSMS getPrices failed (${countryIso}/${serviceSlug}): ${err.message}`);
     return null;
@@ -102,7 +104,7 @@ const getNumber = async (countryIso, serviceSlug, days) => {
   if (!country) throw new Error(`GetSMS: unsupported country ${countryIso}`);
   if (!duration) throw new Error(`GetSMS: unsupported duration ${days} days`);
 
-  const data = await call({
+  const raw = await call({
     method: 'getnumber',
     country,
     service: toServiceCode(serviceSlug),
@@ -110,7 +112,8 @@ const getNumber = async (countryIso, serviceSlug, days) => {
     period: duration.period,
   });
 
-  if (!data || !data.phone) throw new Error(`GetSMS getNumber failed: ${JSON.stringify(data)}`);
+  const data = raw?.data;
+  if (!data || !data.phone) throw new Error(`GetSMS getNumber failed: ${JSON.stringify(raw)}`);
 
   return {
     id: String(data.order_id),
@@ -120,12 +123,14 @@ const getNumber = async (countryIso, serviceSlug, days) => {
 };
 
 // Poll all SMS received on a rented number
+// Response: { status:200, data: { msg: "...", sms_list: [{ date, text }] } }
 const getSMS = async (rentId) => {
   try {
-    const data = await call({ method: 'getcode', rentid: rentId });
-    return Array.isArray(data) ? data : [];
+    const raw = await call({ method: 'getcode', rentid: rentId });
+    const smsList = raw?.data?.sms_list;
+    return Array.isArray(smsList) ? smsList : [];
   } catch (err) {
-    logger.warn(`GetSMS getSMS failed for ${rentId}:`, err.message);
+    logger.warn(`GetSMS getSMS failed for ${rentId}: ${err.message}`);
     return [];
   }
 };

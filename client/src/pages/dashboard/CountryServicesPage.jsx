@@ -27,7 +27,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
 
   // Rental state
   const [rentalService, setRentalService] = useState({ id: null, slug: preselectedService || null, name: null });
-  const [rentalDays, setRentalDays] = useState(7);
+  const [rentalDays, setRentalDays] = useState(3);
   const [showRentalModal, setShowRentalModal] = useState(false);
   const [rentalSearch, setRentalSearch] = useState('');
   const [ordering, setOrdering] = useState(false);
@@ -221,7 +221,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     </span>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">{svc.name}</h3>
-                  <p className="text-xs text-gray-400">3 / 7 / 14 / 30 days</p>
+                  <p className="text-xs text-gray-400">1 / 3 / 7 days</p>
                 </Card>
               ))}
             </div>
