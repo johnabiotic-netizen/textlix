@@ -6,6 +6,7 @@ const smsactivate = require('../providers/sms/smsactivate.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const smspool = require('../providers/sms/smspool.provider');
 const getsms = require('../providers/sms/getsms.provider');
+const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
 const logger = require('../config/logger');
 
@@ -44,7 +45,9 @@ class SMSPollerService {
   }
 
   async _poll(order) {
-    if (order.provider === 'getsms') {
+    if (order.provider === 'getsmsotp') {
+      await this._pollGetSmsOtp(order);
+    } else if (order.provider === 'getsms') {
       await this._pollGetSms(order);
     } else if (order.provider === 'smspool') {
       await this._pollSmsPool(order);
@@ -54,6 +57,18 @@ class SMSPollerService {
       await this._pollGrizzly(order);
     } else {
       await this._pollFiveSim(order);
+    }
+  }
+
+  async _pollGetSmsOtp(order) {
+    const statusStr = await getsmsotp.getStatus(order.providerOrderId);
+    if (statusStr.startsWith('STATUS_OK') || statusStr.startsWith('STATUS_WAIT_RETRY')) {
+      const parts = statusStr.split(':');
+      const code = parts[1] || null;
+      const fakeSms = { text: code ? `Your code: ${code}` : '', code };
+      await this._handleOtpSms(order, fakeSms);
+    } else if (statusStr === 'STATUS_CANCEL') {
+      this.stopPolling(order._id.toString());
     }
   }
 

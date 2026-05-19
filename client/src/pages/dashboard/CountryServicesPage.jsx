@@ -95,9 +95,11 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const rentalPrice = selectedRentalOption?.price || 0;
 
   const otpPrice = selectedService
-    ? (selectedServer === 'lix2'
-        ? selectedService.servers?.lix2?.price
-        : selectedService.servers?.lix1?.price) || 0
+    ? (selectedServer === 'lix3'
+        ? selectedService.servers?.lix3?.price
+        : selectedServer === 'lix2'
+          ? selectedService.servers?.lix2?.price
+          : selectedService.servers?.lix1?.price) || 0
     : 0;
 
   const filteredServices = (servicesData?.services || []).filter(
@@ -255,15 +257,16 @@ export default function CountryServicesPage({ mode: modeProp }) {
               {filteredServices.map((service) => {
                 const lix1Avail = service.servers?.lix1?.available;
                 const lix2Avail = service.servers?.lix2?.available;
-                const anyAvail = lix1Avail || lix2Avail;
+                const lix3Avail = service.servers?.lix3?.available;
+                const anyAvail = lix1Avail || lix2Avail || lix3Avail;
                 return (
                   <Card
                     key={service.id}
                     hover={anyAvail}
                     onClick={() => {
                       if (!anyAvail) return;
-                      // Auto-select server: prefer lix1, fallback to lix2
-                      setSelectedServer(lix1Avail ? 'lix1' : 'lix2');
+                      // Auto-select server: prefer lix1, fallback to lix2, then lix3
+                      setSelectedServer(lix1Avail ? 'lix1' : lix2Avail ? 'lix2' : 'lix3');
                       setSelectedService(service);
                     }}
                     className={`p-5 ${!anyAvail ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -290,6 +293,11 @@ export default function CountryServicesPage({ mode: modeProp }) {
                       {lix2Avail && (
                         <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-medium">
                           LIX 2 · {service.servers.lix2.price} cr
+                        </span>
+                      )}
+                      {lix3Avail && (
+                        <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                          LIX 3 · {service.servers.lix3.price} cr
                         </span>
                       )}
                     </div>
@@ -319,7 +327,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
             {/* Server selector */}
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Select Server</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setSelectedServer('lix1')}
                   disabled={!selectedService.servers?.lix1?.available}
@@ -357,6 +365,23 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix2.successRate)}`}>{selectedService.servers.lix2.successRate}% success</p>
                     : <p className="text-xs text-gray-400 mt-0.5">Server 2</p>}
                 </button>
+
+                <button
+                  onClick={() => setSelectedServer('lix3')}
+                  disabled={!selectedService.servers?.lix3?.available}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    selectedServer === 'lix3' ? 'border-emerald-600 bg-emerald-50' : 'border-gray-200 hover:border-emerald-300'
+                  } ${!selectedService.servers?.lix3?.available ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-xs font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded">LIX 3</span>
+                    {selectedServer === 'lix3' && <FiCheckCircle size={13} className="text-emerald-600" />}
+                  </div>
+                  <p className="font-mono-num font-bold text-emerald-700">
+                    {selectedService.servers?.lix3?.price ?? '—'} <span className="text-xs font-normal text-gray-500">cr</span>
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">Server 3</p>
+                </button>
               </div>
             </div>
 
@@ -372,8 +397,8 @@ export default function CountryServicesPage({ mode: modeProp }) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Server</span>
-                <span className={`font-medium ${selectedServer === 'lix1' ? 'text-brand-600' : 'text-purple-600'}`}>
-                  {selectedServer === 'lix1' ? 'LIX 1' : 'LIX 2'}
+                <span className={`font-medium ${selectedServer === 'lix1' ? 'text-brand-600' : selectedServer === 'lix2' ? 'text-purple-600' : 'text-emerald-600'}`}>
+                  {selectedServer === 'lix1' ? 'LIX 1' : selectedServer === 'lix2' ? 'LIX 2' : 'LIX 3'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">

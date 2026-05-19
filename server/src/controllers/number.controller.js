@@ -10,6 +10,7 @@ const fivesim = require('../providers/sms/fivesim.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const smspool = require('../providers/sms/smspool.provider');
 const getsms = require('../providers/sms/getsms.provider');
+const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const { getSettingNum } = require('../utils/settings');
@@ -309,12 +310,41 @@ async function getGrizzlyOtpPrices(serviceSlug) {
   }
 }
 
+// ─── GetSMS OTP price cache (LIX 3, keyed by serviceSlug → ISO → credits) ─────
+const getsmsotp_PriceCache = new Map();
+
+async function getGetSmsOtpPrices(serviceSlug) {
+  const cached = getsmsotp_PriceCache.get(serviceSlug);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  try {
+    const raw = await getsmsotp.getOtpPrices(serviceSlug);
+    if (!raw) {
+      getsmsotp_PriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + 5 * 60 * 1000 });
+      return null;
+    }
+    const result = {};
+    for (const [iso, data] of Object.entries(raw)) {
+      if (data.count > 0) {
+        result[iso] = Math.ceil(Math.ceil(data.cost * 100) * (1 + MARGIN));
+      }
+    }
+    const out = Object.keys(result).length > 0 ? result : null;
+    getsmsotp_PriceCache.set(serviceSlug, { data: out, expiresAt: Date.now() + CACHE_TTL });
+    return out;
+  } catch (err) {
+    logger.warn(`getGetSmsOtpPrices(${serviceSlug}) failed: ${err.message}`);
+    return null;
+  }
+}
+
 // Provider → user-facing server label
 const SERVER_LABEL = {
   fivesim: 'LIX 1',
   grizzlysms: 'LIX 2',
   smspool: 'LIX 2',
   getsms: 'LIX 1',
+  getsmsotp: 'LIX 3',
 };
 
 const RENTAL_DURATION_OPTIONS = [1, 3, 7];
@@ -378,14 +408,17 @@ exports.getServiceList = async (req, res, next) => {
 
     const enabledServices = services.filter((s) => countMap[s._id.toString()]?.countryCount > 0);
 
-    // Fetch LIX 2 price ranges in parallel (LIX 1 uses DB counts/prices already)
-    const grizzlyPriceMaps = await Promise.all(
-      enabledServices.map((s) => getGrizzlyOtpPrices(s.slug))
-    );
+    // Fetch LIX 2 and LIX 3 price ranges in parallel
+    const [grizzlyPriceMaps, lix3PriceMaps] = await Promise.all([
+      Promise.all(enabledServices.map((s) => getGrizzlyOtpPrices(s.slug))),
+      Promise.all(enabledServices.map((s) => getGetSmsOtpPrices(s.slug))),
+    ]);
 
     const result = enabledServices.map((s, i) => {
       const gMap = grizzlyPriceMaps[i];
+      const l3Map = lix3PriceMaps[i];
       const lix2Prices = gMap ? Object.values(gMap) : [];
+      const lix3Prices = l3Map ? Object.values(l3Map) : [];
       return {
         id: s._id,
         name: s.name,
@@ -399,6 +432,10 @@ exports.getServiceList = async (req, res, next) => {
           lix2: {
             countryCount: lix2Prices.length,
             minPrice: lix2Prices.length > 0 ? Math.min(...lix2Prices) : 0,
+          },
+          lix3: {
+            countryCount: lix3Prices.length,
+            minPrice: lix3Prices.length > 0 ? Math.min(...lix3Prices) : 0,
           },
         },
       };
@@ -471,9 +508,10 @@ exports.getCountriesForService = async (req, res, next) => {
     if (!svc) throw new AppError('NOT_FOUND', 404, 'Service not found');
 
     const pricing = await NumberPricing.find({ serviceId: svc._id, isAvailable: true }).populate('countryId');
-    const [maxPrices, grizzlyPrices] = await Promise.all([
+    const [maxPrices, grizzlyPrices, lix3Prices] = await Promise.all([
       getMaxPrices(serviceSlug),
       getGrizzlyOtpPrices(serviceSlug),
+      getGetSmsOtpPrices(serviceSlug),
     ]);
 
     const result = [];
@@ -484,16 +522,18 @@ exports.getCountriesForService = async (req, res, next) => {
       const liveData = maxPrices?.[slug];
       const lix1Price = liveData ? Math.ceil(Math.ceil(liveData.maxPrice * 100) * (1 + MARGIN)) : (maxPrices ? null : p.finalPrice);
       const lix2Price = grizzlyPrices?.[c.code] ?? null;
-      if (!lix1Price && !lix2Price) continue;
+      const lix3Price = lix3Prices?.[c.code] ?? null;
+      if (!lix1Price && !lix2Price && !lix3Price) continue;
       result.push({
         id: c._id,
         name: c.name,
         code: c.code,
         flagEmoji: c.flagEmoji,
-        minPrice: Math.min(...[lix1Price, lix2Price].filter(Boolean)),
+        minPrice: Math.min(...[lix1Price, lix2Price, lix3Price].filter(Boolean)),
         servers: {
           lix1: { available: !!lix1Price, price: lix1Price },
           lix2: { available: !!lix2Price, price: lix2Price },
+          lix3: { available: !!lix3Price, price: lix3Price },
         },
       });
     }
@@ -564,11 +604,12 @@ exports.getServices = async (req, res, next) => {
       .filter((p) => p.serviceId && p.serviceId.isEnabled)
       .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder);
 
-    // Fetch live prices, raw max-price maps, GrizzlySMS prices, and success rates in parallel
-    const [priceResults, liveMaxMaps, grizzlyPriceMaps, serviceRates, providerRates] = await Promise.all([
+    // Fetch live prices, raw max-price maps, GrizzlySMS prices, GetSMS OTP prices, and success rates in parallel
+    const [priceResults, liveMaxMaps, grizzlyPriceMaps, lix3PriceMaps, serviceRates, providerRates] = await Promise.all([
       Promise.all(enabledPricing.map((p) => getChargeCredits(fivesimSlug, p.serviceId.slug, p.finalPrice))),
       Promise.all(enabledPricing.map((p) => getMaxPrices(p.serviceId.slug))),
       Promise.all(enabledPricing.map((p) => getGrizzlyOtpPrices(p.serviceId.slug))),
+      Promise.all(enabledPricing.map((p) => getGetSmsOtpPrices(p.serviceId.slug))),
       getServiceSuccessRates(),
       getServiceRatesByProvider(),
     ]);
@@ -582,6 +623,7 @@ exports.getServices = async (req, res, next) => {
       const lix2Rate = providerRates[svcId]?.grizzlysms ?? serviceRates[svcId] ?? null;
       const lix1Price = priceResults[i];
       const lix2Price = grizzlyPriceMaps[i]?.[country.code] ?? null;
+      const lix3Price = lix3PriceMaps[i]?.[country.code] ?? null;
       return {
         id: p.serviceId._id,
         name: p.serviceId.name,
@@ -595,6 +637,7 @@ exports.getServices = async (req, res, next) => {
         servers: {
           lix1: { price: lix1Price, available, successRate: lix1Rate },
           lix2: { price: lix2Price, available: !!lix2Price, successRate: lix2Rate },
+          lix3: { price: lix3Price, available: !!lix3Price, successRate: null },
         },
       };
     });
@@ -635,6 +678,9 @@ exports.orderNumber = async (req, res, next) => {
     if (server === 'lix2') {
       const gzPrices = await getGrizzlyOtpPrices(service.slug);
       chargeCredits = gzPrices?.[country.code] ?? pricing.finalPrice;
+    } else if (server === 'lix3') {
+      const l3Prices = await getGetSmsOtpPrices(service.slug);
+      chargeCredits = l3Prices?.[country.code] ?? pricing.finalPrice;
     } else {
       chargeCredits = await getChargeCredits(countryName, service.slug, pricing.finalPrice);
     }
@@ -647,7 +693,13 @@ exports.orderNumber = async (req, res, next) => {
     let providerResponse;
     let usedProvider;
 
-    if (server === 'lix2') {
+    if (server === 'lix3') {
+      const l3Result = await getsmsotp.getNumber(service.slug, country.code).catch((err) => {
+        throw new AppError('PROVIDER_ERROR', 502, `LIX 3 could not get a number: ${err.message}`);
+      });
+      providerResponse = { id: l3Result.id, phone: l3Result.phone, price: 0 };
+      usedProvider = 'getsmsotp';
+    } else if (server === 'lix2') {
       const gzResult = await grizzlysms.getNumber(service.slug, country.code).catch((err) => {
         throw new AppError('PROVIDER_ERROR', 502, `LIX 2 could not get a number: ${err.message}`);
       });
@@ -808,6 +860,8 @@ exports.cancelOrder = async (req, res, next) => {
       } else {
         try { await grizzlysms.setStatus(order.providerOrderId, 8); } catch (_) {}
       }
+    } else if (order.provider === 'getsmsotp') {
+      try { await getsmsotp.setStatus(order.providerOrderId, 8); } catch (_) {}
     } else if (order.provider !== 'smsactivate') {
       try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
     }
