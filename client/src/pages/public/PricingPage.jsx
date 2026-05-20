@@ -30,10 +30,10 @@ export default function PricingPage() {
   return (
     <PublicLayout>
       <Helmet>
-        <title>Pricing — TextLix Virtual Phone Numbers</title>
+        <title>Pricing — textlix Virtual Phone Numbers</title>
         <meta name="description" content="Simple credit-based pricing. Buy credits from $2 and use them to get virtual phone numbers from 1150+ countries. Credits never expire. No subscriptions." />
         <link rel="canonical" href="https://www.textlix.com/pricing" />
-        <meta property="og:title" content="Pricing — TextLix Virtual Phone Numbers" />
+        <meta property="og:title" content="Pricing — textlix Virtual Phone Numbers" />
         <meta property="og:description" content="Simple credit-based pricing starting from $2. No subscriptions, credits never expire." />
         <meta property="og:url" content="https://www.textlix.com/pricing" />
       </Helmet>

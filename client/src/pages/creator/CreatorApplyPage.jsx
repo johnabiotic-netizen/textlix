@@ -97,7 +97,7 @@ export default function CreatorApplyPage() {
 
         {!user && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
-            You need to <Link to="/login" className="font-semibold underline">sign in</Link> to apply. Don't have an account? <a href="https://textlix.com/register" className="font-semibold underline">Sign up on TextLix</a> first.
+            You need to <Link to="/login" className="font-semibold underline">sign in</Link> to apply. Don't have an account? <a href="https://textlix.com/register" className="font-semibold underline">Sign up on textlix</a> first.
           </div>
         )}
 

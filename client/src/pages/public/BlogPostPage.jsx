@@ -190,7 +190,7 @@ export default function BlogPostPage() {
   return (
     <PublicLayout>
       <Helmet>
-        <title>{post.title} — TextLix Blog</title>
+        <title>{post.title} — textlix Blog</title>
         <meta name="description" content={post.description} />
         <link rel="canonical" href={`https://www.textlix.com/blog/${post.slug}`} />
         <meta property="og:title" content={post.title} />
@@ -206,8 +206,8 @@ export default function BlogPostPage() {
           description: post.description,
           datePublished: post.date,
           image: post.image,
-          author: { '@type': 'Organization', name: 'TextLix' },
-          publisher: { '@type': 'Organization', name: 'TextLix', url: 'https://www.textlix.com' },
+          author: { '@type': 'Organization', name: 'textlix' },
+          publisher: { '@type': 'Organization', name: 'textlix', url: 'https://www.textlix.com' },
           url: `https://www.textlix.com/blog/${post.slug}`,
         })}</script>
       </Helmet>
@@ -266,7 +266,7 @@ export default function BlogPostPage() {
 
         {/* CTA */}
         <div className="mt-12 bg-gradient-to-br from-brand-600 to-purple-600 rounded-2xl p-8 text-white text-center">
-          <h2 className="font-display font-bold text-xl mb-2">Ready to try TextLix?</h2>
+          <h2 className="font-display font-bold text-xl mb-2">Ready to try textlix?</h2>
           <p className="text-brand-100 text-sm mb-6">Virtual phone numbers from 150+ countries. Codes delivered in seconds.</p>
           <Link to="/register" className="bg-white text-brand-600 font-semibold px-6 py-2.5 rounded-xl hover:bg-brand-50 transition-colors inline-block text-sm">
             Create Free Account

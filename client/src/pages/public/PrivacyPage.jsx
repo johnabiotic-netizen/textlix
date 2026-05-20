@@ -6,7 +6,7 @@ export default function PrivacyPage() {
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
-            <span>✓</span> TextLix
+            <span>✓</span> textlix
           </Link>
           <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
         </div>
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
             { title: '6. Data Security', body: 'We use industry-standard encryption and security practices to protect your data. Passwords are hashed using bcrypt. Access tokens expire after 15 minutes.' },
             { title: '7. Data Retention', body: 'Account data is retained until you delete your account. SMS content is deleted after 24 hours. Payment records are retained for 7 years for legal compliance.' },
             { title: '8. Your Rights', body: 'You have the right to access, correct, or delete your personal data at any time. Contact us at support@textlix.com to exercise these rights.' },
-            { title: '9. Children\'s Privacy', body: 'TextLix is not intended for users under 18 years of age. We do not knowingly collect data from children.' },
+            { title: '9. Children\'s Privacy', body: 'textlix is not intended for users under 18 years of age. We do not knowingly collect data from children.' },
             { title: '10. Contact', body: 'For privacy-related questions or requests, contact us at support@textlix.com.' },
           ].map((section) => (
             <div key={section.title}>
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
 
       <footer className="border-t border-gray-200 py-10 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} TextLix. All rights reserved.</p>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()} textlix. All rights reserved.</p>
           <div className="flex gap-6 text-sm text-gray-500">
             <Link to="/faq" className="hover:text-gray-700">FAQ</Link>
             <Link to="/support" className="hover:text-gray-700">Support</Link>

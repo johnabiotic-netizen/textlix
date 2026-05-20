@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FiMenu, FiX } from 'react-icons/fi';
+import Logo from '../common/Logo';
 
 const NAV_LINKS = [
   { to: '/pricing', label: 'Pricing' },
@@ -19,9 +20,7 @@ export default function PublicLayout({ children }) {
       {/* Navbar */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
-            <span>✓</span> TextLix
-          </Link>
+          <Link to="/"><Logo textClassName="text-xl" /></Link>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6">
@@ -76,9 +75,7 @@ export default function PublicLayout({ children }) {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
             <div>
-              <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 mb-2">
-                <span>✓</span> TextLix
-              </div>
+              <Logo textClassName="text-xl" className="mb-2" />
               <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 1150+ countries.</p>
             </div>
             <div className="flex flex-wrap gap-12">
@@ -109,7 +106,7 @@ export default function PublicLayout({ children }) {
             </div>
           </div>
           <div className="border-t border-gray-200 pt-6 text-center">
-            <p className="text-sm text-gray-400">© {new Date().getFullYear()} TextLix. All rights reserved.</p>
+            <p className="text-sm text-gray-400">© {new Date().getFullYear()} textlix. All rights reserved.</p>
           </div>
         </div>
       </footer>

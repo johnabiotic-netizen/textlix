@@ -31,7 +31,7 @@ Before jumping into the methods, it helps to understand what you actually need t
 
 **Long-term business use** — For a US business phone line, a proper VoIP service like [Google Voice](https://voice.google.com) or [OpenPhone](https://www.openphone.com) is more appropriate.
 
-**One-off verification** — If you just need to verify one account right now, a temporary virtual number from [TextLix](https://www.textlix.com) is the fastest and cheapest option.
+**One-off verification** — If you just need to verify one account right now, a temporary virtual number from [textlix](https://www.textlix.com) is the fastest and cheapest option.
 
 ## Method 1: Virtual number for SMS verification (fastest, cheapest)
 
@@ -39,7 +39,7 @@ If your goal is to receive a one-time SMS code — to verify a Google account, s
 
 **How it works:** You rent a real US phone number for a few minutes. When the target app sends a verification code to that number, it appears in your browser in real-time. The whole process takes under 60 seconds.
 
-**Step-by-step with [TextLix](https://www.textlix.com):**
+**Step-by-step with [textlix](https://www.textlix.com):**
 
 1. Go to [textlix.com](https://www.textlix.com) and create a free account (no phone number needed to register)
 2. Add credits — minimum $2.00 (200 credits). US numbers for most services cost 100–300 credits ($1.00–$3.00)
@@ -47,7 +47,7 @@ If your goal is to receive a one-time SMS code — to verify a Google account, s
 4. Filter by **United States** and click **Buy Number**
 5. A real US number (e.g. +1 415 555 xxxx) is assigned to you instantly
 6. Enter this number in the app you're verifying
-7. The SMS code appears on your TextLix dashboard within seconds — live, no refresh needed
+7. The SMS code appears on your textlix dashboard within seconds — live, no refresh needed
 8. Enter the code. Done.
 
 **If no SMS arrives within 20 minutes, you get a full credit refund.** This makes it completely risk-free to try.
@@ -128,7 +128,7 @@ If your goal is to receive a one-time SMS code — to verify a Google account, s
 
 | Goal | Best option | Approximate cost |
 |--|--|--|
-| Verify one account right now | [TextLix](https://www.textlix.com) | $1.00–$3.00 |
+| Verify one account right now | [textlix](https://www.textlix.com) | $1.00–$3.00 |
 | Free permanent US number | [Google Voice](https://voice.google.com) | Free (US residents) |
 | Business phone line | [OpenPhone](https://www.openphone.com) | $13+/month |
 | Temp calls + texts | [Hushed](https://hushed.com) | ~$2–$5/month |
@@ -138,7 +138,7 @@ If your goal is to receive a one-time SMS code — to verify a Google account, s
 
 People often look for a free US phone number when what they actually need is a working one. Free VoIP numbers from obscure providers are frequently flagged by Google, WhatsApp, and other platforms because they've been used thousands of times for spam accounts.
 
-Services like [TextLix](https://www.textlix.com) source numbers directly from real mobile operator networks worldwide. That means the numbers are fresh, properly provisioned, and accepted by major platforms — not recycled VoIP lines that get instantly flagged. That's what you're paying for: a number that actually works.
+Services like [textlix](https://www.textlix.com) source numbers directly from real mobile operator networks worldwide. That means the numbers are fresh, properly provisioned, and accepted by major platforms — not recycled VoIP lines that get instantly flagged. That's what you're paying for: a number that actually works.
 
 ## Tips for successful US verification
 
@@ -149,7 +149,7 @@ Services like [TextLix](https://www.textlix.com) source numbers directly from re
 
 ## Final thoughts
 
-Getting a US phone number in 2026 is easy and inexpensive if you know the right tool for the job. For one-time SMS verification, [TextLix](https://www.textlix.com) is the fastest and most reliable option — real numbers, instant delivery, full refund if it doesn't work. For a permanent US line you can make calls on, [OpenPhone](https://www.openphone.com) or [Google Voice](https://voice.google.com) (if you're in the US) are the better long-term choices.
+Getting a US phone number in 2026 is easy and inexpensive if you know the right tool for the job. For one-time SMS verification, [textlix](https://www.textlix.com) is the fastest and most reliable option — real numbers, instant delivery, full refund if it doesn't work. For a permanent US line you can make calls on, [OpenPhone](https://www.openphone.com) or [Google Voice](https://voice.google.com) (if you're in the US) are the better long-term choices.
 
 Start with what you need right now — you can always upgrade later.
     `,
@@ -198,15 +198,15 @@ Telegram accepts numbers from virtually every country, but success rates vary by
 
 ## Step-by-step: Create a Telegram account with a virtual number
 
-**Step 1 — Get a virtual number from [TextLix](https://www.textlix.com)**
+**Step 1 — Get a virtual number from [textlix](https://www.textlix.com)**
 
-Go to [textlix.com](https://www.textlix.com) and register. You don't need a phone number to create your TextLix account — just an email.
+Go to [textlix.com](https://www.textlix.com) and register. You don't need a phone number to create your textlix account — just an email.
 
 Add at least $2 in credits. A Telegram number costs roughly 50–150 credits ($0.50–$1.50) depending on country.
 
 **Step 2 — Order your Telegram number**
 
-On your TextLix dashboard:
+On your textlix dashboard:
 - Select **OTP Mode**
 - Choose **Telegram** from the service list
 - Pick your country (Russia or Poland are great starting points)
@@ -219,18 +219,18 @@ Your virtual number appears instantly, e.g. +7 999 123 4567.
 
 - Download [Telegram](https://telegram.org) on your device or use [Telegram Web](https://web.telegram.org)
 - Tap **Start Messaging** → **Sign up with phone number**
-- Enter the country code and number you received from TextLix
+- Enter the country code and number you received from textlix
 - Tap **Next**
 
 **Step 4 — Receive the code**
 
-Telegram sends a 5-digit SMS code to your virtual number. Switch back to your TextLix dashboard — the code typically arrives within 3–10 seconds and appears live in your browser without refreshing.
+Telegram sends a 5-digit SMS code to your virtual number. Switch back to your textlix dashboard — the code typically arrives within 3–10 seconds and appears live in your browser without refreshing.
 
 **Step 5 — Enter the code and complete setup**
 
 Type the 5-digit code into Telegram. Set your name, username, and profile photo. Your account is created.
 
-**If no code arrives within 3 minutes:** Tap "Send code via call" in Telegram. Note that TextLix virtual numbers only receive SMS — if Telegram only offers a voice call option for your country, switch to a different country in TextLix.
+**If no code arrives within 3 minutes:** Tap "Send code via call" in Telegram. Note that textlix virtual numbers only receive SMS — if Telegram only offers a voice call option for your country, switch to a different country in textlix.
 
 ## Setting up a Telegram channel with a virtual number
 
@@ -280,14 +280,14 @@ A: Telegram's terms of service do not prohibit virtual numbers. They prohibit sp
 A: Only if they have your virtual number in their phone contacts, which is essentially impossible since the number is temporary and randomly assigned.
 
 **Q: Can I receive future Telegram codes on the same number?**
-A: OTP numbers on [TextLix](https://www.textlix.com) are one-time use. If you need to receive codes again later (for re-login), you'll need to order a new number, or switch your Telegram account to a permanent number in Settings.
+A: OTP numbers on [textlix](https://www.textlix.com) are one-time use. If you need to receive codes again later (for re-login), you'll need to order a new number, or switch your Telegram account to a permanent number in Settings.
 
 **Q: What if Telegram sends the code as a voice call instead of SMS?**
-A: Select a different country in TextLix. Some countries trigger voice-only verification. Russia, Ukraine, and Kazakhstan almost always deliver via SMS.
+A: Select a different country in textlix. Some countries trigger voice-only verification. Russia, Ukraine, and Kazakhstan almost always deliver via SMS.
 
 ## Ready to try it?
 
-Head to [TextLix](https://www.textlix.com), create your account, and get your Telegram verified in under 2 minutes. No personal phone number required.
+Head to [textlix](https://www.textlix.com), create your account, and get your Telegram verified in under 2 minutes. No personal phone number required.
     `,
   },
 
@@ -312,7 +312,7 @@ Most people conflate virtual numbers into a single category, but businesses typi
 
 **Use case A: Sending SMS to your users.** Your app sends verification codes, transaction alerts, or two-factor authentication messages to your customers' real phone numbers. For this, you need an outbound SMS provider like [Twilio](https://www.twilio.com), [Vonage](https://www.vonage.com), or [AWS SNS](https://aws.amazon.com/sns/).
 
-**Use case B: Receiving SMS on a virtual number.** You or your team need to receive verification codes from third-party platforms — WhatsApp, Google, Telegram, social networks, or any service that sends SMS. For this, you need a virtual number service like [TextLix](https://www.textlix.com).
+**Use case B: Receiving SMS on a virtual number.** You or your team need to receive verification codes from third-party platforms — WhatsApp, Google, Telegram, social networks, or any service that sends SMS. For this, you need a virtual number service like [textlix](https://www.textlix.com).
 
 These are different problems requiring different tools. Most businesses eventually need both.
 
@@ -320,12 +320,12 @@ These are different problems requiring different tools. Most businesses eventual
 
 **The problem:** Your QA team needs to test registration flows, 2FA flows, and account verification. Every test creates a new account, and every account requires a unique phone number. Using real team members' numbers is chaotic and doesn't scale. Buying SIM cards is expensive and slow.
 
-**The solution:** Virtual numbers on demand. Your QA team orders a number from [TextLix](https://www.textlix.com), completes the test, and the number is released. The next test uses a fresh number. This works for manual testing and can be integrated into automated test pipelines.
+**The solution:** Virtual numbers on demand. Your QA team orders a number from [textlix](https://www.textlix.com), completes the test, and the number is released. The next test uses a fresh number. This works for manual testing and can be integrated into automated test pipelines.
 
 **Example flow in a CI/CD pipeline:**
-1. Test runner calls TextLix API to get a virtual number
+1. Test runner calls textlix API to get a virtual number
 2. Submits the number to the registration form being tested
-3. Polls TextLix for incoming SMS (or uses WebSocket for real-time delivery)
+3. Polls textlix for incoming SMS (or uses WebSocket for real-time delivery)
 4. Extracts the verification code from the SMS
 5. Completes the registration flow with the code
 6. Marks the order as done
@@ -338,7 +338,7 @@ This pattern eliminates "we need a phone" as a blocker in QA workflows.
 
 **The problem:** Your product behaves differently across regions. WhatsApp might require a UK number. Certain Google services need a US number. You're launching in Germany and need to test German phone verification flows.
 
-**The solution:** [TextLix](https://www.textlix.com) provides numbers from 150+ countries. Your team can test with a UK number on Monday, a German number on Tuesday, and a Brazilian number on Wednesday — all from the same platform, same credits.
+**The solution:** [textlix](https://www.textlix.com) provides numbers from 150+ countries. Your team can test with a UK number on Monday, a German number on Tuesday, and a Brazilian number on Wednesday — all from the same platform, same credits.
 
 This is especially valuable for:
 - E-commerce platforms testing regional checkout flows
@@ -356,7 +356,7 @@ This is especially valuable for:
 
 ## Business use case 4: Programmatic number access via API
 
-If your business needs numbers programmatically — for automated testing pipelines, CI/CD workflows, or building internal verification tools — [TextLix](https://www.textlix.com) provides a clean REST API and WebSocket interface. Numbers are available in seconds, usage is tracked per credit, and every call returns structured JSON.
+If your business needs numbers programmatically — for automated testing pipelines, CI/CD workflows, or building internal verification tools — [textlix](https://www.textlix.com) provides a clean REST API and WebSocket interface. Numbers are available in seconds, usage is tracked per credit, and every call returns structured JSON.
 
 ![Developer keyboard and code on a monitor — building API integrations](https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&w=900&q=80)
 
@@ -366,7 +366,7 @@ If your business needs numbers programmatically — for automated testing pipeli
 
 | Tool | Best for | Pricing model | Countries |
 |--|--|--|--|
-| [TextLix](https://www.textlix.com) | QA testing, team verifications | Credits, pay-per-use | 150+ |
+| [textlix](https://www.textlix.com) | QA testing, team verifications | Credits, pay-per-use | 150+ |
 | [OnlineSIM](https://onlinesim.io) | Rental numbers, EU focus | Pay-per-use | 50+ |
 
 ### For sending SMS to your users (outbound, 2FA)
@@ -393,11 +393,11 @@ If your business needs numbers programmatically — for automated testing pipeli
 
 **Step 2 — Calculate volume.** Estimate how many verifications per month your team needs. This determines budget.
 
-**Step 3 — Set up a shared credit pool.** For QA and operations teams using [TextLix](https://www.textlix.com), create one account, add a shared credit balance, and give team members access. This is simpler than individual accounts.
+**Step 3 — Set up a shared credit pool.** For QA and operations teams using [textlix](https://www.textlix.com), create one account, add a shared credit balance, and give team members access. This is simpler than individual accounts.
 
 **Step 4 — Document the workflow.** Write a runbook for your team: how to order a number, which country to use for which service, what to do if a code doesn't arrive.
 
-**Step 5 — Track spend.** Use the credit transaction history in [TextLix](https://www.textlix.com) to review monthly spend by use case.
+**Step 5 — Track spend.** Use the credit transaction history in [textlix](https://www.textlix.com) to review monthly spend by use case.
 
 ## Cost analysis: Virtual numbers vs. real SIM cards for QA
 
@@ -418,14 +418,14 @@ For teams running more than 20 tests per month across multiple countries, virtua
 
 When your team uses virtual numbers for testing, treat them with the same care as other credentials:
 
-- **Don't log SMS content permanently** — codes are sensitive. [TextLix](https://www.textlix.com) clears SMS content from completed orders after 30 days automatically.
+- **Don't log SMS content permanently** — codes are sensitive. [textlix](https://www.textlix.com) clears SMS content from completed orders after 30 days automatically.
 - **Revoke access when team members leave** — if you're sharing one account, rotate credentials when someone exits the team.
 - **Don't use test numbers for production accounts** — test account numbers should be separate from any real customer-facing infrastructure.
 - **Document which accounts were created with virtual numbers** — for audit and compliance purposes.
 
 ## The bottom line for businesses
 
-Virtual phone numbers are not a workaround — they're a standard part of modern software development and operations workflows. The companies already doing this well use [TextLix](https://www.textlix.com) or similar services as a first-class tool alongside [Twilio](https://www.twilio.com) and [AWS](https://aws.amazon.com), not as an afterthought.
+Virtual phone numbers are not a workaround — they're a standard part of modern software development and operations workflows. The companies already doing this well use [textlix](https://www.textlix.com) or similar services as a first-class tool alongside [Twilio](https://www.twilio.com) and [AWS](https://aws.amazon.com), not as an afterthought.
 
 The cost is low, the setup is immediate, and the alternative (blocking QA on "we need a phone number") is far more expensive.
     `,
@@ -484,7 +484,7 @@ Once your phone number enters marketing databases, it rarely leaves. Cold calls,
 
 ## What happens when you use a virtual number instead
 
-When you register an account with a virtual number from [TextLix](https://www.textlix.com), the number used for verification is:
+When you register an account with a virtual number from [textlix](https://www.textlix.com), the number used for verification is:
 
 - **Not tied to your real identity** — it's not registered in your name, your carrier, or your address
 - **Not in any data broker database** — it's a temporary number from a provider pool
@@ -499,7 +499,7 @@ Here's how privacy-conscious users approach online account creation in 2026:
 
 **For services you trust:** Use your real number. Your bank, your doctor, your employer — organizations where the phone relationship is legitimate and expected.
 
-**For services you don't fully trust:** Use a virtual number from [TextLix](https://www.textlix.com). Social networks, e-commerce platforms, apps where verification is a checkbox rather than a relationship.
+**For services you don't fully trust:** Use a virtual number from [textlix](https://www.textlix.com). Social networks, e-commerce platforms, apps where verification is a checkbox rather than a relationship.
 
 **For sensitive research and journalism:** Use virtual numbers combined with a VPN (like [Mullvad](https://mullvad.net) or [ProtonVPN](https://protonvpn.com)) and a privacy-focused email provider (like [ProtonMail](https://proton.me) or [Tutanota](https://tuta.com)). This creates a complete identity separation layer.
 
@@ -517,7 +517,7 @@ Contact your mobile carrier and enable [SIM locking](https://www.att.com/support
 Google, Apple, GitHub, Twitter, and most major platforms support authenticator app 2FA. Switch to this wherever possible. Your bank may still require SMS — that's harder to avoid, but at least you've limited the exposure.
 
 **4. Use virtual numbers for new sign-ups.**
-Starting now, use a [TextLix](https://www.textlix.com) virtual number when registering for any new service you're not certain you'll keep. This prevents the accumulation of new data points linking your real number to new platforms.
+Starting now, use a [textlix](https://www.textlix.com) virtual number when registering for any new service you're not certain you'll keep. This prevents the accumulation of new data points linking your real number to new platforms.
 
 **5. Opt out of data broker databases.**
 Services like [DeleteMe](https://joindeleteme.com) and [Privacy Bee](https://privacybee.com) automate the opt-out process across hundreds of data brokers. It doesn't remove everything, but it significantly reduces your exposure.
@@ -539,7 +539,7 @@ Ten years ago, your phone number was mostly used for calling. Today it's used to
 
 The phone number has become the keystone of your digital identity — and most people gave it away for free, one verification at a time, because that's what the signup form asked for.
 
-[TextLix](https://www.textlix.com) exists precisely to give you back that choice. Virtual numbers from 150+ countries, delivered in seconds, for $1–$3 per use. It's a small price for not having your real identity scattered across every database on the internet.
+[textlix](https://www.textlix.com) exists precisely to give you back that choice. Virtual numbers from 150+ countries, delivered in seconds, for $1–$3 per use. It's a small price for not having your real identity scattered across every database on the internet.
 
 > "Privacy is not about having something to hide. It's about having the power to choose what you share and with whom." — [Electronic Frontier Foundation](https://www.eff.org)
 
@@ -574,7 +574,7 @@ Without a verified phone number, some Fiverr features are restricted. Sellers in
 
 ## Can you use a virtual number for Fiverr?
 
-Yes. Fiverr sends a standard SMS verification code to whatever number you provide. As long as the number can receive SMS, it works — whether it's a SIM card or a virtual number. [TextLix](https://www.textlix.com) virtual numbers receive SMS from Fiverr reliably.
+Yes. Fiverr sends a standard SMS verification code to whatever number you provide. As long as the number can receive SMS, it works — whether it's a SIM card or a virtual number. [textlix](https://www.textlix.com) virtual numbers receive SMS from Fiverr reliably.
 
 The best countries to use for Fiverr verification based on our network data:
 
@@ -588,7 +588,7 @@ The best countries to use for Fiverr verification based on our network data:
 
 ## Step-by-step: Verify Fiverr with a virtual number
 
-**Step 1 — Create your TextLix account**
+**Step 1 — Create your textlix account**
 
 Go to [textlix.com](https://www.textlix.com) and register with your email. No phone number required to sign up.
 
@@ -598,7 +598,7 @@ Top up with at least $2 (200 credits). A US or UK Fiverr number costs roughly 10
 
 **Step 3 — Order your number**
 
-On your TextLix dashboard:
+On your textlix dashboard:
 1. Click **Get Number** and select **OTP Mode**
 2. Search for **Fiverr** in the service list (if listed), or choose **Other** as the service
 3. Filter by **United States** or **United Kingdom**
@@ -612,18 +612,18 @@ A real virtual number is assigned instantly — for example +1 415 555 0182.
 Log in to [Fiverr](https://www.fiverr.com). Go to your account settings and find the phone verification section. You can also trigger it during registration or when Fiverr prompts you.
 
 - Select the country matching your virtual number (US, UK, etc.)
-- Enter the full virtual phone number you received from TextLix
+- Enter the full virtual phone number you received from textlix
 - Click **Send Code**
 
 **Step 5 — Receive the code**
 
-Switch back to your TextLix dashboard. The 4–6 digit SMS code from Fiverr typically arrives within 5–10 seconds and appears live in your browser — no refreshing needed.
+Switch back to your textlix dashboard. The 4–6 digit SMS code from Fiverr typically arrives within 5–10 seconds and appears live in your browser — no refreshing needed.
 
 **Step 6 — Enter the code on Fiverr**
 
 Type the code into the Fiverr verification box and confirm. Your Fiverr account is now phone-verified.
 
-If no code arrives within 5 minutes, you can cancel the order on TextLix for a **full credit refund** and try a different country.
+If no code arrives within 5 minutes, you can cancel the order on textlix for a **full credit refund** and try a different country.
 
 ## Tips for Fiverr verification success
 
@@ -631,7 +631,7 @@ If no code arrives within 5 minutes, you can cancel the order on TextLix for a *
 
 **Enter the number exactly.** Include the country code when entering the number. For a US number: select United States (+1) and enter just the 10-digit number, not the +1 prefix — Fiverr adds the country code automatically once you select the country.
 
-**Don't switch tabs for too long.** Fiverr's verification codes expire quickly (usually 10 minutes). Keep your TextLix tab open so you can copy the code immediately.
+**Don't switch tabs for too long.** Fiverr's verification codes expire quickly (usually 10 minutes). Keep your textlix tab open so you can copy the code immediately.
 
 **If "invalid number" appears:** Try a different country. Occasionally Fiverr's system flags certain number ranges. A Canadian or Australian number is a good fallback.
 
@@ -658,15 +658,15 @@ Phone verification also reduces the risk of having your account flagged when pla
 
 ## Can Fiverr tell the difference between a virtual and real number?
 
-Fiverr's verification process checks only whether the SMS code was delivered and entered correctly — not whether the number belongs to a physical SIM card. Virtual numbers from [TextLix](https://www.textlix.com) are sourced from real mobile operator networks, which means they appear as legitimate mobile numbers to Fiverr's system.
+Fiverr's verification process checks only whether the SMS code was delivered and entered correctly — not whether the number belongs to a physical SIM card. Virtual numbers from [textlix](https://www.textlix.com) are sourced from real mobile operator networks, which means they appear as legitimate mobile numbers to Fiverr's system.
 
 ## Frequently asked questions
 
 **Q: Can I use the same virtual number to verify multiple Fiverr accounts?**
-A: Fiverr links each phone number to one account. Once a number has been used to verify an account, it cannot be reused for a different Fiverr account. TextLix OTP numbers are single-use, so each order gives you a fresh number.
+A: Fiverr links each phone number to one account. Once a number has been used to verify an account, it cannot be reused for a different Fiverr account. textlix OTP numbers are single-use, so each order gives you a fresh number.
 
 **Q: What if Fiverr asks to re-verify my number later?**
-A: If Fiverr triggers a second verification (e.g., after a suspicious login), you'll need to order a new virtual number. If the original number is no longer active, simply order a new one from [TextLix](https://www.textlix.com) with the same country.
+A: If Fiverr triggers a second verification (e.g., after a suspicious login), you'll need to order a new virtual number. If the original number is no longer active, simply order a new one from [textlix](https://www.textlix.com) with the same country.
 
 **Q: Is this against Fiverr's terms of service?**
 A: Fiverr's terms of service prohibit fraud, spam, and misrepresentation — not the use of virtual phone numbers for legitimate account verification. Using a virtual number to create a genuine Fiverr account for real work is not a violation.
@@ -676,7 +676,7 @@ A: The OTP number is released after use. Your Fiverr account remains verified pe
 
 ## Ready to get started?
 
-Head to [TextLix](https://www.textlix.com), pick up a US or UK virtual number, and have your Fiverr account verified in under 2 minutes. Credits start at $2 with a full refund if no code arrives.
+Head to [textlix](https://www.textlix.com), pick up a US or UK virtual number, and have your Fiverr account verified in under 2 minutes. Credits start at $2 with a full refund if no code arrives.
     `,
   },
 
@@ -701,7 +701,7 @@ A virtual phone number is a temporary number that can receive SMS messages — i
 
 ## Step-by-step: Verify WhatsApp with a virtual number
 
-**Step 1 — Create a [TextLix](https://www.textlix.com) account**
+**Step 1 — Create a [textlix](https://www.textlix.com) account**
 Go to [textlix.com](https://www.textlix.com) and sign up. It takes less than 60 seconds.
 
 **Step 2 — Buy credits**
@@ -717,7 +717,7 @@ From the service list, pick WhatsApp. You'll see the credit cost and confirm the
 Open [WhatsApp](https://www.whatsapp.com) (or WhatsApp Business), tap "Use a different number", and enter the virtual number you just received.
 
 **Step 6 — Get your code**
-WhatsApp sends an SMS — your TextLix dashboard shows it in real-time, usually within 5 seconds.
+WhatsApp sends an SMS — your textlix dashboard shows it in real-time, usually within 5 seconds.
 
 **Step 7 — Enter the code**
 Type the 6-digit code into WhatsApp. Done — your account is verified.
@@ -726,11 +726,11 @@ Type the 6-digit code into WhatsApp. Done — your account is verified.
 
 - Always confirm the order before starting the WhatsApp setup. The number is active as soon as you order it.
 - If WhatsApp says "incorrect number" try again with a different country.
-- If no code arrives within 5 minutes, cancel the order on [TextLix](https://www.textlix.com) for a full credit refund.
+- If no code arrives within 5 minutes, cancel the order on [textlix](https://www.textlix.com) for a full credit refund.
 
 ## How much does it cost?
 
-A typical WhatsApp verification costs between 100 and 250 credits ($1.00–$2.50). The exact price depends on the country and which operator is assigned. See [TextLix pricing](https://www.textlix.com/pricing) for a full breakdown.
+A typical WhatsApp verification costs between 100 and 250 credits ($1.00–$2.50). The exact price depends on the country and which operator is assigned. See [textlix pricing](https://www.textlix.com/pricing) for a full breakdown.
     `,
   },
 
@@ -743,7 +743,7 @@ A typical WhatsApp verification costs between 100 and 250 credits ($1.00–$2.50
     readTime: '3 min read',
     image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?auto=format&w=1200&q=80',
     content: `
-[TextLix](https://www.textlix.com) offers two types of virtual numbers: OTP numbers and rental numbers. Understanding which to use saves you money and gets the job done faster.
+[textlix](https://www.textlix.com) offers two types of virtual numbers: OTP numbers and rental numbers. Understanding which to use saves you money and gets the job done faster.
 
 ## OTP numbers — one-time use
 
@@ -791,7 +791,7 @@ If you just need to verify one account one time — use an **OTP number**. It's 
 
 If you need the number for a longer session, multiple services, or multiple codes — use a **rental number**.
 
-Both modes are available on [TextLix](https://www.textlix.com) from your main dashboard.
+Both modes are available on [textlix](https://www.textlix.com) from your main dashboard.
     `,
   },
 
@@ -850,7 +850,7 @@ Not all virtual numbers are equal. Some countries have higher success rates on c
 
 1. **Try a different country if the first fails.** Success rates vary by day and operator. If UK WhatsApp fails, try Poland or Germany.
 2. **Use the number immediately.** Don't order a number and wait 10 minutes before using it — start the platform verification right after ordering.
-3. **Check the success score.** On [TextLix](https://www.textlix.com), every country shows a live success score pulled directly from provider data — aim for 70%+ for the best results.
+3. **Check the success score.** On [textlix](https://www.textlix.com), every country shows a live success score pulled directly from provider data — aim for 70%+ for the best results.
     `,
   },
 
@@ -937,9 +937,9 @@ If you're already on [AWS](https://aws.amazon.com/sns/), SNS is the natural choi
 
 **Pricing:** From $0.006 per SMS depending on volume.
 
-## 5. TextLix
+## 5. textlix
 
-[TextLix](https://www.textlix.com) takes a different approach — instead of sending SMS, it's built for **receiving** them. It provides virtual phone numbers from 150+ countries that developers can use to receive SMS verification codes programmatically.
+[textlix](https://www.textlix.com) takes a different approach — instead of sending SMS, it's built for **receiving** them. It provides virtual phone numbers from 150+ countries that developers can use to receive SMS verification codes programmatically.
 
 **Best for:** Testing registration flows, account verification, QA automation, receiving OTP codes during development.
 
@@ -961,12 +961,12 @@ If you're already on [AWS](https://aws.amazon.com/sns/), SNS is the natural choi
 | Use case | Best option |
 |--|--|
 | Sending OTP to users | [Twilio](https://www.twilio.com), [Vonage](https://www.vonage.com), [AWS SNS](https://aws.amazon.com/sns/) |
-| Receiving SMS in your app or tests | [TextLix](https://www.textlix.com) |
+| Receiving SMS in your app or tests | [textlix](https://www.textlix.com) |
 | High-volume alerts | [AWS SNS](https://aws.amazon.com/sns/) |
 | EU-focused product | [Vonage](https://www.vonage.com) |
-| Testing verification flows in CI/CD | [TextLix](https://www.textlix.com) |
+| Testing verification flows in CI/CD | [textlix](https://www.textlix.com) |
 
-If your app sends SMS to users, [Twilio](https://www.twilio.com) or [AWS SNS](https://aws.amazon.com/sns/) are solid defaults. If you need to receive SMS — for testing, verification bypass, or building tools that consume inbound messages — [TextLix](https://www.textlix.com) is purpose-built for that workflow and significantly cheaper than buying Twilio numbers just to receive codes.
+If your app sends SMS to users, [Twilio](https://www.twilio.com) or [AWS SNS](https://aws.amazon.com/sns/) are solid defaults. If you need to receive SMS — for testing, verification bypass, or building tools that consume inbound messages — [textlix](https://www.textlix.com) is purpose-built for that workflow and significantly cheaper than buying Twilio numbers just to receive codes.
     `,
   },
 
@@ -989,9 +989,9 @@ If your app sends SMS to users, [Twilio](https://www.twilio.com) or [AWS SNS](ht
 - **Payment issues** — limited payment options, no crypto in some regions
 - **No refund guarantee** — you lose credits even when the number fails
 
-## 1. TextLix — Best Overall Alternative
+## 1. textlix — Best Overall Alternative
 
-[TextLix](https://www.textlix.com) is purpose-built to fix everything frustrating about older virtual number platforms. Clean interface, transparent pricing, real-time SMS delivery, and a guaranteed refund policy that no competitor matches.
+[textlix](https://www.textlix.com) is purpose-built to fix everything frustrating about older virtual number platforms. Clean interface, transparent pricing, real-time SMS delivery, and a guaranteed refund policy that no competitor matches.
 
 **What makes it different:**
 - Credit-based pricing — pay only for what you use, no subscriptions
@@ -1059,7 +1059,7 @@ If your app sends SMS to users, [Twilio](https://www.twilio.com) or [AWS SNS](ht
 
 | Provider | Refund policy | Countries | Best for |
 |--|--|--|--|
-| [TextLix](https://www.textlix.com) | Full refund if no SMS | 150+ | Best overall experience |
+| [textlix](https://www.textlix.com) | Full refund if no SMS | 150+ | Best overall experience |
 | [SMS-Man](https://sms-man.com) | Partial | 40+ | Eastern Europe/Asia |
 | [OnlineSIM](https://onlinesim.io) | Yes | 50+ | Rental numbers |
 | [Grizzly SMS](https://grizzlysms.com) | Yes | 40+ | Bulk/cheap |
@@ -1067,7 +1067,7 @@ If your app sends SMS to users, [Twilio](https://www.twilio.com) or [AWS SNS](ht
 
 ## Bottom line
 
-If you're switching from 5sim, [TextLix](https://www.textlix.com) is the upgrade — cleaner UI, honest success scores, real-time delivery, and a no-questions refund if your code never arrives. Sign up at [textlix.com](https://www.textlix.com) — no phone number required to register.
+If you're switching from 5sim, [textlix](https://www.textlix.com) is the upgrade — cleaner UI, honest success scores, real-time delivery, and a no-questions refund if your code never arrives. Sign up at [textlix.com](https://www.textlix.com) — no phone number required to register.
     `,
   },
 
@@ -1138,11 +1138,11 @@ For high-volume, cost-sensitive teams already on [AWS](https://aws.amazon.com), 
 
 ## Best service for receiving OTP during testing and development
 
-## 4. TextLix
+## 4. textlix
 
 When your QA team or CI/CD pipeline needs to test registration flows — creating accounts on [WhatsApp](https://www.whatsapp.com), [Telegram](https://telegram.org), [Google](https://accounts.google.com), or your own app — you need a way to receive SMS codes without burning real SIM cards.
 
-[TextLix](https://www.textlix.com) provides virtual phone numbers from 150+ countries that receive SMS in real-time.
+[textlix](https://www.textlix.com) provides virtual phone numbers from 150+ countries that receive SMS in real-time.
 
 **Pros:**
 - Numbers ready in seconds, no procurement delay
@@ -1163,16 +1163,16 @@ When your QA team or CI/CD pipeline needs to test registration flows — creatin
 | Sending 2FA codes to your users | [Twilio Verify](https://www.twilio.com/verify) |
 | High-volume OTP sending on a budget | [AWS SNS](https://aws.amazon.com/sns/) |
 | EU-focused user base | [Vonage Verify](https://www.vonage.com) |
-| Testing your app's registration flow | [TextLix](https://www.textlix.com) |
-| Creating accounts on WhatsApp/Google/Telegram | [TextLix](https://www.textlix.com) |
-| QA automation that needs fresh phone numbers | [TextLix](https://www.textlix.com) |
+| Testing your app's registration flow | [textlix](https://www.textlix.com) |
+| Creating accounts on WhatsApp/Google/Telegram | [textlix](https://www.textlix.com) |
+| QA automation that needs fresh phone numbers | [textlix](https://www.textlix.com) |
 
 ## The smart approach for growing businesses
 
 Most engineering teams end up using two types of OTP service:
 
 1. **A managed sender** ([Twilio](https://www.twilio.com) or [Vonage](https://www.vonage.com)) for their production user flows
-2. **A virtual number receiver** ([TextLix](https://www.textlix.com)) for their QA and testing workflows
+2. **A virtual number receiver** ([textlix](https://www.textlix.com)) for their QA and testing workflows
 
 Getting both in place early means your QA pipeline never gets blocked waiting for a real SIM card, and your production 2FA is handled by infrastructure with proper SLAs and fraud protection.
     `,
@@ -1202,7 +1202,7 @@ When you give your phone number to an app or website:
 
 ## How virtual numbers protect you
 
-A virtual number from [TextLix](https://www.textlix.com) is temporary. It's not tied to your identity, your carrier, or your address. When the verification is done, the number is released and SMS data is cleared after 30 days.
+A virtual number from [textlix](https://www.textlix.com) is temporary. It's not tied to your identity, your carrier, or your address. When the verification is done, the number is released and SMS data is cleared after 30 days.
 
 **What you protect:**
 - Your real mobile number stays private
@@ -1226,7 +1226,7 @@ Yes. Using a virtual number for account verification is completely legal in virt
 
 ## Getting started
 
-1. Create a [TextLix](https://www.textlix.com) account — no phone number required to sign up
+1. Create a [textlix](https://www.textlix.com) account — no phone number required to sign up
 2. Top up with $2–$5 worth of credits
 3. Pick your country and service
 4. Get your code and keep your real number private
@@ -1242,16 +1242,16 @@ export default function BlogPage() {
   return (
     <PublicLayout>
       <Helmet>
-        <title>Blog — TextLix: SMS Verification Guides & Tips</title>
-        <meta name="description" content="Guides, tips, and explainers on SMS verification, virtual phone numbers, privacy, and more from the TextLix team." />
+        <title>Blog — textlix: SMS Verification Guides & Tips</title>
+        <meta name="description" content="Guides, tips, and explainers on SMS verification, virtual phone numbers, privacy, and more from the textlix team." />
         <link rel="canonical" href="https://www.textlix.com/blog" />
-        <meta property="og:title" content="TextLix Blog" />
+        <meta property="og:title" content="textlix Blog" />
         <meta property="og:description" content="Guides and tips on SMS verification, virtual phone numbers, and privacy." />
         <meta property="og:url" content="https://www.textlix.com/blog" />
       </Helmet>
 
       <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-16 px-4 text-center">
-        <h1 className="font-display font-extrabold text-4xl mb-3">TextLix Blog</h1>
+        <h1 className="font-display font-extrabold text-4xl mb-3">textlix Blog</h1>
         <p className="text-brand-100 text-lg">Guides, tips, and news on SMS verification and virtual numbers</p>
       </section>
 

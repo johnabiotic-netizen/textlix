@@ -5,6 +5,7 @@ import { RiCoinLine } from 'react-icons/ri';
 import useAuthStore from '../../store/authStore';
 import { logout as logoutApi } from '../../api/auth';
 import toast from 'react-hot-toast';
+import Logo from '../common/Logo';
 
 export default function Navbar() {
   const { user, logout } = useAuthStore();
@@ -27,9 +28,8 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <span className="text-2xl">✓</span>
-            <span className="font-display font-bold text-gray-900 text-lg">TextLix</span>
+          <Link to="/dashboard">
+            <Logo textClassName="text-lg" />
           </Link>
 
           <div className="hidden md:flex items-center gap-6">

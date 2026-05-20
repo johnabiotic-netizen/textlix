@@ -51,7 +51,7 @@ function printHistory(orders) {
 
   const win = window.open('', '_blank');
   win.document.write(`
-    <html><head><title>TextLix Order History</title>
+    <html><head><title>textlix Order History</title>
     <style>
       body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; }
       h1 { font-size: 18px; margin-bottom: 4px; }
@@ -63,7 +63,7 @@ function printHistory(orders) {
       @media print { body { padding: 10px; } }
     </style></head>
     <body>
-      <h1>TextLix — Order History</h1>
+      <h1>textlix — Order History</h1>
       <p class="sub">Exported ${dayjs().format('MMMM D, YYYY')} &nbsp;|&nbsp; ${orders.length} orders shown</p>
       <table>
         <thead><tr>

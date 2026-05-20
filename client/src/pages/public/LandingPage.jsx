@@ -90,10 +90,10 @@ export default function LandingPage() {
   return (
     <>
     <Helmet>
-      <title>TextLix — Virtual Phone Numbers for SMS Verification</title>
+      <title>textlix — Virtual Phone Numbers for SMS Verification</title>
       <meta name="description" content="Get virtual phone numbers from 150+ countries instantly. One-time OTP or long-term rental. Receive SMS codes in real-time with smart success scoring. Crypto & card payments accepted." />
       <link rel="canonical" href="https://www.textlix.com/" />
-      <meta property="og:title" content="TextLix — Virtual Phone Numbers for SMS Verification" />
+      <meta property="og:title" content="textlix — Virtual Phone Numbers for SMS Verification" />
       <meta property="og:description" content="Get virtual phone numbers from 150+ countries instantly. Receive SMS verification codes in real-time." />
       <meta property="og:url" content="https://www.textlix.com/" />
     </Helmet>
@@ -103,7 +103,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
-            <span>✓</span> TextLix
+            <span>✓</span> textlix
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pricing</Link>
@@ -262,7 +262,7 @@ export default function LandingPage() {
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="font-display font-bold text-2xl text-gray-900 mb-3">Works With Every App</h2>
-          <p className="text-gray-500 mb-8">Hundreds of services supported — if it sends an SMS, TextLix works with it</p>
+          <p className="text-gray-500 mb-8">Hundreds of services supported — if it sends an SMS, textlix works with it</p>
           <div className="flex flex-wrap gap-3 justify-center">
             {SERVICES.map((s) => (
               <div key={s.name} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-700">
@@ -287,7 +287,7 @@ export default function LandingPage() {
       {/* Features grid */}
       <section className="py-20 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">Why TextLix?</h2>
+          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">Why textlix?</h2>
           <p className="text-gray-500 text-center mb-12">Built for speed, reliability, and transparency</p>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
@@ -373,7 +373,7 @@ export default function LandingPage() {
       <section className="py-20 px-4 bg-gradient-to-br from-brand-600 to-purple-600 text-white">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-4">Ready to get started?</h2>
-          <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with TextLix — real-time delivery, live success scores, and a full refund if it doesn't work.</p>
+          <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with textlix — real-time delivery, live success scores, and a full refund if it doesn't work.</p>
           <Link to="/register" className="bg-white text-brand-600 font-semibold text-lg px-8 py-4 rounded-xl hover:bg-brand-50 transition-colors shadow-lg inline-block">
             Create Free Account
           </Link>
@@ -386,7 +386,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 mb-2">
-                <span>✓</span> TextLix
+                <span>✓</span> textlix
               </div>
               <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 150+ countries. OTP and long-term rental.</p>
             </div>
@@ -417,7 +417,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-gray-200 pt-6 text-center">
-            <p className="text-sm text-gray-400">© {new Date().getFullYear()} TextLix. All rights reserved.</p>
+            <p className="text-sm text-gray-400">© {new Date().getFullYear()} textlix. All rights reserved.</p>
           </div>
         </div>
       </footer>

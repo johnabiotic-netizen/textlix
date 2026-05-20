@@ -6,6 +6,7 @@ import { login } from '../../api/auth';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
 import api from '../../api/axios';
+import Logo from '../../components/common/Logo';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 
@@ -81,9 +82,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl text-gray-900 mb-2">
-            <span>✓</span> TextLix
-          </Link>
+          <Link to="/"><Logo textClassName="text-2xl" className="mb-2" /></Link>
           <h1 className="text-xl font-semibold text-gray-900">Sign in to your account</h1>
         </div>
 

@@ -10,7 +10,7 @@ export default function CreatorLandingPage() {
           <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
             <FiLink size={16} className="text-white" />
           </div>
-          <span className="font-bold text-gray-900">TextLix Creators</span>
+          <span className="font-bold text-gray-900">textlix Creators</span>
         </div>
         <div className="flex gap-3">
           <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 px-4 py-2">
@@ -28,7 +28,7 @@ export default function CreatorLandingPage() {
           Influencer Program
         </span>
         <h1 className="text-5xl font-extrabold text-gray-900 mb-6 leading-tight">
-          Earn real money<br />promoting TextLix
+          Earn real money<br />promoting textlix
         </h1>
         <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
           Share your unique referral link with your audience. Earn <strong className="text-gray-900">10% of every top-up</strong> your referrals make — paid in Naira directly to your bank account.
@@ -66,7 +66,7 @@ export default function CreatorLandingPage() {
       {/* CTA */}
       <section className="max-w-5xl mx-auto px-6 py-20 text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to start earning?</h2>
-        <p className="text-gray-500 mb-8">Join other creators who are already earning with TextLix</p>
+        <p className="text-gray-500 mb-8">Join other creators who are already earning with textlix</p>
         <Link
           to="/apply"
           className="inline-flex items-center gap-2 bg-emerald-600 text-white font-semibold px-8 py-4 rounded-xl hover:bg-emerald-700 transition-colors"
@@ -76,7 +76,7 @@ export default function CreatorLandingPage() {
       </section>
 
       <footer className="border-t border-gray-100 py-6 text-center text-sm text-gray-400">
-        © {new Date().getFullYear()} TextLix · <a href="https://textlix.com" className="hover:text-gray-600">Main Platform</a>
+        © {new Date().getFullYear()} textlix · <a href="https://textlix.com" className="hover:text-gray-600">Main Platform</a>
       </footer>
     </div>
   );

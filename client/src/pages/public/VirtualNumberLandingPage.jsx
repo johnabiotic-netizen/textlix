@@ -79,7 +79,7 @@ function buildFaqs(country, service) {
   return [
     {
       q: `Can I really get ${country.article} ${country.name} number for ${service.name}?`,
-      a: `Yes. TextLix provides real virtual phone numbers registered in ${country.name}. ${service.name} will send the SMS verification code to that number, and you'll see it live on your dashboard within seconds.`,
+      a: `Yes. textlix provides real virtual phone numbers registered in ${country.name}. ${service.name} will send the SMS verification code to that number, and you'll see it live on your dashboard within seconds.`,
     },
     {
       q: 'What happens if the SMS never arrives?',
@@ -111,14 +111,14 @@ export default function VirtualNumberLandingPage() {
   const { name: serviceName, emoji: serviceEmoji, description: serviceDesc } = service;
   const faqs = buildFaqs(country, service);
 
-  const pageTitle = `Get ${article} ${countryName} Phone Number for ${serviceName} — TextLix`;
+  const pageTitle = `Get ${article} ${countryName} Phone Number for ${serviceName} — textlix`;
   const metaDesc = `Get ${article} ${countryName} virtual phone number for ${serviceName} verification instantly. Receive SMS codes in real-time. From $1. Full refund if no SMS arrives.`;
   const canonical = `https://www.textlix.com/virtual-numbers/${countryCode.toLowerCase()}/${serviceSlug.toLowerCase()}`;
 
   return (
     <>
       <Helmet>
-        <title>{`Get ${article} ${countryName} Phone Number for ${serviceName} Verification — TextLix`}</title>
+        <title>{`Get ${article} ${countryName} Phone Number for ${serviceName} Verification — textlix`}</title>
         <meta name="description" content={metaDesc} />
         <link rel="canonical" href={canonical} />
         <meta property="og:title" content={pageTitle} />
@@ -132,7 +132,7 @@ export default function VirtualNumberLandingPage() {
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
-              <span>✓</span> TextLix
+              <span>✓</span> textlix
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link to="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pricing</Link>
@@ -202,11 +202,11 @@ export default function VirtualNumberLandingPage() {
           </div>
         </section>
 
-        {/* Why TextLix / trust signals */}
+        {/* Why textlix / trust signals */}
         <section className="py-20 px-4">
           <div className="max-w-5xl mx-auto">
             <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">
-              Why Use TextLix for {serviceName}?
+              Why Use textlix for {serviceName}?
             </h2>
             <p className="text-gray-500 text-center mb-12">Built for reliability — not just cheapness</p>
             <div className="grid md:grid-cols-3 gap-5">
@@ -346,7 +346,7 @@ export default function VirtualNumberLandingPage() {
         <footer className="border-t border-gray-200 py-10 px-4 bg-white">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
-              <span>✓</span> TextLix
+              <span>✓</span> textlix
             </Link>
             <div className="flex gap-6 text-sm text-gray-500">
               <Link to="/pricing" className="hover:text-gray-700">Pricing</Link>
@@ -356,7 +356,7 @@ export default function VirtualNumberLandingPage() {
               <Link to="/terms" className="hover:text-gray-700">Terms</Link>
               <Link to="/privacy" className="hover:text-gray-700">Privacy</Link>
             </div>
-            <p className="text-sm text-gray-400">© {new Date().getFullYear()} TextLix</p>
+            <p className="text-sm text-gray-400">© {new Date().getFullYear()} textlix</p>
           </div>
         </footer>
       </div>

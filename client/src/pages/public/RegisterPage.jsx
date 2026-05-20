@@ -4,6 +4,7 @@ import { FcGoogle } from 'react-icons/fc';
 import toast from 'react-hot-toast';
 import { register } from '../../api/auth';
 import useAuthStore from '../../store/authStore';
+import Logo from '../../components/common/Logo';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 
@@ -48,7 +49,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl text-gray-900 mb-2"><span>✓</span> TextLix</Link>
+          <Link to="/"><Logo textClassName="text-2xl" /></Link>
           <h1 className="text-xl font-semibold text-gray-900">Create your account</h1>
         </div>
 

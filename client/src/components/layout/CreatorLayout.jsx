@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { FiHome, FiDollarSign, FiUsers, FiCreditCard, FiLogOut, FiLink } from 'react-icons/fi';
+import { FiHome, FiDollarSign, FiUsers, FiCreditCard, FiLogOut } from 'react-icons/fi';
 import useAuthStore from '../../store/authStore';
 import { logout } from '../../api/auth';
+import Logo from '../common/Logo';
 
 const nav = [
   { to: '/dashboard', icon: FiHome, label: 'Dashboard' },
@@ -25,15 +26,8 @@ export default function CreatorLayout() {
       {/* Sidebar */}
       <aside className="w-60 bg-white border-r border-gray-100 flex flex-col">
         <div className="px-6 py-5 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <FiLink size={16} className="text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-gray-900 text-sm">TextLix</p>
-              <p className="text-xs text-emerald-600 font-medium">Creator Program</p>
-            </div>
-          </div>
+          <Logo textClassName="text-sm" />
+          <p className="text-xs text-emerald-600 font-medium mt-1 ml-7">Creator Program</p>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">

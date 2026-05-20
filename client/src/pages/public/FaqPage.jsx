@@ -7,9 +7,9 @@ const FAQS = [
   {
     category: 'Getting Started',
     items: [
-      { q: 'What is TextLix?', a: 'TextLix is a platform that provides temporary virtual phone numbers from 50+ countries. You can use these numbers to receive SMS verification codes for any online service without using your real phone number.' },
+      { q: 'What is textlix?', a: 'textlix is a platform that provides temporary virtual phone numbers from 50+ countries. You can use these numbers to receive SMS verification codes for any online service without using your real phone number.' },
       { q: 'How do I get started?', a: 'Create a free account, buy credits (starting from $2), choose a country and service, get a virtual number, and receive your SMS code instantly on your dashboard.' },
-      { q: 'Do I need a SIM card?', a: 'No. Everything is virtual. You receive SMS codes directly on your TextLix dashboard in real-time.' },
+      { q: 'Do I need a SIM card?', a: 'No. Everything is virtual. You receive SMS codes directly on your textlix dashboard in real-time.' },
     ],
   },
   {
@@ -64,15 +64,15 @@ export default function FaqPage() {
   return (
     <>
     <Helmet>
-      <title>FAQ — TextLix Virtual Phone Numbers</title>
-      <meta name="description" content="Frequently asked questions about TextLix virtual phone numbers. Learn how to receive SMS verification codes, top up credits, and more." />
+      <title>FAQ — textlix Virtual Phone Numbers</title>
+      <meta name="description" content="Frequently asked questions about textlix virtual phone numbers. Learn how to receive SMS verification codes, top up credits, and more." />
       <link rel="canonical" href="https://www.textlix.com/faq" />
     </Helmet>
     <div className="min-h-screen bg-white font-body">
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
-            <span>✓</span> TextLix
+            <span>✓</span> textlix
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
@@ -84,7 +84,7 @@ export default function FaqPage() {
       <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-16 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="font-display font-extrabold text-4xl md:text-5xl mb-4">Frequently Asked Questions</h1>
-          <p className="text-brand-100 text-lg">Everything you need to know about TextLix</p>
+          <p className="text-brand-100 text-lg">Everything you need to know about textlix</p>
         </div>
       </section>
 
@@ -113,7 +113,7 @@ export default function FaqPage() {
 
       <footer className="border-t border-gray-200 py-10 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} TextLix. All rights reserved.</p>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()} textlix. All rights reserved.</p>
           <div className="flex gap-6 text-sm text-gray-500">
             <Link to="/faq" className="hover:text-gray-700">FAQ</Link>
             <Link to="/support" className="hover:text-gray-700">Support</Link>

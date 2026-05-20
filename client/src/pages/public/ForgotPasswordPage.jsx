@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { forgotPassword } from '../../api/auth';
+import Logo from '../../components/common/Logo';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 
@@ -27,7 +28,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="font-display font-bold text-2xl text-gray-900">✓ TextLix</Link>
+          <Link to="/"><Logo textClassName="text-2xl" /></Link>
           <h1 className="text-xl font-semibold text-gray-900 mt-2">Reset your password</h1>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">

@@ -47,7 +47,7 @@ function GlobalSmsNotifier() {
         { duration: 8000, id: `sms-${data.orderId}` }
       );
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('SMS received — TextLix', {
+        new Notification('SMS received — textlix', {
           body: code ? `Your code: ${code}` : 'Check your active numbers',
           icon: '/icons/icon-192.png',
           tag: `sms-${data.orderId}`,
@@ -78,7 +78,7 @@ export default function UserLayout() {
       </main>
       <footer className="border-t border-gray-200 mt-16 py-8">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} TextLix. All rights reserved.</p>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()} textlix. All rights reserved.</p>
           <div className="flex gap-6 text-sm text-gray-500">
             <Link to="/terms" className="hover:text-gray-700">Terms</Link>
             <Link to="/privacy" className="hover:text-gray-700">Privacy</Link>

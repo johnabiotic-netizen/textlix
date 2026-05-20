@@ -195,7 +195,7 @@ export default function ApiKeysPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display font-bold text-2xl text-gray-900">API Keys</h1>
-          <p className="text-sm text-gray-500 mt-1">Use API keys to access TextLix programmatically.</p>
+          <p className="text-sm text-gray-500 mt-1">Use API keys to access textlix programmatically.</p>
         </div>
         <Button
           onClick={() => setShowGenerate(true)}

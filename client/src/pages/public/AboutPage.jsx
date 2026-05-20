@@ -14,10 +14,10 @@ export default function AboutPage() {
   return (
     <PublicLayout>
       <Helmet>
-        <title>About TextLix — Virtual Phone Numbers for SMS Verification</title>
-        <meta name="description" content="TextLix provides virtual phone numbers from 1150+ countries for SMS verification. Learn about our mission, values, and the team behind the platform." />
+        <title>About textlix — Virtual Phone Numbers for SMS Verification</title>
+        <meta name="description" content="textlix provides virtual phone numbers from 1150+ countries for SMS verification. Learn about our mission, values, and the team behind the platform." />
         <link rel="canonical" href="https://www.textlix.com/about" />
-        <meta property="og:title" content="About TextLix" />
+        <meta property="og:title" content="About textlix" />
         <meta property="og:description" content="Virtual phone numbers for SMS verification from 1150+ countries. Learn about our mission and values." />
         <meta property="og:url" content="https://www.textlix.com/about" />
       </Helmet>
@@ -26,7 +26,7 @@ export default function AboutPage() {
       <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-24 px-4 text-center">
         <h1 className="font-display font-extrabold text-4xl md:text-5xl mb-6">Built for people who verify smarter</h1>
         <p className="text-brand-100 text-lg max-w-2xl mx-auto">
-          TextLix was built out of frustration with expensive, slow, and unreliable SMS verification services.
+          textlix was built out of frustration with expensive, slow, and unreliable SMS verification services.
           We wanted something fast, affordable, and honest — so we built it.
         </p>
       </section>
@@ -41,7 +41,7 @@ export default function AboutPage() {
             or managing multiple accounts, you deserve a reliable way to receive SMS codes without exposing your real number.
           </p>
           <p className="text-gray-600 text-lg leading-relaxed">
-            TextLix gives you instant access to virtual numbers from 1150+ countries. Real-time delivery,
+            textlix gives you instant access to virtual numbers from 1150+ countries. Real-time delivery,
             fair credit-based pricing, and a no-nonsense refund policy if the SMS never arrives.
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function AboutPage() {
       {/* Stats */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-12">TextLix by the numbers</h2>
+          <h2 className="font-display font-bold text-2xl text-gray-900 mb-12">textlix by the numbers</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { value: '150+', label: 'Countries' },
@@ -88,7 +88,7 @@ export default function AboutPage() {
       {/* CTA */}
       <section className="py-16 px-4 bg-gradient-to-br from-brand-600 to-purple-600 text-white text-center">
         <h2 className="font-display font-bold text-3xl mb-3">Ready to try it?</h2>
-        <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with TextLix.</p>
+        <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with textlix.</p>
         <div className="flex gap-4 justify-center flex-wrap">
           <Link to="/register" className="bg-white text-brand-600 font-semibold px-8 py-3 rounded-xl hover:bg-brand-50 transition-colors">
             Create Free Account

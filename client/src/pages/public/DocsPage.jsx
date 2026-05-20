@@ -11,11 +11,11 @@ const SECTIONS = [
     articles: [
       {
         title: 'How to create an account',
-        content: `Creating a TextLix account takes less than 60 seconds.\n\n1. Go to textlix.com and click **Get Started**.\n2. Enter your name, email address, and a password — or sign in with Google or GitHub.\n3. Verify your email address by clicking the link we send you.\n4. You're in. Your account starts with 0 credits.`,
+        content: `Creating a textlix account takes less than 60 seconds.\n\n1. Go to textlix.com and click **Get Started**.\n2. Enter your name, email address, and a password — or sign in with Google or GitHub.\n3. Verify your email address by clicking the link we send you.\n4. You're in. Your account starts with 0 credits.`,
       },
       {
         title: 'How to buy credits',
-        content: `Credits are the currency of TextLix. 1 credit = $0.01 USD.\n\n1. Go to **Buy Credits** from your dashboard.\n2. Choose a package (starting from $2 / 200 credits).\n3. Pay with Paystack (card or bank transfer) or CoinGate (USDT, BTC, ETH).\n4. Credits are added to your account instantly after payment is confirmed.\n\nCredits never expire — buy as many as you need and use them at your own pace.`,
+        content: `Credits are the currency of textlix. 1 credit = $0.01 USD.\n\n1. Go to **Buy Credits** from your dashboard.\n2. Choose a package (starting from $2 / 200 credits).\n3. Pay with Paystack (card or bank transfer) or CoinGate (USDT, BTC, ETH).\n4. Credits are added to your account instantly after payment is confirmed.\n\nCredits never expire — buy as many as you need and use them at your own pace.`,
       },
       {
         title: 'How to get a virtual number',
@@ -55,7 +55,7 @@ const SECTIONS = [
       },
       {
         title: 'Payment methods accepted',
-        content: `**Paystack** — Debit/credit card, bank transfer (Nigeria and other African countries supported).\n\n**CoinGate** — USDT (TRC20/ERC20), Bitcoin, Ethereum, and other cryptocurrencies.\n\nAll payments are processed securely. TextLix does not store your card details.`,
+        content: `**Paystack** — Debit/credit card, bank transfer (Nigeria and other African countries supported).\n\n**CoinGate** — USDT (TRC20/ERC20), Bitcoin, Ethereum, and other cryptocurrencies.\n\nAll payments are processed securely. textlix does not store your card details.`,
       },
       {
         title: 'Can I get a refund to my card?',
@@ -73,7 +73,7 @@ const SECTIONS = [
       },
       {
         title: 'Is my data safe?',
-        content: `Yes. TextLix takes privacy seriously:\n\n- SMS content is automatically deleted after **30 days**.\n- We never sell or share your personal data.\n- All connections are encrypted via HTTPS.\n- Passwords are hashed using bcrypt — we never store them in plain text.\n\nSee our [Privacy Policy](/privacy) for full details.`,
+        content: `Yes. textlix takes privacy seriously:\n\n- SMS content is automatically deleted after **30 days**.\n- We never sell or share your personal data.\n- All connections are encrypted via HTTPS.\n- Passwords are hashed using bcrypt — we never store them in plain text.\n\nSee our [Privacy Policy](/privacy) for full details.`,
       },
     ],
   },
@@ -88,10 +88,10 @@ export default function DocsPage() {
   return (
     <PublicLayout>
       <Helmet>
-        <title>Documentation — TextLix Virtual Phone Numbers</title>
-        <meta name="description" content="Learn how to use TextLix virtual phone numbers. Step-by-step guides for getting numbers, receiving SMS codes, buying credits, and managing your account." />
+        <title>Documentation — textlix Virtual Phone Numbers</title>
+        <meta name="description" content="Learn how to use textlix virtual phone numbers. Step-by-step guides for getting numbers, receiving SMS codes, buying credits, and managing your account." />
         <link rel="canonical" href="https://www.textlix.com/docs" />
-        <meta property="og:title" content="TextLix Documentation" />
+        <meta property="og:title" content="textlix Documentation" />
         <meta property="og:description" content="Step-by-step guides for getting virtual numbers and receiving SMS verification codes." />
         <meta property="og:url" content="https://www.textlix.com/docs" />
       </Helmet>

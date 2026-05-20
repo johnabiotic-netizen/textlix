@@ -30,7 +30,7 @@ function OnboardingModal({ onDismiss }) {
       <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl">
         <div className="text-center mb-6">
           <div className="text-5xl mb-3">👋</div>
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-2">Welcome to TextLix!</h2>
+          <h2 className="font-display font-bold text-2xl text-gray-900 mb-2">Welcome to textlix!</h2>
           <p className="text-gray-500 text-sm">Get your first SMS verification number in 3 simple steps</p>
         </div>
         <div className="space-y-4 mb-8">
@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (searchParams.get('verified') === 'true') {
-      toast.success('Email verified! Welcome to TextLix. 🎉', { duration: 5000 });
+      toast.success('Email verified! Welcome to textlix. 🎉', { duration: 5000 });
       setSearchParams({}, { replace: true });
     }
   }, []);
