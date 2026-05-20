@@ -1,5 +1,5 @@
 // Branded SVG hero illustrations for each blog post.
-// All use TextLix brand colors — no external image dependencies.
+// All use textlix brand colors — no external image dependencies.
 
 function Base({ id, category, children }) {
   const w = category.length * 8 + 32;
@@ -24,8 +24,8 @@ function Base({ id, category, children }) {
       <circle cx="600"  cy="250" r="350" fill="rgba(255,255,255,0.025)" />
       {/* Main illustration */}
       {children}
-      {/* TextLix wordmark */}
-      <text x="48" y="468" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="20" fontWeight="800" fill="rgba(255,255,255,0.5)" letterSpacing="-0.5">TextLix</text>
+      {/* textlix wordmark */}
+      <text x="48" y="468" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="20" fontWeight="800" fill="rgba(255,255,255,0.5)" letterSpacing="-0.5">textlix</text>
       {/* Category pill */}
       <rect x="48" y="28" rx="18" width={w} height="36" fill="rgba(255,255,255,0.18)" />
       <text x={48 + w / 2} y="51" textAnchor="middle" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="13" fontWeight="600" fill="white">{category}</text>
@@ -129,7 +129,7 @@ function SmsApiHero() {
       <circle cx="360" cy="120" r="7" fill="rgba(255,100,100,0.7)" />
       <circle cx="384" cy="120" r="7" fill="rgba(255,200,50,0.7)" />
       <circle cx="408" cy="120" r="7" fill="rgba(100,220,100,0.7)" />
-      <text x="600" y="125" textAnchor="middle" fontFamily="monospace" fontSize="12" fill="rgba(255,255,255,0.5)">TextLix API</text>
+      <text x="600" y="125" textAnchor="middle" fontFamily="monospace" fontSize="12" fill="rgba(255,255,255,0.5)">textlix API</text>
       {/* Code lines */}
       <text x="358" y="168" fontFamily="monospace" fontSize="13" fill="rgba(167,139,250,1)">POST</text>
       <text x="405" y="168" fontFamily="monospace" fontSize="13" fill="rgba(255,255,255,0.8)">/api/v1/numbers/order</text>
@@ -151,7 +151,7 @@ function SmsApiHero() {
 // ── 5. 5sim Alternatives ─────────────────────────────────────────────────────
 function FivesimAlternativesHero() {
   const items = [
-    { label: 'TextLix', score: '★★★★★', highlight: true },
+    { label: 'textlix', score: '★★★★★', highlight: true },
     { label: 'SMS-Man',   score: '★★★★☆', highlight: false },
     { label: 'OnlineSIM', score: '★★★★☆', highlight: false },
     { label: 'Grizzly SMS', score: '★★★☆☆', highlight: false },
@@ -258,7 +258,7 @@ function UsPhoneHero() {
 function TelegramHero() {
   return (
     <Base id="telegram" category="Guide">
-      {/* Paper plane (Telegram icon shape) — TextLix branded, not Telegram blue */}
+      {/* Paper plane (Telegram icon shape) — textlix branded, not Telegram blue */}
       <path d="M480,180 L760,250 L660,380 Z" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
       <path d="M480,180 L660,380 L630,300 Z" fill="rgba(255,255,255,0.1)" />
       <path d="M480,180 L760,250 L630,300 Z" fill="rgba(255,255,255,0.08)" />
@@ -269,9 +269,9 @@ function TelegramHero() {
       <text x="830" y="248" textAnchor="middle" fontFamily="monospace" fontSize="20" fontWeight="700" fill="white">84 291</text>
       <rect x="792" y="264" rx="6" width="76" height="24" fill="rgba(167,139,250,0.4)" />
       <text x="830" y="281" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="11" fontWeight="600" fill="white">Code received ✓</text>
-      {/* TextLix shield badge */}
+      {/* textlix shield badge */}
       <circle cx="390" cy="280" r="55" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
-      <text x="390" y="272" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="13" fontWeight="700" fill="white">TextLix</text>
+      <text x="390" y="272" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="13" fontWeight="700" fill="white">textlix</text>
       <text x="390" y="292" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="11" fill="rgba(255,255,255,0.6)">verified</text>
       {/* Headline */}
       <text x="600" y="440" textAnchor="middle" fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" fontSize="24" fontWeight="700" fill="white">Verify Telegram Without Your Real Number</text>
@@ -359,7 +359,7 @@ function FiverrHero() {
       <text x="652" y="229" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="12" fontWeight="600" fill="white">Send Code</text>
       {/* Code received badge */}
       <rect x="352" y="260" rx="8" width="356" height="48" fill="rgba(134,239,172,0.12)" stroke="rgba(134,239,172,0.35)" strokeWidth="1" />
-      <text x="530" y="280" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="12" fill="rgba(134,239,172,0.9)">Code received on TextLix</text>
+      <text x="530" y="280" textAnchor="middle" fontFamily="-apple-system,sans-serif" fontSize="12" fill="rgba(134,239,172,0.9)">Code received on textlix</text>
       <text x="530" y="300" textAnchor="middle" fontFamily="monospace" fontSize="20" fontWeight="700" fill="white">4 8 2 1 9</text>
       {/* Phone on the side */}
       <rect x="800" y="150" rx="16" width="110" height="200" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />

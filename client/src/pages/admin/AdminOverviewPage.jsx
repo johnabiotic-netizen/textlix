@@ -96,7 +96,7 @@ export default function AdminOverviewPage() {
               <XAxis dataKey="name" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(v) => [`$${v}`, 'Revenue']} />
-              <Line type="monotone" dataKey="revenue" stroke="#6366F1" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="revenue" stroke="#4a7fa7" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

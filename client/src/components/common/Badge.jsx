@@ -11,7 +11,7 @@ const variants = {
   SPEND: 'bg-red-100 text-red-700',
   REFUND: 'bg-blue-100 text-blue-700',
   ADMIN_ADJUST: 'bg-purple-100 text-purple-700',
-  PAYSTACK: 'bg-indigo-100 text-indigo-700',
+  PAYSTACK: 'bg-brand-100 text-brand-700',
   CRYPTO: 'bg-orange-100 text-orange-700',
   USER: 'bg-gray-100 text-gray-700',
   ADMIN: 'bg-brand-100 text-brand-700',

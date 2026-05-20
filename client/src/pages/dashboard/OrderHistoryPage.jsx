@@ -57,7 +57,7 @@ function printHistory(orders) {
       h1 { font-size: 18px; margin-bottom: 4px; }
       .sub { color: #888; margin-bottom: 16px; font-size: 12px; }
       table { width: 100%; border-collapse: collapse; }
-      th { background: #4f46e5; color: white; padding: 6px 8px; text-align: left; font-size: 11px; }
+      th { background: #4a7fa7; color: white; padding: 6px 8px; text-align: left; font-size: 11px; }
       td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 11px; }
       tr:nth-child(even) td { background: #f9fafb; }
       @media print { body { padding: 10px; } }

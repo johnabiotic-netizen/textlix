@@ -107,7 +107,7 @@ export default function AdminReportsPage() {
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v) => [`$${v}`, 'Revenue']} />
-                <Bar dataKey="revenue" fill="#6366F1" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="revenue" fill="#4a7fa7" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
