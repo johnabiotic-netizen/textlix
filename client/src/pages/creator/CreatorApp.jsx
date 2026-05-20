@@ -25,7 +25,7 @@ function CreatorProtectedRoute({ children }) {
 
 // Simple login page redirect — creator subdomain uses the main app's login
 function CreatorLoginRedirect() {
-  window.location.href = 'https://textlix.com/login';
+  window.location.href = 'https://www.textlix.com/login';
   return <Spinner />;
 }
 
