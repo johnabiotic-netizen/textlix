@@ -20,7 +20,7 @@ export default function BrowseByModePage({ mode }) {
   const [search, setSearch] = useState('');
 
   const isRental = mode === 'rental';
-  const accent = isRental ? 'purple' : 'brand';
+  const accent = isRental ? 'brand' : 'brand';
 
   const { data: countryData, isLoading: countriesLoading } = useQuery({
     queryKey: ['countries', mode],
@@ -133,7 +133,7 @@ export default function BrowseByModePage({ mode }) {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1">{country.name}</h3>
                 <p className="text-xs text-gray-500">{country.serviceCount} service{country.serviceCount !== 1 ? 's' : ''}</p>
-                <p className={`text-xs font-medium mt-1 ${isRental ? 'text-purple-600' : 'text-brand-600'}`}>
+                <p className={`text-xs font-medium mt-1 ${isRental ? 'text-brand-600' : 'text-brand-600'}`}>
                   {isRental ? `From ${country.minPrice} cr/day` : `From ${country.minPrice} credits`}
                 </p>
               </Card>
@@ -158,7 +158,7 @@ export default function BrowseByModePage({ mode }) {
                   <div className="text-3xl mb-3">{SERVICE_EMOJIS[service.slug] || '📱'}</div>
                   <h3 className="font-semibold text-gray-900 mb-1">{service.name}</h3>
                   <p className="text-xs text-gray-500">{service.countryCount} countr{service.countryCount !== 1 ? 'ies' : 'y'}</p>
-                  <p className={`text-xs font-medium mt-1 ${isRental ? 'text-purple-600' : 'text-brand-600'}`}>
+                  <p className={`text-xs font-medium mt-1 ${isRental ? 'text-brand-600' : 'text-brand-600'}`}>
                     {isRental ? `From ${service.minPrice} cr/day` : `From ${service.minPrice} credits`}
                   </p>
                 </Card>

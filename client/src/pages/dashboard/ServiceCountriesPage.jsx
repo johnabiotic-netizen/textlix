@@ -57,7 +57,7 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
       </div>
 
       {/* Mode badge */}
-      <div className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium ${mode === 'otp' ? 'bg-brand-50 text-brand-700' : 'bg-purple-50 text-purple-700'}`}>
+      <div className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium ${mode === 'otp' ? 'bg-brand-50 text-brand-700' : 'bg-brand-50 text-brand-700'}`}>
         {mode === 'otp' ? '⚡ One-Time OTP' : '📅 Rental — 1 to 30 days'}
       </div>
 
@@ -94,7 +94,7 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
                 )}
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">{country.name}</h3>
-              <p className={`text-xs font-medium mt-1 ${mode === 'otp' ? 'text-brand-600' : 'text-purple-600'}`}>
+              <p className={`text-xs font-medium mt-1 ${mode === 'otp' ? 'text-brand-600' : 'text-brand-600'}`}>
                 {mode === 'rental'
                   ? `${country.pricePerDay} cr / day`
                   : `From ${country.minPrice} credits`}

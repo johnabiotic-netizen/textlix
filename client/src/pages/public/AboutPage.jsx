@@ -23,7 +23,7 @@ export default function AboutPage() {
       </Helmet>
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-24 px-4 text-center">
+      <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-24 px-4 text-center">
         <h1 className="font-display font-extrabold text-4xl md:text-5xl mb-6">Built for people who verify smarter</h1>
         <p className="text-brand-100 text-lg max-w-2xl mx-auto">
           textlix was built out of frustration with expensive, slow, and unreliable SMS verification services.
@@ -86,7 +86,7 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-4 bg-gradient-to-br from-brand-600 to-purple-600 text-white text-center">
+      <section className="py-16 px-4 bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white text-center">
         <h2 className="font-display font-bold text-3xl mb-3">Ready to try it?</h2>
         <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with textlix.</p>
         <div className="flex gap-4 justify-center flex-wrap">

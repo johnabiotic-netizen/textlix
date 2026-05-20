@@ -147,7 +147,7 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
             <span className="text-gray-300">·</span>
             <span className="text-sm text-gray-500">{service?.name}</span>
             {isRental && (
-              <span className="flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">
                 <FiCalendar size={10} /> {order.rentalDays}d rental
               </span>
             )}

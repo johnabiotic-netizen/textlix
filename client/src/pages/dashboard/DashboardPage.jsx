@@ -138,7 +138,7 @@ export default function DashboardPage() {
       {showOnboarding && <OnboardingModal onDismiss={dismissOnboarding} />}
 
       {/* ── Welcome banner ─────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-brand-600 to-purple-600 rounded-2xl p-6 md:p-8 text-white">
+      <div className="bg-gradient-to-r from-[#0A1B31] to-brand-600 rounded-2xl p-6 md:p-8 text-white">
         <p className="text-brand-100 text-sm mb-1">Welcome back</p>
         <h1 className="font-display font-bold text-3xl mb-4">{user?.name} 👋</h1>
 
@@ -206,7 +206,7 @@ export default function DashboardPage() {
             value: orderStats?.total ?? '—',
             sub: 'all time',
             emoji: '📋',
-            color: 'text-purple-600',
+            color: 'text-brand-600',
           },
           {
             label: 'Member Since',
@@ -338,7 +338,7 @@ export default function DashboardPage() {
         {referralLink && (
           <div className="lg:w-72 shrink-0">
             <h2 className="font-display font-semibold text-gray-900 mb-3">Refer & Earn</h2>
-            <Card className="p-5 bg-gradient-to-br from-purple-50 to-brand-50 border-brand-200">
+            <Card className="p-5 bg-gradient-to-br from-brand-50 to-brand-100 border-brand-200">
               <div className="text-3xl mb-3">🎁</div>
               <p className="font-semibold text-gray-900 mb-1">Invite friends, earn credits</p>
               <p className="text-sm text-gray-500 mb-4">

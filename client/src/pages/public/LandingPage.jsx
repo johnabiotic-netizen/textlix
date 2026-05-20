@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
 import { FiZap, FiGlobe, FiShield, FiClock, FiRefreshCw, FiTrendingUp, FiStar, FiSmartphone } from 'react-icons/fi';
 import { getPublicStats } from '../../api/numbers';
+import Logo from '../../components/common/Logo';
 
 const PACKAGES = [
   { label: 'Starter', usd: '$2', credits: '200 credits' },
@@ -102,9 +103,7 @@ export default function LandingPage() {
       {/* Navbar */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
-          <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
-            <span>✓</span> textlix
-          </div>
+          <Logo textClassName="text-xl" />
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pricing</Link>
             <Link to="/docs" className="text-sm font-medium text-gray-600 hover:text-gray-900">Docs</Link>
@@ -125,7 +124,7 @@ export default function LandingPage() {
       <LiveStatsBanner />
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-24 px-4">
+      <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-24 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="text-yellow-300">★</span> Smart success scoring — know before you buy
@@ -169,17 +168,17 @@ export default function LandingPage() {
               </Link>
             </div>
             {/* Rental */}
-            <div className="bg-white rounded-2xl p-8 border border-purple-100 shadow-sm">
+            <div className="bg-white rounded-2xl p-8 border border-brand-100 shadow-sm">
               <div className="text-4xl mb-4">📅</div>
               <h3 className="font-display font-bold text-xl text-gray-900 mb-2">Long-Term Rental</h3>
               <p className="text-gray-500 text-sm mb-5">Rent a number for days or weeks. Keep receiving codes on the same number — perfect for accounts that need repeated verification.</p>
               <ul className="space-y-2 text-sm text-gray-600 mb-6">
-                <li className="flex items-center gap-2"><span className="text-purple-500 font-bold">✓</span> Daily rental pricing</li>
-                <li className="flex items-center gap-2"><span className="text-purple-500 font-bold">✓</span> Same number stays yours</li>
-                <li className="flex items-center gap-2"><span className="text-purple-500 font-bold">✓</span> Unlimited SMS on the rental period</li>
-                <li className="flex items-center gap-2"><span className="text-purple-500 font-bold">✓</span> Cancel anytime</li>
+                <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Daily rental pricing</li>
+                <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Same number stays yours</li>
+                <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Unlimited SMS on the rental period</li>
+                <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Cancel anytime</li>
               </ul>
-              <Link to="/register" className="inline-block bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+              <Link to="/register" className="inline-block bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
                 Try Rental Numbers →
               </Link>
             </div>
@@ -210,7 +209,7 @@ export default function LandingPage() {
       </section>
 
       {/* Smart success scoring callout */}
-      <section className="py-16 px-4 bg-gradient-to-r from-brand-50 to-purple-50">
+      <section className="py-16 px-4 bg-gradient-to-r from-brand-50 to-brand-100">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div>
@@ -370,7 +369,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 bg-gradient-to-br from-brand-600 to-purple-600 text-white">
+      <section className="py-20 px-4 bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-4">Ready to get started?</h2>
           <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with textlix — real-time delivery, live success scores, and a full refund if it doesn't work.</p>
@@ -385,9 +384,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
             <div>
-              <div className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 mb-2">
-                <span>✓</span> textlix
-              </div>
+              <Logo textClassName="text-xl" className="mb-2" />
               <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 150+ countries. OTP and long-term rental.</p>
             </div>
             <div className="flex gap-16">

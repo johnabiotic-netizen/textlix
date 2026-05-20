@@ -152,7 +152,7 @@ export default function VirtualNumberLandingPage() {
         </header>
 
         {/* Hero */}
-        <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-20 px-4">
+        <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
             <div className="text-5xl mb-4">{flag}</div>
             <h1 className="font-display font-extrabold text-4xl md:text-5xl mb-5 leading-tight">
@@ -253,7 +253,7 @@ export default function VirtualNumberLandingPage() {
         </section>
 
         {/* Pricing callout */}
-        <section className="py-16 px-4 bg-gradient-to-r from-brand-50 to-purple-50">
+        <section className="py-16 px-4 bg-gradient-to-r from-brand-50 to-brand-100">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="font-display font-bold text-3xl text-gray-900 mb-3">
               Simple Credit Pricing
@@ -316,7 +316,7 @@ export default function VirtualNumberLandingPage() {
         </section>
 
         {/* CTA footer */}
-        <section className="py-20 px-4 bg-gradient-to-br from-brand-600 to-purple-600 text-white">
+        <section className="py-20 px-4 bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white">
           <div className="max-w-2xl mx-auto text-center">
             <div className="text-4xl mb-4">{flag} {serviceEmoji}</div>
             <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-4">

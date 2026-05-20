@@ -32,7 +32,7 @@ export default function CreatorDashboardPage() {
         {[
           { label: 'Pending Earnings', value: fmt(c.pendingEarningsNaira), icon: FiDollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Total Earned', value: fmt(c.totalEarningsNaira), icon: FiTrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Total Referrals', value: c.totalReferrals, icon: FiUsers, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Total Referrals', value: c.totalReferrals, icon: FiUsers, color: 'text-brand-600', bg: 'bg-brand-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-3`}>

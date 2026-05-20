@@ -16,7 +16,7 @@ export default function SupportPage() {
         </div>
       </header>
 
-      <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-16 px-4">
+      <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-16 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="font-display font-extrabold text-4xl md:text-5xl mb-4">Support</h1>
           <p className="text-brand-100 text-lg">We're here to help. Choose how you'd like to reach us.</p>
@@ -58,14 +58,14 @@ export default function SupportPage() {
 
             {/* FAQ */}
             <div className="border border-gray-200 rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <FiBook size={26} className="text-purple-600" />
+              <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <FiBook size={26} className="text-brand-600" />
               </div>
               <h3 className="font-display font-bold text-lg text-gray-900 mb-2">FAQ</h3>
               <p className="text-sm text-gray-500 mb-5">Find instant answers to common questions.</p>
               <Link
                 to="/faq"
-                className="w-full block bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                className="w-full block bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
               >
                 Browse FAQ
               </Link>

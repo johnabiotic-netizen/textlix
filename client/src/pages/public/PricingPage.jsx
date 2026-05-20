@@ -39,7 +39,7 @@ export default function PricingPage() {
       </Helmet>
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-brand-600 to-purple-600 text-white py-20 px-4 text-center">
+      <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-20 px-4 text-center">
         <h1 className="font-display font-extrabold text-4xl md:text-5xl mb-4">Simple, transparent pricing</h1>
         <p className="text-brand-100 text-lg max-w-xl mx-auto">
           Buy credits once, use them whenever you need. No subscriptions, no hidden fees. Credits never expire.
@@ -110,7 +110,7 @@ export default function PricingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-4 bg-gradient-to-br from-brand-600 to-purple-600 text-white text-center">
+      <section className="py-16 px-4 bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white text-center">
         <FiZap size={32} className="mx-auto mb-4 text-yellow-300" />
         <h2 className="font-display font-bold text-3xl mb-3">Start verifying in 60 seconds</h2>
         <p className="text-brand-100 mb-8">Create a free account, top up, and get your first number instantly.</p>

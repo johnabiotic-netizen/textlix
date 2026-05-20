@@ -265,7 +265,7 @@ export default function BlogPostPage() {
         </div>
 
         {/* CTA */}
-        <div className="mt-12 bg-gradient-to-br from-brand-600 to-purple-600 rounded-2xl p-8 text-white text-center">
+        <div className="mt-12 bg-gradient-to-br from-[#0A1B31] to-brand-600 rounded-2xl p-8 text-white text-center">
           <h2 className="font-display font-bold text-xl mb-2">Ready to try textlix?</h2>
           <p className="text-brand-100 text-sm mb-6">Virtual phone numbers from 150+ countries. Codes delivered in seconds.</p>
           <Link to="/register" className="bg-white text-brand-600 font-semibold px-6 py-2.5 rounded-xl hover:bg-brand-50 transition-colors inline-block text-sm">
