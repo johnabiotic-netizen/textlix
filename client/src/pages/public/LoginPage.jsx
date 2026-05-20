@@ -53,6 +53,8 @@ export default function LoginPage() {
   const [twoFAState, setTwoFAState] = useState(null);
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+  const safeRedirect = redirectParam?.endsWith('.textlix.com/dashboard') ? redirectParam : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,6 +68,7 @@ export default function LoginPage() {
       const { user, accessToken } = data.data;
       setAuth(user, accessToken);
       toast.success(`Welcome back, ${user.name}!`);
+      if (safeRedirect) { window.location.href = safeRedirect; return; }
       navigate(user.role === 'ADMIN' ? '/admin' : '/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Login failed');
@@ -88,7 +91,7 @@ export default function LoginPage() {
           {twoFAState ? (
             <TwoFAStep
               tempToken={twoFAState.tempToken}
-              onSuccess={(user, token) => { setAuth(user, token); navigate('/dashboard'); }}
+              onSuccess={(user, token) => { setAuth(user, token); if (safeRedirect) { window.location.href = safeRedirect; } else { navigate('/dashboard'); } }}
             />
           ) : (
             <>
