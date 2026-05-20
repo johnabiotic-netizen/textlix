@@ -35,6 +35,7 @@ app.use(
       const allowed = [
         'https://www.textlix.com',
         'https://textlix.com',
+        'https://creator.textlix.com',
         'https://textlix-production.up.railway.app',
         'http://localhost:5173',
         'http://localhost:5174',
