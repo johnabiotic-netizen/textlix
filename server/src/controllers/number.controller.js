@@ -388,7 +388,7 @@ exports.getServiceList = async (req, res, next) => {
     if (mode === 'rental') {
       // Return all enabled services that Get-SMS supports (have a known service code)
       const services = await Service.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
-      const supportedSlugs = new Set(Object.keys(getsms.SERVICE_CODE));
+      const supportedSlugs = new Set(Object.keys(getsms.SERVICE_ID));
       const result = services
         .filter((s) => supportedSlugs.has(s.slug))
         .map((s) => ({ id: s._id, slug: s.slug, name: s.name, icon: s.icon }));
