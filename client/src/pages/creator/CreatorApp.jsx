@@ -1,5 +1,5 @@
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import useAuthStore from '../../store/authStore';
 import CreatorLayout from '../../components/layout/CreatorLayout';
 import api from '../../api/axios';
@@ -18,36 +18,10 @@ const Spinner = () => (
   </div>
 );
 
-function SsoHandler() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { setAuth } = useAuthStore();
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const sso = params.get('sso');
-    if (!sso) return;
-    api.post('/auth/sso/exchange', { ssoToken: sso })
-      .then(({ data }) => {
-        sessionStorage.removeItem('ssoTried');
-        setAuth(data.data.user, data.data.accessToken);
-        navigate('/dashboard', { replace: true });
-      })
-      .catch(() => {
-        sessionStorage.removeItem('ssoTried');
-        navigate('/login', { replace: true });
-      });
-  }, []);
-
-  return null;
-}
-
 function CreatorProtectedRoute({ children }) {
   const { user, isLoading } = useAuthStore();
   if (isLoading) return <Spinner />;
   if (!user) {
-    // Try silent SSO via browser navigation (cookies sent automatically) before showing login form.
-    // sessionStorage flag prevents infinite loop if server also has no session.
     const tried = sessionStorage.getItem('ssoTried');
     if (!tried) {
       sessionStorage.setItem('ssoTried', '1');
@@ -63,6 +37,27 @@ function CreatorProtectedRoute({ children }) {
 }
 
 export default function CreatorApp() {
+  const { setAuth } = useAuthStore();
+  const [ssoReady, setSsoReady] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sso = params.get('sso');
+    if (!sso) { setSsoReady(true); return; }
+
+    // Exchange SSO token BEFORE routing so CreatorProtectedRoute sees the user
+    api.post('/auth/sso/exchange', { ssoToken: sso })
+      .then(({ data }) => {
+        sessionStorage.removeItem('ssoTried');
+        setAuth(data.data.user, data.data.accessToken);
+        window.history.replaceState({}, '', window.location.pathname);
+      })
+      .catch(() => sessionStorage.removeItem('ssoTried'))
+      .finally(() => setSsoReady(true));
+  }, []);
+
+  if (!ssoReady) return <Spinner />;
+
   return (
     <Suspense fallback={<Spinner />}>
       <Routes>
@@ -70,12 +65,11 @@ export default function CreatorApp() {
         <Route path="/apply" element={<CreatorApplyPage />} />
         <Route path="/login" element={<CreatorLoginPage />} />
         <Route element={<CreatorProtectedRoute><CreatorLayout /></CreatorProtectedRoute>}>
-          <Route path="/dashboard" element={<><SsoHandler /><CreatorDashboardPage /></>} />
+          <Route path="/dashboard" element={<CreatorDashboardPage />} />
           <Route path="/earnings" element={<CreatorEarningsPage />} />
           <Route path="/referrals" element={<CreatorReferralsPage />} />
           <Route path="/withdrawals" element={<CreatorWithdrawalsPage />} />
         </Route>
-
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
