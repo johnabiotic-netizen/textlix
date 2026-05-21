@@ -51,31 +51,31 @@ export default function CreatorDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Welcome back, {c.name.split(' ')[0]} 👋</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back, {c.name.split(' ')[0]} 👋</h1>
         <p className="text-gray-500 text-sm mt-1">Your creator dashboard</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Pending Earnings', value: fmt(c.pendingEarningsNaira), icon: FiDollarSign, color: 'text-brand-600', bg: 'bg-brand-50' },
           { label: 'Total Earned', value: fmt(c.totalEarningsNaira), icon: FiTrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Total Referrals', value: c.totalReferrals, icon: FiUsers, color: 'text-brand-600', bg: 'bg-brand-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div key={label} className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100">
             <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-3`}>
               <Icon size={18} className={color} />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
             <p className="text-xs text-gray-500 mt-1">{label}</p>
           </div>
         ))}
       </div>
 
       {/* Referral link + code customization */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">Your Referral Link</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">Your Referral Link</h2>
           {!editingCode && (
             <button
               onClick={startEditCode}
@@ -141,7 +141,7 @@ export default function CreatorDashboardPage() {
       </div>
 
       {/* Withdrawal info */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
         <h2 className="font-semibold text-gray-900 mb-2">Withdrawals</h2>
         <div className="flex items-center justify-between">
           <div>

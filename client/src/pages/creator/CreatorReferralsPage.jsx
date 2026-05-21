@@ -11,7 +11,7 @@ export default function CreatorReferralsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Referrals</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Referrals</h1>
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Loading...</div>
@@ -22,7 +22,7 @@ export default function CreatorReferralsPage() {
           <p className="text-sm mt-1">Share your referral link to bring in users</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>

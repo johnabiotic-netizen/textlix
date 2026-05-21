@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FiMenu, FiX } from 'react-icons/fi';
 import Logo from '../common/Logo';
+import ThemeToggle from '../common/ThemeToggle';
 
 const NAV_LINKS = [
   { to: '/pricing', label: 'Pricing' },
@@ -35,7 +36,8 @@ export default function PublicLayout({ children }) {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
+            <ThemeToggle />
             <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
             <Link to="/register" className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
               Get Started

@@ -57,10 +57,10 @@ export default function CreatorWithdrawalsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-gray-900">Withdrawals</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Withdrawals</h1>
 
       {/* Balance */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-sm text-gray-500">Available balance</p>
@@ -83,9 +83,9 @@ export default function CreatorWithdrawalsPage() {
       </div>
 
       {/* Bank account */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900">Bank Account</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">Bank Account</h2>
           {!editingBank && (
             <button onClick={() => { setEditingBank(true); setBank(creator?.bankAccount || { bankName: '', accountNumber: '', accountName: '' }); }} className="text-sm text-brand-600 hover:text-brand-700 font-medium">
               {hasBank ? 'Edit' : 'Set up'}
@@ -120,9 +120,9 @@ export default function CreatorWithdrawalsPage() {
       </div>
 
       {/* Withdrawal history */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Withdrawal History</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">Withdrawal History</h2>
         </div>
         {!withdrawalsData?.withdrawals?.length ? (
           <div className="text-center py-8 text-gray-400 text-sm">No withdrawal history</div>
@@ -138,7 +138,7 @@ export default function CreatorWithdrawalsPage() {
             <tbody className="divide-y divide-gray-50">
               {withdrawalsData.withdrawals.map((w) => (
                 <tr key={w._id}>
-                  <td className="px-6 py-4 font-semibold text-gray-900">{fmt(w.amountNaira)}</td>
+                  <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{fmt(w.amountNaira)}</td>
                   <td className="px-6 py-4">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${w.status === 'paid' ? 'bg-brand-100 text-brand-700' : w.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
                       {w.status}

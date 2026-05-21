@@ -69,20 +69,20 @@ function GlobalSmsNotifier() {
 
 export default function UserLayout() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <GlobalSmsNotifier />
       <AnnouncementBanner />
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <Outlet />
       </main>
-      <footer className="border-t border-gray-200 mt-16 py-8">
+      <footer className="border-t border-gray-200 dark:border-gray-800 mt-16 py-8">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} textlix. All rights reserved.</p>
-          <div className="flex gap-6 text-sm text-gray-500">
-            <Link to="/terms" className="hover:text-gray-700">Terms</Link>
-            <Link to="/privacy" className="hover:text-gray-700">Privacy</Link>
-            <Link to="/support" className="hover:text-gray-700">Support</Link>
+          <p className="text-sm text-gray-500 dark:text-gray-400">© {new Date().getFullYear()} textlix. All rights reserved.</p>
+          <div className="flex gap-6 text-sm text-gray-500 dark:text-gray-400">
+            <Link to="/terms" className="hover:text-gray-700 dark:hover:text-gray-200">Terms</Link>
+            <Link to="/privacy" className="hover:text-gray-700 dark:hover:text-gray-200">Privacy</Link>
+            <Link to="/support" className="hover:text-gray-700 dark:hover:text-gray-200">Support</Link>
           </div>
         </div>
       </footer>
