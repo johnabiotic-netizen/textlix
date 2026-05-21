@@ -5,6 +5,7 @@ import CreatorLayout from '../../components/layout/CreatorLayout';
 
 const CreatorLandingPage = lazy(() => import('./CreatorLandingPage'));
 const CreatorApplyPage = lazy(() => import('./CreatorApplyPage'));
+const CreatorLoginPage = lazy(() => import('./CreatorLoginPage'));
 const CreatorDashboardPage = lazy(() => import('./CreatorDashboardPage'));
 const CreatorEarningsPage = lazy(() => import('./CreatorEarningsPage'));
 const CreatorReferralsPage = lazy(() => import('./CreatorReferralsPage'));
@@ -23,19 +24,13 @@ function CreatorProtectedRoute({ children }) {
   return children;
 }
 
-// Simple login page redirect — creator subdomain uses the main app's login
-function CreatorLoginRedirect() {
-  window.location.href = 'https://www.textlix.com/login?redirect=https://creator.textlix.com/dashboard';
-  return <Spinner />;
-}
-
 export default function CreatorApp() {
   return (
     <Suspense fallback={<Spinner />}>
       <Routes>
         <Route path="/" element={<CreatorLandingPage />} />
         <Route path="/apply" element={<CreatorApplyPage />} />
-        <Route path="/login" element={<CreatorLoginRedirect />} />
+        <Route path="/login" element={<CreatorLoginPage />} />
 
         <Route element={<CreatorProtectedRoute><CreatorLayout /></CreatorProtectedRoute>}>
           <Route path="/dashboard" element={<CreatorDashboardPage />} />

@@ -82,7 +82,11 @@ function AdminRoute({ children }) {
 function PublicRoute({ children }) {
   const { user, isLoading } = useAuthStore();
   if (isLoading) return null;
-  if (user) return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/dashboard'} replace />;
+  if (user) {
+    const redirect = new URLSearchParams(window.location.search).get('redirect');
+    if (redirect?.includes('.textlix.com')) { window.location.href = redirect; return null; }
+    return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/dashboard'} replace />;
+  }
   return children;
 }
 
