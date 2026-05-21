@@ -473,7 +473,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     }`}
                   >
                     <div className="font-semibold text-sm text-gray-900">{opt.label}</div>
-                    {opt.price && <div className="font-mono-num text-xs text-brand-700 mt-0.5">{opt.price} cr</div>}
+                    <div className="font-mono-num text-xs text-brand-700 mt-0.5">{opt.price ? `${opt.price.toLocaleString()} cr` : '—'}</div>
                   </button>
                 ))}
               </div>

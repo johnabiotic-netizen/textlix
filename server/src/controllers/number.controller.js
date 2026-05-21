@@ -954,11 +954,13 @@ exports.getRentalPrice = async (req, res, next) => {
       price: prices?.[days] ?? null,
     }));
 
+    const available = !!prices && options.some((o) => o.price !== null);
+
     success(res, {
-      available: true,
+      available,
       country: { name: country.name, flagEmoji: country.flagEmoji },
       service: service ? { name: service.name, slug: service.slug } : null,
-      options,
+      options: available ? options : [],
     });
   } catch (err) {
     next(err);
