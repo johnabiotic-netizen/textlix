@@ -196,17 +196,26 @@ exports.logout = async (req, res, next) => {
 
 exports.oauthCallback = async (user, res, refCode) => {
   try {
-    if (refCode && !user.referredBy && !user.creatorReferredBy) {
-      const referrer = await User.findOne({ referralCode: refCode.toUpperCase() });
-      if (referrer && String(referrer._id) !== String(user._id)) {
-        if (referrer.isCreator) {
-          await User.findByIdAndUpdate(user._id, { creatorReferredBy: referrer._id });
+    if (refCode) {
+      const freshUser = await User.findById(user._id);
+      if (!freshUser.referredBy && !freshUser.creatorReferredBy) {
+        const referrer = await User.findOne({ referralCode: refCode.toUpperCase() });
+        if (referrer && String(referrer._id) !== String(user._id)) {
+          if (referrer.isCreator) {
+            await User.findByIdAndUpdate(user._id, { creatorReferredBy: referrer._id });
+            logger.info(`OAuth referral: ${user.email} → creator ${referrer.email} (${refCode})`);
+          } else {
+            await User.findByIdAndUpdate(user._id, { referredBy: referrer._id });
+            logger.info(`OAuth referral: ${user.email} → user ${referrer.email} (${refCode})`);
+          }
         } else {
-          await User.findByIdAndUpdate(user._id, { referredBy: referrer._id });
+          logger.warn(`OAuth referral: code ${refCode} not found or self-referral`);
         }
       }
     }
-  } catch {}
+  } catch (err) {
+    logger.warn(`OAuth referral apply failed: ${err.message}`);
+  }
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
   setRefreshCookie(res, refreshToken);
