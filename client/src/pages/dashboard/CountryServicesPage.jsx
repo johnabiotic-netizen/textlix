@@ -223,7 +223,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     </span>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">{svc.name}</h3>
-                  <p className="text-xs text-gray-400">1 week · 2 weeks · 1 month</p>
+                  <p className="text-xs text-gray-400">1 week · 2 · 3 weeks · 1 month</p>
                 </Card>
               ))}
             </div>
@@ -461,7 +461,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
             {/* Duration picker */}
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Duration</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {rentalOptions.map((opt) => (
                   <button
                     key={opt.days}

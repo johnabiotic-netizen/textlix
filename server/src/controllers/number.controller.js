@@ -347,8 +347,8 @@ const SERVER_LABEL = {
   getsmsotp: 'LIX 3',
 };
 
-const RENTAL_DURATION_OPTIONS = [7, 14, 30];
-const RENTAL_DURATION_LABELS = { 7: '1 Week', 14: '2 Weeks', 30: '1 Month' };
+const RENTAL_DURATION_OPTIONS = [7, 14, 21, 30];
+const RENTAL_DURATION_LABELS = { 7: '1 Week', 14: '2 Weeks', 21: '3 Weeks', 30: '1 Month' };
 
 // Cache: `${countryIso}/${serviceSlug}` → { expiresAt, data: { 1: credits, 3: credits, 7: credits } }
 const rentalPriceCache = new Map();

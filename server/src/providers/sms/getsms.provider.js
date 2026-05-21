@@ -8,6 +8,7 @@ const BASE_URL = 'https://get-sms.com/api/v2/rent/rent_number.php';
 const DURATION_MAP = {
   7:  { type: 'week',  period: 1 },
   14: { type: 'week',  period: 2 },
+  21: { type: 'week',  period: 3 },
   30: { type: 'month', period: 1 },
 };
 
