@@ -69,6 +69,18 @@ export default function CreatorLoginPage() {
             </button>
           </form>
         </div>
+        <div className="mt-4 text-center">
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+            <div className="relative flex justify-center text-xs"><span className="bg-gray-50 px-3 text-gray-400">or</span></div>
+          </div>
+          <a
+            href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/sso/creator`}
+            className="w-full inline-block text-center border border-gray-300 rounded-xl py-2.5 text-sm font-medium text-gray-700 hover:bg-white transition-colors"
+          >
+            Continue with textlix.com account
+          </a>
+        </div>
         <p className="text-center mt-4 text-xs text-gray-500">
           Don't have a textlix account?{' '}
           <a href="https://www.textlix.com/register" className="text-brand-600 hover:underline font-medium">Sign up</a>

@@ -357,3 +357,37 @@ exports.twoFAComplete = async (req, res, next) => {
     success(res, { user: formatUser(user), accessToken });
   } catch (err) { next(err); }
 };
+
+// GET /auth/sso/creator — bridge session from main domain to creator subdomain
+exports.creatorSsoInit = async (req, res, next) => {
+  try {
+    const token = req.cookies.refreshToken;
+    if (!token) return res.redirect('https://creator.textlix.com/login');
+    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const user = await User.findById(payload.userId);
+    if (!user) return res.redirect('https://creator.textlix.com/login');
+    // Short-lived (90s) SSO token
+    const ssoToken = jwt.sign(
+      { userId: user._id, type: 'creator_sso' },
+      process.env.JWT_ACCESS_SECRET,
+      { expiresIn: '90s' }
+    );
+    return res.redirect(`https://creator.textlix.com/dashboard?sso=${ssoToken}`);
+  } catch { return res.redirect('https://creator.textlix.com/login'); }
+};
+
+// POST /auth/sso/exchange — exchange SSO token for a real session
+exports.creatorSsoExchange = async (req, res, next) => {
+  try {
+    const { ssoToken } = req.body;
+    if (!ssoToken) throw new AppError('VALIDATION_ERROR', 400, 'Missing sso token');
+    const payload = jwt.verify(ssoToken, process.env.JWT_ACCESS_SECRET);
+    if (payload.type !== 'creator_sso') throw new AppError('UNAUTHORIZED', 401, 'Invalid SSO token');
+    const user = await User.findById(payload.userId);
+    if (!user) throw new AppError('UNAUTHORIZED', 401, 'User not found');
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+    setRefreshCookie(res, refreshToken);
+    success(res, { user: formatUser(user), accessToken });
+  } catch (err) { next(err); }
+};

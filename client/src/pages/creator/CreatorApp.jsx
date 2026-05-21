@@ -1,7 +1,8 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
 import CreatorLayout from '../../components/layout/CreatorLayout';
+import api from '../../api/axios';
 
 const CreatorLandingPage = lazy(() => import('./CreatorLandingPage'));
 const CreatorApplyPage = lazy(() => import('./CreatorApplyPage'));
@@ -17,6 +18,26 @@ const Spinner = () => (
   </div>
 );
 
+function SsoHandler() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { setAuth } = useAuthStore();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const sso = params.get('sso');
+    if (!sso) return;
+    api.post('/auth/sso/exchange', { ssoToken: sso })
+      .then(({ data }) => {
+        setAuth(data.data.user, data.data.accessToken);
+        navigate('/dashboard', { replace: true });
+      })
+      .catch(() => navigate('/login', { replace: true }));
+  }, []);
+
+  return null;
+}
+
 function CreatorProtectedRoute({ children }) {
   const { user, isLoading } = useAuthStore();
   if (isLoading) return <Spinner />;
@@ -31,9 +52,8 @@ export default function CreatorApp() {
         <Route path="/" element={<CreatorLandingPage />} />
         <Route path="/apply" element={<CreatorApplyPage />} />
         <Route path="/login" element={<CreatorLoginPage />} />
-
         <Route element={<CreatorProtectedRoute><CreatorLayout /></CreatorProtectedRoute>}>
-          <Route path="/dashboard" element={<CreatorDashboardPage />} />
+          <Route path="/dashboard" element={<><SsoHandler /><CreatorDashboardPage /></>} />
           <Route path="/earnings" element={<CreatorEarningsPage />} />
           <Route path="/referrals" element={<CreatorReferralsPage />} />
           <Route path="/withdrawals" element={<CreatorWithdrawalsPage />} />
