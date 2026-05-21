@@ -27,7 +27,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
 
   // Rental state
   const [rentalService, setRentalService] = useState({ id: null, slug: preselectedService || null, name: null });
-  const [rentalDays, setRentalDays] = useState(3);
+  const [rentalDays, setRentalDays] = useState(7);
   const [showRentalModal, setShowRentalModal] = useState(false);
   const [rentalSearch, setRentalSearch] = useState('');
   const [ordering, setOrdering] = useState(false);
@@ -223,7 +223,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     </span>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">{svc.name}</h3>
-                  <p className="text-xs text-gray-400">1 / 3 / 7 days</p>
+                  <p className="text-xs text-gray-400">1 week · 2 weeks · 1 month</p>
                 </Card>
               ))}
             </div>
@@ -461,7 +461,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
             {/* Duration picker */}
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Duration</p>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {rentalOptions.map((opt) => (
                   <button
                     key={opt.days}
@@ -491,7 +491,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Duration</span>
-                <span className="font-medium">{rentalDays} Days</span>
+                <span className="font-medium">{rentalOptions.find(o => o.days === rentalDays)?.label || `${rentalDays} days`}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Total cost</span>
@@ -508,7 +508,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
             </div>
 
             <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-              Number is dedicated to {rentalService.name} and expires after {rentalDays} days.
+              Number is dedicated to {rentalService.name} for {rentalOptions.find(o => o.days === rentalDays)?.label || `${rentalDays} days`}. No refund after order is placed.
             </p>
 
             <div className="flex gap-3">
