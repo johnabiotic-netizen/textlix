@@ -30,7 +30,7 @@ export default function CreatorApplyPage() {
         <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-sm">
           <p className="text-4xl mb-4">✅</p>
           <h2 className="font-bold text-xl text-gray-900 mb-2">You're already approved!</h2>
-          <Link to="/dashboard" className="mt-4 inline-block bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium">Go to Dashboard</Link>
+          <Link to="/dashboard" className="mt-4 inline-block bg-brand-600 text-white px-6 py-2 rounded-lg font-medium">Go to Dashboard</Link>
         </div>
       </div>
     );
@@ -111,7 +111,7 @@ export default function CreatorApplyPage() {
                   <select
                     value={p.platform}
                     onChange={(e) => updatePlatform(i, 'platform', e.target.value)}
-                    className="col-span-3 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="col-span-3 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
                   >
                     <option value="">Platform</option>
                     {PLATFORMS.map((pl) => <option key={pl} value={pl}>{pl}</option>)}
@@ -121,14 +121,14 @@ export default function CreatorApplyPage() {
                     placeholder="Handle / link"
                     value={p.handle}
                     onChange={(e) => updatePlatform(i, 'handle', e.target.value)}
-                    className="col-span-5 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="col-span-5 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
                   />
                   <input
                     type="number"
                     placeholder="Followers"
                     value={p.followerCount}
                     onChange={(e) => updatePlatform(i, 'followerCount', e.target.value)}
-                    className="col-span-3 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="col-span-3 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
                   />
                   {platforms.length > 1 && (
                     <button type="button" onClick={() => removePlatform(i)} className="col-span-1 p-2 text-gray-400 hover:text-red-500">
@@ -138,7 +138,7 @@ export default function CreatorApplyPage() {
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addPlatform} className="mt-2 flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+            <button type="button" onClick={addPlatform} className="mt-2 flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium">
               <FiPlus size={14} /> Add another platform
             </button>
           </div>
@@ -155,7 +155,7 @@ export default function CreatorApplyPage() {
                     placeholder="https://..."
                     value={link}
                     onChange={(e) => updateProofLink(i, e.target.value)}
-                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
                   />
                   {proofLinks.length > 1 && (
                     <button type="button" onClick={() => removeProofLink(i)} className="p-2 text-gray-400 hover:text-red-500">
@@ -165,7 +165,7 @@ export default function CreatorApplyPage() {
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addProofLink} className="mt-2 flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+            <button type="button" onClick={addProofLink} className="mt-2 flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium">
               <FiPlus size={14} /> Add another link
             </button>
           </div>
@@ -178,14 +178,14 @@ export default function CreatorApplyPage() {
               onChange={(e) => setBio(e.target.value)}
               rows={3}
               placeholder="Brief description of your audience and content..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading || !user}
-            className="w-full bg-emerald-600 text-white font-semibold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            className="w-full bg-brand-600 text-white font-semibold py-3 rounded-xl hover:bg-brand-700 transition-colors disabled:opacity-50"
           >
             {loading ? 'Submitting...' : 'Submit Application'}
           </button>

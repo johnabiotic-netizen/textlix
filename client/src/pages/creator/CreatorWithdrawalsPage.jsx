@@ -64,13 +64,13 @@ export default function CreatorWithdrawalsPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-sm text-gray-500">Available balance</p>
-            <p className="text-3xl font-bold text-emerald-700">{fmt(creator?.pendingEarningsNaira)}</p>
+            <p className="text-3xl font-bold text-brand-700">{fmt(creator?.pendingEarningsNaira)}</p>
             <p className="text-xs text-gray-400 mt-1">Minimum: {fmt(creator?.minWithdrawalNaira)}</p>
           </div>
           <button
             onClick={handleWithdraw}
             disabled={!canWithdraw || !hasBank || requesting || creator?.pendingWithdrawal}
-            className="px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-3 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {requesting ? 'Requesting...' : 'Request Withdrawal'}
           </button>
@@ -87,7 +87,7 @@ export default function CreatorWithdrawalsPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-900">Bank Account</h2>
           {!editingBank && (
-            <button onClick={() => { setEditingBank(true); setBank(creator?.bankAccount || { bankName: '', accountNumber: '', accountName: '' }); }} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+            <button onClick={() => { setEditingBank(true); setBank(creator?.bankAccount || { bankName: '', accountNumber: '', accountName: '' }); }} className="text-sm text-brand-600 hover:text-brand-700 font-medium">
               {hasBank ? 'Edit' : 'Set up'}
             </button>
           )}
@@ -96,13 +96,13 @@ export default function CreatorWithdrawalsPage() {
         {editingBank ? (
           <form onSubmit={handleSaveBank} className="space-y-3">
             <input required placeholder="Bank Name (e.g. Access Bank)" value={bank.bankName} onChange={(e) => setBank({ ...bank, bankName: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
             <input required placeholder="Account Number" value={bank.accountNumber} onChange={(e) => setBank({ ...bank, accountNumber: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
             <input required placeholder="Account Name" value={bank.accountName} onChange={(e) => setBank({ ...bank, accountName: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
             <div className="flex gap-2">
-              <button type="submit" disabled={savingBank} className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+              <button type="submit" disabled={savingBank} className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50">
                 {savingBank ? 'Saving...' : 'Save'}
               </button>
               <button type="button" onClick={() => setEditingBank(false)} className="px-4 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">Cancel</button>
@@ -140,7 +140,7 @@ export default function CreatorWithdrawalsPage() {
                 <tr key={w._id}>
                   <td className="px-6 py-4 font-semibold text-gray-900">{fmt(w.amountNaira)}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${w.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : w.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${w.status === 'paid' ? 'bg-brand-100 text-brand-700' : w.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
                       {w.status}
                     </span>
                   </td>

@@ -40,9 +40,9 @@ export default function CreatorEarningsPage() {
                   <td className="px-6 py-4 text-gray-700">{e.referredUserId?.name || '—'}</td>
                   <td className="px-6 py-4 text-gray-700">${e.amountUSD?.toFixed(2)}</td>
                   <td className="px-6 py-4 text-gray-500">₦{e.usdNgnRate?.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-right font-semibold text-emerald-700">₦{e.commissionNaira?.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-right font-semibold text-brand-700">₦{e.commissionNaira?.toLocaleString()}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${e.status === 'withdrawn' ? 'bg-gray-100 text-gray-500' : 'bg-emerald-100 text-emerald-700'}`}>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${e.status === 'withdrawn' ? 'bg-gray-100 text-gray-500' : 'bg-brand-100 text-brand-700'}`}>
                       {e.status === 'withdrawn' ? 'Paid out' : 'Pending'}
                     </span>
                   </td>

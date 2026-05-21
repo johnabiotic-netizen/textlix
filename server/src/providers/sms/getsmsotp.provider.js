@@ -35,7 +35,7 @@ const COUNTRY_ID_TO_ISO = Object.fromEntries(
   Object.entries(ISO_TO_COUNTRY_ID).map(([iso, id]) => [String(id), iso])
 );
 
-// Service slug → Get-SMS OTP service code (different from rental codes!)
+// Service slug → Get-SMS OTP service code
 const SERVICE_CODE = {
   whatsapp:   'wa',
   telegram:   'tg',
@@ -84,42 +84,74 @@ const call = async (params) => {
   return data;
 };
 
+// Cache: full price map { [iso]: { [serviceCode]: { cost, count } } }
+// API now requires country param — we batch per country and cache 10 min
+let _priceCache = null;
+let _priceCacheTime = 0;
+const CACHE_TTL = 10 * 60 * 1000;
+const BATCH_SIZE = 8;
+
+const buildFullPriceMap = async () => {
+  const entries = Object.entries(ISO_TO_COUNTRY_ID);
+  const result = {};
+
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+    const batch = entries.slice(i, i + BATCH_SIZE);
+    const responses = await Promise.allSettled(
+      batch.map(([iso, id]) =>
+        call({ action: 'getPrices', country: id })
+          .then(raw => {
+            if (!raw || typeof raw !== 'object') return null;
+            const countryData = raw[String(id)];
+            if (!countryData || typeof countryData !== 'object') return null;
+            const services = {};
+            for (const [code, priceMap] of Object.entries(countryData)) {
+              if (typeof priceMap !== 'object') continue;
+              const [priceStr, count] = Object.entries(priceMap)[0] || [];
+              const cost = Number(priceStr);
+              const cnt = Number(count);
+              if (cost > 0 && cnt > 0) services[code] = { cost, count: cnt };
+            }
+            return { iso, services };
+          })
+      )
+    );
+    for (const r of responses) {
+      if (r.status === 'fulfilled' && r.value) {
+        result[r.value.iso] = r.value.services;
+      }
+    }
+  }
+  return result;
+};
+
+const getFullPrices = async () => {
+  if (_priceCache && Date.now() - _priceCacheTime < CACHE_TTL) return _priceCache;
+  try {
+    _priceCache = await buildFullPriceMap();
+    _priceCacheTime = Date.now();
+  } catch (err) {
+    logger.warn(`GetSMS OTP buildFullPriceMap failed: ${err.message}`);
+    if (!_priceCache) _priceCache = {};
+  }
+  return _priceCache;
+};
+
 // Get prices for a service across all countries.
 // Returns: { [countryIso]: { cost: number (USD), count: number } }
 const getOtpPrices = async (serviceSlug) => {
   const code = toServiceCode(serviceSlug);
   if (!code) return null;
   try {
-    // Calling without country returns all countries
-    const raw = await call({ action: 'getPrices', service: code });
-    if (!raw || typeof raw !== 'object') return null;
-
-    // Response shape: { countryId: { operatorId: { price: count } } }
-    // Prices are in rubles — divide by 90 to get approximate USD
+    const fullData = await getFullPrices();
     const result = {};
-    for (const [countryIdStr, operators] of Object.entries(raw)) {
-      const iso = COUNTRY_ID_TO_ISO[countryIdStr];
-      if (!iso || typeof operators !== 'object') continue;
-      let minCost = Infinity;
-      let totalCount = 0;
-      for (const priceMap of Object.values(operators)) {
-        if (typeof priceMap !== 'object') continue;
-        for (const [price, count] of Object.entries(priceMap)) {
-          const p = Number(price);
-          const c = Number(count);
-          if (p > 0 && c > 0) {
-            if (p < minCost) minCost = p;
-            totalCount += c;
-          }
-        }
-      }
-      if (minCost !== Infinity && totalCount > 0) {
-        result[iso] = { cost: minCost / 90, count: totalCount };
-      }
+    for (const [iso, services] of Object.entries(fullData)) {
+      const svc = services[code];
+      if (svc) result[iso] = svc;
     }
     return Object.keys(result).length > 0 ? result : null;
   } catch (err) {
-    logger.warn(`GetSMS OTP getPrices(${serviceSlug}) failed: ${err.message}`);
+    logger.warn(`GetSMS OTP getOtpPrices(${serviceSlug}) failed: ${err.message}`);
     return null;
   }
 };
@@ -143,7 +175,7 @@ const getNumber = async (serviceSlug, countryIso) => {
   throw new Error(`GetSMS OTP unexpected response: ${JSON.stringify(data)}`);
 };
 
-// Check order status. Returns status string (STATUS_WAIT_CODE, STATUS_OK:code, STATUS_CANCEL, etc.)
+// Check order status. Returns status string
 const getStatus = async (orderId) => {
   const data = await call({ action: 'getStatus', id: orderId });
   return typeof data === 'string' ? data.trim() : String(data);

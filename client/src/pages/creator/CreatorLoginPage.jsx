@@ -32,7 +32,7 @@ export default function CreatorLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Logo textClassName="text-xl" className="justify-center mb-1" />
-          <p className="text-xs text-emerald-600 font-medium">Creator Program</p>
+          <p className="text-xs text-brand-600 font-medium">Creator Program</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
           <h1 className="text-lg font-semibold text-gray-900 mb-6 text-center">Sign in to your account</h1>

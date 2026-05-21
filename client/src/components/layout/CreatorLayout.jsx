@@ -12,12 +12,12 @@ const nav = [
 ];
 
 export default function CreatorLayout() {
-  const { clearAuth } = useAuthStore();
+  const { logout: storeLogout } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try { await logout(); } catch (_) {}
-    clearAuth();
+    storeLogout();
     navigate('/');
   };
 
@@ -27,7 +27,7 @@ export default function CreatorLayout() {
       <aside className="w-60 bg-white border-r border-gray-100 flex flex-col">
         <div className="px-6 py-5 border-b border-gray-100">
           <Logo textClassName="text-sm" />
-          <p className="text-xs text-emerald-600 font-medium mt-1 ml-7">Creator Program</p>
+          <p className="text-xs text-brand-600 font-medium mt-1 ml-7">Creator Program</p>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
@@ -38,7 +38,7 @@ export default function CreatorLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-emerald-50 text-emerald-700'
+                    ? 'bg-brand-50 text-brand-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }

@@ -30,7 +30,7 @@ export default function CreatorDashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Pending Earnings', value: fmt(c.pendingEarningsNaira), icon: FiDollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Pending Earnings', value: fmt(c.pendingEarningsNaira), icon: FiDollarSign, color: 'text-brand-600', bg: 'bg-brand-50' },
           { label: 'Total Earned', value: fmt(c.totalEarningsNaira), icon: FiTrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Total Referrals', value: c.totalReferrals, icon: FiUsers, color: 'text-brand-600', bg: 'bg-brand-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
@@ -55,7 +55,7 @@ export default function CreatorDashboardPage() {
           />
           <button
             onClick={copyLink}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
           >
             <FiCopy size={14} /> Copy
           </button>
@@ -69,10 +69,10 @@ export default function CreatorDashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">Available for withdrawal</p>
-            <p className="text-xl font-bold text-emerald-700">{fmt(c.pendingEarningsNaira)}</p>
+            <p className="text-xl font-bold text-brand-700">{fmt(c.pendingEarningsNaira)}</p>
             <p className="text-xs text-gray-400 mt-1">Minimum withdrawal: {fmt(c.minWithdrawalNaira)}</p>
           </div>
-          <a href="/withdrawals" className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+          <a href="/withdrawals" className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors">
             {c.pendingEarningsNaira >= c.minWithdrawalNaira ? 'Withdraw Now' : 'Manage Withdrawals'}
           </a>
         </div>
