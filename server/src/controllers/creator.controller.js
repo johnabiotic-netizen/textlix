@@ -148,6 +148,22 @@ exports.updateBank = async (req, res, next) => {
   }
 };
 
+// ─── Update referral code ─────────────────────────────────────────────────────
+exports.updateReferralCode = async (req, res, next) => {
+  try {
+    const { code } = req.body;
+    if (!code) throw new AppError('VALIDATION_ERROR', 400, 'Code is required');
+    const clean = code.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+    if (clean.length < 3 || clean.length > 20) {
+      throw new AppError('VALIDATION_ERROR', 400, 'Code must be 3–20 alphanumeric characters');
+    }
+    const existing = await User.findOne({ referralCode: clean, _id: { $ne: req.user.userId } });
+    if (existing) throw new AppError('VALIDATION_ERROR', 400, 'This code is already taken — try another');
+    await User.findByIdAndUpdate(req.user.userId, { referralCode: clean });
+    success(res, { referralCode: clean });
+  } catch (err) { next(err); }
+};
+
 // ─── Request withdrawal ───────────────────────────────────────────────────────
 exports.requestWithdrawal = async (req, res, next) => {
   try {

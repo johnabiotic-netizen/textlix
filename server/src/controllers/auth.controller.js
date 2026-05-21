@@ -194,7 +194,19 @@ exports.logout = async (req, res, next) => {
   }
 };
 
-exports.oauthCallback = (user, res, req) => {
+exports.oauthCallback = async (user, res, refCode) => {
+  try {
+    if (refCode && !user.referredBy && !user.creatorReferredBy) {
+      const referrer = await User.findOne({ referralCode: refCode.toUpperCase() });
+      if (referrer && String(referrer._id) !== String(user._id)) {
+        if (referrer.isCreator) {
+          await User.findByIdAndUpdate(user._id, { creatorReferredBy: referrer._id });
+        } else {
+          await User.findByIdAndUpdate(user._id, { referredBy: referrer._id });
+        }
+      }
+    }
+  } catch {}
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
   setRefreshCookie(res, refreshToken);

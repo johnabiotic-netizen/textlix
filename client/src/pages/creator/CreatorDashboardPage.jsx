@@ -1,24 +1,52 @@
-import { useQuery } from '@tanstack/react-query';
-import { getCreatorMe } from '../../api/creator';
-import { FiCopy, FiDollarSign, FiUsers, FiTrendingUp } from 'react-icons/fi';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getCreatorMe, updateReferralCode } from '../../api/creator';
+import { FiCopy, FiDollarSign, FiUsers, FiTrendingUp, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString()}`;
 
 export default function CreatorDashboardPage() {
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['creatorMe'],
     queryFn: () => getCreatorMe().then((r) => r.data.data.creator),
   });
+
+  const [editingCode, setEditingCode] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [savingCode, setSavingCode] = useState(false);
 
   if (isLoading) return <div className="text-center py-20 text-gray-400">Loading...</div>;
 
   const c = data;
 
   const copyLink = () => {
-    navigator.clipboard.writeText(c.referralLink);
+    navigator.clipboard.writeText(c.referralLink || '');
     toast.success('Referral link copied!');
   };
+
+  const startEditCode = () => {
+    setCodeInput(c.referralCode || '');
+    setEditingCode(true);
+  };
+
+  const saveCode = async () => {
+    if (!codeInput.trim()) return;
+    setSavingCode(true);
+    try {
+      await updateReferralCode(codeInput.trim());
+      toast.success('Referral code updated!');
+      qc.invalidateQueries({ queryKey: ['creatorMe'] });
+      setEditingCode(false);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to update code');
+    } finally {
+      setSavingCode(false);
+    }
+  };
+
+  const referralBase = 'https://www.textlix.com/register?ref=';
 
   return (
     <div className="space-y-8">
@@ -44,13 +72,62 @@ export default function CreatorDashboardPage() {
         ))}
       </div>
 
-      {/* Referral link */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h2 className="font-semibold text-gray-900 mb-4">Your Referral Link</h2>
+      {/* Referral link + code customization */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-gray-900">Your Referral Link</h2>
+          {!editingCode && (
+            <button
+              onClick={startEditCode}
+              className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium"
+            >
+              <FiEdit2 size={12} /> Customize code
+            </button>
+          )}
+        </div>
+
+        {/* Referral code editor */}
+        {editingCode ? (
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-600">Your referral code</label>
+            <div className="flex gap-2 items-center">
+              <span className="text-xs text-gray-400 shrink-0">textlix.com/register?ref=</span>
+              <input
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+                maxLength={20}
+                placeholder="YOURNAME"
+                className="flex-1 px-3 py-2 text-sm border border-brand-300 rounded-lg font-mono focus:ring-2 focus:ring-brand-500 outline-none"
+                autoFocus
+              />
+              <button
+                onClick={saveCode}
+                disabled={savingCode || !codeInput.trim()}
+                className="p-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
+              >
+                <FiCheck size={15} />
+              </button>
+              <button
+                onClick={() => setEditingCode(false)}
+                className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-500"
+              >
+                <FiX size={15} />
+              </button>
+            </div>
+            <p className="text-xs text-gray-400">Letters, numbers and underscores only (3–20 chars)</p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-sm">
+            <span className="text-gray-400 font-mono text-xs">textlix.com/register?ref=</span>
+            <span className="font-mono font-bold text-gray-900 bg-brand-50 px-2 py-0.5 rounded text-xs">{c.referralCode}</span>
+          </div>
+        )}
+
+        {/* Full link + copy */}
         <div className="flex gap-2">
           <input
             readOnly
-            value={c.referralLink || ''}
+            value={c.referralLink || `${referralBase}${c.referralCode}`}
             className="flex-1 px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg font-mono text-gray-700"
           />
           <button
@@ -60,7 +137,7 @@ export default function CreatorDashboardPage() {
             <FiCopy size={14} /> Copy
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2">Share this link on WhatsApp, TikTok, Instagram, Facebook and more. You earn 10% of every top-up your referrals make.</p>
+        <p className="text-xs text-gray-400">Share on WhatsApp, TikTok, Instagram, Facebook. You earn 10% of every top-up your referrals make.</p>
       </div>
 
       {/* Withdrawal info */}
@@ -81,7 +158,6 @@ export default function CreatorDashboardPage() {
         )}
       </div>
 
-      {/* Live rate */}
       <p className="text-xs text-gray-400 text-center">
         Current USD/NGN rate: ₦{c.currentUsdNgnRate?.toLocaleString()} · Updated hourly
       </p>

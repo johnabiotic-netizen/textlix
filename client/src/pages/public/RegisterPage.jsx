@@ -53,24 +53,23 @@ export default function RegisterPage() {
           <h1 className="text-xl font-semibold text-gray-900">Create your account</h1>
         </div>
 
-        {refCode && (
-          <div className="mb-4 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-700 text-center">
-            🎉 You were invited — you'll get started with a bonus when you top up!
-          </div>
-        )}
-
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input label="Full name" value={form.name} onChange={f('name')} required placeholder="John Doe" />
             <Input label="Email" type="email" value={form.email} onChange={f('email')} required placeholder="you@example.com" />
             <Input label="Password" type="password" value={form.password} onChange={f('password')} required placeholder="Min. 8 characters" />
             <Input label="Confirm password" type="password" value={form.confirm} onChange={f('confirm')} required placeholder="Repeat password" />
-            {!searchParams.get('ref') && (
+            {searchParams.get('ref') ? (
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-brand-50 border border-brand-200 rounded-xl text-sm text-brand-700">
+                <span className="text-base">🎉</span>
+                <span>Referral code applied: <strong>{searchParams.get('ref')}</strong></span>
+              </div>
+            ) : (
               <Input
                 label="Referral code (optional)"
                 value={manualRef}
                 onChange={(e) => setManualRef(e.target.value.toUpperCase())}
-                placeholder="e.g. ABC12345"
+                placeholder="e.g. JOHNDOE"
               />
             )}
             <Button type="submit" loading={loading} className="w-full" size="lg">Create Account</Button>
@@ -82,7 +81,10 @@ export default function RegisterPage() {
           </div>
 
           <div className="flex">
-            <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google`} className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <a
+              href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google${refCode ? `?ref=${encodeURIComponent(refCode)}` : ''}`}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
               <FcGoogle size={18} /> Continue with Google
             </a>
           </div>

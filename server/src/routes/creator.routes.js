@@ -11,6 +11,7 @@ router.get('/me', creator.getMe);
 router.get('/earnings', creator.getEarnings);
 router.get('/referrals', creator.getReferrals);
 router.put('/bank', creator.updateBank);
+router.put('/referral-code', creator.updateReferralCode);
 router.post('/withdraw', creator.requestWithdrawal);
 router.get('/withdrawals', creator.getWithdrawals);
 

@@ -35,11 +35,18 @@ router.post('/forgot-password', authLimiter, authController.forgotPassword);
 router.post('/reset-password', resetLimiter, authController.resetPassword);
 router.get('/verify-email/:token', authController.verifyEmail);
 
-// Google OAuth
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// Google OAuth — ref code passed through state so it survives the OAuth redirect
+router.get('/google', (req, res, next) => {
+  const state = req.query.ref ? Buffer.from(req.query.ref).toString('base64') : undefined;
+  passport.authenticate('google', { scope: ['profile', 'email'], ...(state && { state }) })(req, res, next);
+});
 router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=oauth_failed` }),
-  (req, res) => authController.oauthCallback(req.user, res)
+  (req, res) => {
+    let ref = null;
+    try { if (req.query.state) ref = Buffer.from(req.query.state, 'base64').toString(); } catch {}
+    authController.oauthCallback(req.user, res, ref);
+  }
 );
 
 // GitHub OAuth

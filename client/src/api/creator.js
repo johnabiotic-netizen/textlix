@@ -5,6 +5,7 @@ export const applyCreator = (data) => api.post('/creator/apply', data);
 export const getCreatorEarnings = (page = 1) => api.get(`/creator/earnings?page=${page}`);
 export const getCreatorReferrals = (page = 1) => api.get(`/creator/referrals?page=${page}`);
 export const updateCreatorBank = (data) => api.put('/creator/bank', data);
+export const updateReferralCode = (code) => api.put('/creator/referral-code', { code });
 export const requestWithdrawal = () => api.post('/creator/withdraw');
 export const getCreatorWithdrawals = () => api.get('/creator/withdrawals');
 
