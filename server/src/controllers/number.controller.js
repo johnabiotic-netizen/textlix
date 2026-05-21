@@ -347,8 +347,8 @@ const SERVER_LABEL = {
   getsmsotp: 'LIX 3',
 };
 
-const RENTAL_DURATION_OPTIONS = [1, 3, 7];
-const RENTAL_DURATION_LABELS = { 1: '1 Day', 3: '3 Days', 7: '7 Days' };
+const RENTAL_DURATION_OPTIONS = [7, 14, 30];
+const RENTAL_DURATION_LABELS = { 7: '1 Week', 14: '2 Weeks', 30: '1 Month' };
 
 // Cache: `${countryIso}/${serviceSlug}` → { expiresAt, data: { 1: credits, 3: credits, 7: credits } }
 const rentalPriceCache = new Map();
@@ -494,10 +494,8 @@ exports.getCountriesForService = async (req, res, next) => {
     const { mode = 'otp' } = req.query;
 
     if (mode === 'rental') {
-      const supportedIsos = new Set(Object.keys(getsms.ISO_TO_COUNTRY));
       const allCountries = await Country.find({ isEnabled: true });
       const result = allCountries
-        .filter((c) => supportedIsos.has(c.code))
         .map((c) => ({ id: c._id, name: c.name, code: c.code, flagEmoji: c.flagEmoji }))
         .sort((a, b) => a.name.localeCompare(b.name));
       return success(res, { countries: result });
@@ -550,13 +548,10 @@ exports.getCountries = async (req, res, next) => {
     const countries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
 
     if (mode === 'rental') {
-      const supportedIsos = new Set(Object.keys(getsms.ISO_TO_COUNTRY));
       const allCountries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
-      const result = allCountries
-        .filter((c) => supportedIsos.has(c.code))
-        .map((c) => ({
-          id: c._id, name: c.name, code: c.code, flagEmoji: c.flagEmoji,
-        }));
+      const result = allCountries.map((c) => ({
+        id: c._id, name: c.name, code: c.code, flagEmoji: c.flagEmoji,
+      }));
       return success(res, { countries: result });
     }
 
@@ -942,7 +937,7 @@ exports.getRentalPrice = async (req, res, next) => {
     const country = await Country.findById(countryId);
     if (!country || !country.isEnabled) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
-    if (!getsms.ISO_TO_COUNTRY[country.code]) return success(res, { available: false });
+    // API now uses ISO codes directly — all countries are potentially supported
 
     const service = serviceId
       ? await Service.findById(serviceId)
@@ -990,10 +985,6 @@ exports.orderRental = async (req, res, next) => {
 
     const country = await Country.findById(countryId);
     if (!country) throw new AppError('NOT_FOUND', 404, 'Country not found');
-
-    if (!getsms.ISO_TO_COUNTRY[country.code]) {
-      throw new AppError('NOT_FOUND', 404, `Rental not available in ${country.name}`);
-    }
 
     const service = serviceId ? await Service.findById(serviceId) : null;
     if (!service) throw new AppError('VALIDATION_ERROR', 400, 'serviceId is required for rental');

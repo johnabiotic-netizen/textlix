@@ -1,132 +1,131 @@
 const axios = require('axios');
 const logger = require('../../config/logger');
 
-const BASE_URL = 'https://get-sms.com/api/v2/rent/';
+// Updated API base URL (changed per Get-SMS docs update)
+const BASE_URL = 'https://get-sms.com/api/v2/rent/rent_number.php';
 
-// Duration options → Get-SMS type/period params (API supports max 7 days)
+// Rental durations: minimum is 1 week (API only supports week/month)
 const DURATION_MAP = {
-  1: { type: 'day',  period: 1 },
-  3: { type: 'day',  period: 3 },
-  7: { type: 'week', period: 1 },
+  7:  { type: 'week',  period: 1 },
+  14: { type: 'week',  period: 2 },
+  30: { type: 'month', period: 1 },
 };
 
-// ISO-2 → Get-SMS country name (exact names from their live API)
-const ISO_TO_COUNTRY = {
-  US: 'ssha',             GB: 'england',          CA: 'canada',
-  DE: 'germany',          FR: 'france',           BR: 'brazil',
-  EE: 'estonia',          KZ: 'kazakhstan',       ID: 'indonesia',
-  KG: 'kyrgyzstan',       LA: 'laos',             LT: 'lithuania',
-  NL: 'netherlands',      PL: 'poland',           RO: 'romania',
-  SE: 'sweden',           IN: 'indiia',           MY: 'malaiziia',
-  VN: 'vetnam',           PH: 'filippiny',        TR: 'turtsiia',
-  MD: 'moldova',          UZ: 'uzbekistan',       GE: 'gruziia',
-  IE: 'irlandiia',        PT: 'portugaliia',      ES: 'ispaniia',
-  CZ: 'chekhiia',         BD: 'bangladesh',       HK: 'gonkong',
-  TH: 'tailand',          MX: 'meksika',          LV: 'latviia',
-  PK: 'pakistan',         GR: 'gretsiia',         NI: 'nikaragua',
-  AR: 'argentina',        HT: 'gaiti',            UA: 'ukr',
-  MN: 'mongoliia',        IL: 'izrail',           EG: 'egipet',
-  GT: 'gvatemala',        LY: 'liviia',           IR: 'iran',
-  YE: 'iemen',            TJ: 'tadzhikistan',     CN: 'kitai',
-  LK: 'shrilanka',        SY: 'siriia',           LB: 'livan',
-  BO: 'boliviia',         RS: 'serbiia',          CO: 'kolumbiia',
-  AT: 'avstriia',         DZ: 'alzhir',           PE: 'peru',
-  HN: 'gonduras',         MA: 'marokko',          VE: 'venesuela',
-  NG: 'nigeriia',         SV: 'salvador',         PY: 'paragvai',
-  NP: 'nepal',            IQ: 'irak',             MM: 'mianma',
-  KH: 'kambodzha',        BY: 'belarus',          CI: 'kotdivuar',
-  SA: 'saudaraviia',      AE: 'oae',              HR: 'khorvatiia',
-  TZ: 'tanzaniia',        DK: 'daniia',           DO: 'dominikanskaiarespublika',
-  EC: 'ekvador',          AF: 'afganistan',       NZ: 'novaiazelandiia',
-  TW: 'taivan',           CY: 'kipr',             CL: 'chili',
-  FI: 'finliandiia',      IT: 'italiia',          BG: 'bolgariia',
-  HU: 'vengriia',         SI: 'sloveniia',
+// Service slug → Get-SMS rental service ID
+// IDs confirmed from getdatacountry endpoint
+const SERVICE_ID = {
+  airbnb:     2,
+  amazon:     6,
+  discord:    32,
+  facebook:   36,
+  fiverr:     38,
+  google:     43,
+  instagram:  51,
+  line:       59,
+  linkedin:   60,
+  microsoft:  64,
+  netflix:    76,
+  paypal:     88,
+  signal:     107,
+  telegram:   113,
+  tiktok:     115,
+  tinder:     116,
+  viber:      125,
+  whatsapp:   137,
+  twitter:    142,
+  ebay:       88, // bundled with PayPal
 };
 
-// Service slug → Get-SMS service code (SMS-Activate format)
-const SERVICE_CODE = {
-  whatsapp: 'wa', telegram: 'tg',  google: 'go',  instagram: 'ig',
-  facebook: 'fb', twitter: 'tw',   tiktok: 'tt',  discord: 'ds',
-  snapchat: 'sc', amazon: 'am',    netflix: 'nf', uber: 'ub',
-  linkedin: 'li', paypal: 'pp',    viber: 'vi',   fiverr: 'fi',
-  tinder: 'ti',   signal: 'si',    ebay: 'eb',    wechat: 'wc',
-  weibo: 'wb',    tencentqq: 'qq', naver: 'nv',   zalo: 'zl',
-  spotify: 'sp',  line: 'ln',      lyft: 'lf',    airbnb: 'ai',
-  doordash: 'dp', kwai: 'kw',      grindr: 'gr',  badoo: 'bd',
-  twitch: 'tv',   bilibili: 'bi',  iqiyi: 'iq',   kakaotalk: 'ka',
-  aol: 'aol',     microsoft: 'ms',
-};
-
-const toServiceCode = (slug) => SERVICE_CODE[slug] || slug;
+const toServiceId = (slug) => SERVICE_ID[slug] || null;
 
 const call = async (params) => {
   const { data } = await axios.get(BASE_URL, {
     params: { userkey: process.env.GETSMS_API_KEY, ...params },
     timeout: 15000,
   });
-  // Error envelope: { status: 4xx, data: { msg: '...' } }
-  if (data && typeof data === 'object') {
-    if (data.error) throw new Error(`GetSMS: ${data.error}`);
-    if (data.status && data.status >= 400) throw new Error(`GetSMS: ${data.data?.msg || data.status}`);
+  if (data?.status && data.status >= 400) {
+    throw new Error(`GetSMS: ${data.data?.msg || data.status}`);
   }
   return data;
 };
 
-// Get rental pricing for a country + service.
-// Response: { status:200, data: { [serviceCode]: { count: N, price: { "1day": X, "3day": X, "7day": X, ... } } } }
-// Returns: { count: N, prices: { 1: X, 3: X, 7: X } } with USD prices
-const getPrices = async (countryIso, serviceSlug) => {
-  const country = ISO_TO_COUNTRY[countryIso?.toUpperCase()];
-  if (!country) return null;
+// Cache country data (services + prices) per ISO code — 30 min TTL
+const _countryCache = new Map();
+const CACHE_TTL = 30 * 60 * 1000;
+
+const getCountryData = async (countryIso) => {
+  const cached = _countryCache.get(countryIso);
+  if (cached && Date.now() < cached.expires) return cached.services;
   try {
-    const raw = await call({ method: 'getcountprices', country });
-    if (!raw?.data || typeof raw.data !== 'object') return null;
-    const code = toServiceCode(serviceSlug);
-    const svcData = raw.data[code];
-    if (!svcData?.price) return null;
-    // Map "Nday" keys to day numbers: { "1day": 2.5 } → { 1: 2.5 }
+    const raw = await call({ method: 'getdatacountry', country: countryIso });
+    if (!raw?.data?.services) return null;
+    _countryCache.set(countryIso, {
+      expires: Date.now() + CACHE_TTL,
+      services: raw.data.services,
+    });
+    return raw.data.services;
+  } catch (err) {
+    logger.warn(`GetSMS getCountryData(${countryIso}): ${err.message}`);
+    return null;
+  }
+};
+
+// Get rental pricing for a country + service.
+// Returns: { count: N, prices: { 7: X, 14: X, 30: X } } with USD prices
+const getPrices = async (countryIso, serviceSlug) => {
+  const serviceId = toServiceId(serviceSlug);
+  if (!serviceId) return null;
+  try {
+    const services = await getCountryData(countryIso);
+    if (!services) return null;
+    const svc = services.find(s => s.id === serviceId);
+    if (!svc || !svc.price_day || Number(svc.qty) <= 0) return null;
+
+    const pricePerDay = Number(svc.price_day);
     const prices = {};
-    for (const [key, price] of Object.entries(svcData.price)) {
-      const days = parseInt(key, 10);
-      if (!isNaN(days) && Number(price) > 0) prices[days] = Number(price);
+    for (const [days, { type, period }] of Object.entries(DURATION_MAP)) {
+      const totalDays = type === 'month' ? 30 : period * 7;
+      prices[Number(days)] = pricePerDay * totalDays;
     }
-    return { count: Number(svcData.count) || 0, prices };
+    return { count: Number(svc.qty), prices };
   } catch (err) {
     logger.warn(`GetSMS getPrices failed (${countryIso}/${serviceSlug}): ${err.message}`);
     return null;
   }
 };
 
-// Rent a number for X days (3, 7, 14, or 30)
+// Rent a number. days must be one of [7, 14, 30]
 const getNumber = async (countryIso, serviceSlug, days) => {
-  const country = ISO_TO_COUNTRY[countryIso?.toUpperCase()];
+  const serviceId = toServiceId(serviceSlug);
   const duration = DURATION_MAP[days];
-  if (!country) throw new Error(`GetSMS: unsupported country ${countryIso}`);
+  if (!serviceId) throw new Error(`GetSMS: unsupported service ${serviceSlug}`);
   if (!duration) throw new Error(`GetSMS: unsupported duration ${days} days`);
 
   const raw = await call({
-    method: 'getnumber',
-    country,
-    service: toServiceCode(serviceSlug),
+    method: 'createorder',
+    country: countryIso,
+    services: serviceId,
     type: duration.type,
     period: duration.period,
   });
 
   const data = raw?.data;
-  if (!data || !data.phone) throw new Error(`GetSMS getNumber failed: ${JSON.stringify(raw)}`);
+  if (!data?.phone) throw new Error(`GetSMS createorder failed: ${JSON.stringify(raw)}`);
 
   return {
     id: String(data.order_id),
     phone: String(data.phone),
-    expiresAt: data.end_time_timestamp ? new Date(data.end_time_timestamp * 1000) : new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+    expiresAt: data.end_time_timestamp
+      ? new Date(data.end_time_timestamp * 1000)
+      : new Date(Date.now() + days * 24 * 60 * 60 * 1000),
   };
 };
 
-// Poll all SMS received on a rented number
-// Response: { status:200, data: { msg: "...", sms_list: [{ date, text }] } }
+// Poll SMS received on a rented number
+// Response: { status:200, data: { sms_list: [{date, text}], status_rent } }
 const getSMS = async (rentId) => {
   try {
-    const raw = await call({ method: 'getcode', rentid: rentId });
+    const raw = await call({ method: 'getsms', rentid: rentId });
     const smsList = raw?.data?.sms_list;
     return Array.isArray(smsList) ? smsList : [];
   } catch (err) {
@@ -135,13 +134,17 @@ const getSMS = async (rentId) => {
   }
 };
 
-// Cancel/refund rental (refund available within 20 minutes of ordering)
+// No cancel endpoint in updated API — rentals expire naturally
 const cancel = async (rentId) => {
-  try {
-    await call({ method: 'refuse', rentid: rentId });
-  } catch (err) {
-    logger.warn(`GetSMS cancel failed for ${rentId}:`, err.message);
-  }
+  logger.info(`GetSMS rental ${rentId}: no cancel available, expires naturally`);
 };
 
-module.exports = { getPrices, getNumber, getSMS, cancel, DURATION_MAP, ISO_TO_COUNTRY, SERVICE_CODE, toServiceCode };
+module.exports = {
+  getPrices,
+  getNumber,
+  getSMS,
+  cancel,
+  DURATION_MAP,
+  SERVICE_ID,
+  toServiceId,
+};
