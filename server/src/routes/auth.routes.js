@@ -69,7 +69,9 @@ router.post('/2fa/enable',   authenticate, authController.twoFAEnable);
 router.post('/2fa/disable',  authenticate, authController.twoFADisable);
 router.post('/2fa/complete',              authController.twoFAComplete);
 
-// Creator subdomain SSO bridge
+// SSO bridges (browser navigation carries cookies, XHR may not)
+router.get('/sso/main', authController.mainSsoInit);
+router.post('/sso/exchange-main', authController.mainSsoExchange);
 router.get('/sso/creator', authController.creatorSsoInit);
 router.post('/sso/exchange', authController.creatorSsoExchange);
 

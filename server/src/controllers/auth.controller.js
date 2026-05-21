@@ -379,6 +379,41 @@ exports.twoFAComplete = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// GET /auth/sso/main — restore session on www.textlix.com via cookie (browser navigation)
+exports.mainSsoInit = async (req, res, next) => {
+  try {
+    const token = req.cookies.refreshToken;
+    const redirect = req.query.redirect || 'https://www.textlix.com/dashboard';
+    if (!token) return res.redirect(`${redirect}?sso_failed=1`);
+    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const user = await User.findById(payload.userId);
+    if (!user) return res.redirect(`${redirect}?sso_failed=1`);
+    const ssoToken = jwt.sign(
+      { userId: user._id, type: 'main_sso' },
+      process.env.JWT_ACCESS_SECRET,
+      { expiresIn: '90s' }
+    );
+    const sep = redirect.includes('?') ? '&' : '?';
+    return res.redirect(`${redirect}${sep}sso=${ssoToken}`);
+  } catch { return res.redirect('https://www.textlix.com/login'); }
+};
+
+// POST /auth/sso/exchange-main — exchange main SSO token for session
+exports.mainSsoExchange = async (req, res, next) => {
+  try {
+    const { ssoToken } = req.body;
+    if (!ssoToken) throw new AppError('VALIDATION_ERROR', 400, 'Missing sso token');
+    const payload = jwt.verify(ssoToken, process.env.JWT_ACCESS_SECRET);
+    if (payload.type !== 'main_sso') throw new AppError('UNAUTHORIZED', 401, 'Invalid SSO token');
+    const user = await User.findById(payload.userId);
+    if (!user) throw new AppError('UNAUTHORIZED', 401, 'User not found');
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+    setRefreshCookie(res, refreshToken);
+    success(res, { user: formatUser(user), accessToken });
+  } catch (err) { next(err); }
+};
+
 // GET /auth/sso/creator — bridge session from main domain to creator subdomain
 exports.creatorSsoInit = async (req, res, next) => {
   try {

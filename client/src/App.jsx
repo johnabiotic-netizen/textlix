@@ -137,6 +137,25 @@ export default function App() {
     };
 
     const initAuth = async () => {
+      // First: check for ?sso= token from SSO bridge redirect
+      const params = new URLSearchParams(window.location.search);
+      const ssoToken = params.get('sso');
+      if (ssoToken && !params.get('sso_failed')) {
+        try {
+          const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
+          const { data } = await axios.post(`${apiBase}/auth/sso/exchange-main`, { ssoToken }, { withCredentials: true });
+          const token = data.data.accessToken;
+          useAuthStore.getState().setAccessToken(token);
+          const userRes = await api.get('/user/me');
+          setAuth(userRes.data.data.user, token);
+          scheduleProactiveRefresh(token, doRefresh);
+          // Clean up URL
+          const clean = window.location.pathname + window.location.search.replace(/[?&]sso=[^&]*/g, '').replace(/^&/, '?');
+          window.history.replaceState({}, '', clean || window.location.pathname);
+          return;
+        } catch {}
+      }
+
       try {
         const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
         const { data } = await axios.post(`${apiBase}/auth/refresh`, {}, { withCredentials: true });
@@ -145,7 +164,18 @@ export default function App() {
         const userRes = await api.get('/user/me');
         setAuth(userRes.data.data.user, token);
         scheduleProactiveRefresh(token, doRefresh);
+        sessionStorage.removeItem('mainSsoTried');
       } catch {
+        // Refresh via XHR failed — try SSO bridge via browser navigation (cookies sent automatically)
+        const tried = sessionStorage.getItem('mainSsoTried');
+        if (!tried && !isCreatorSubdomain) {
+          sessionStorage.setItem('mainSsoTried', '1');
+          const apiBase = import.meta.env.VITE_API_URL || '';
+          const redirect = window.location.href.split('?')[0] + window.location.search.replace(/[?&]sso=[^&]*/g, '');
+          window.location.href = `${apiBase}/api/v1/auth/sso/main?redirect=${encodeURIComponent(redirect)}`;
+          return;
+        }
+        sessionStorage.removeItem('mainSsoTried');
         setLoading(false);
       }
     };
