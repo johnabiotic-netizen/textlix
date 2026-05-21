@@ -29,10 +29,14 @@ function SsoHandler() {
     if (!sso) return;
     api.post('/auth/sso/exchange', { ssoToken: sso })
       .then(({ data }) => {
+        sessionStorage.removeItem('ssoTried');
         setAuth(data.data.user, data.data.accessToken);
         navigate('/dashboard', { replace: true });
       })
-      .catch(() => navigate('/login', { replace: true }));
+      .catch(() => {
+        sessionStorage.removeItem('ssoTried');
+        navigate('/login', { replace: true });
+      });
   }, []);
 
   return null;
@@ -41,7 +45,20 @@ function SsoHandler() {
 function CreatorProtectedRoute({ children }) {
   const { user, isLoading } = useAuthStore();
   if (isLoading) return <Spinner />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    // Try silent SSO via browser navigation (cookies sent automatically) before showing login form.
+    // sessionStorage flag prevents infinite loop if server also has no session.
+    const tried = sessionStorage.getItem('ssoTried');
+    if (!tried) {
+      sessionStorage.setItem('ssoTried', '1');
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      window.location.href = `${apiBase}/api/v1/auth/sso/creator`;
+      return <Spinner />;
+    }
+    sessionStorage.removeItem('ssoTried');
+    return <Navigate to="/login" replace />;
+  }
+  sessionStorage.removeItem('ssoTried');
   return children;
 }
 
