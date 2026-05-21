@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FiZap, FiGlobe, FiShield, FiClock, FiRefreshCw, FiTrendingUp, FiStar, FiSmartphone } from 'react-icons/fi';
 import { getPublicStats } from '../../api/numbers';
 import Logo from '../../components/common/Logo';
+import ThemeToggle from '../../components/common/ThemeToggle';
 
 const PACKAGES = [
   { label: 'Starter', usd: '$2', credits: '200 credits' },
@@ -98,21 +99,22 @@ export default function LandingPage() {
       <meta property="og:description" content="Get virtual phone numbers from 150+ countries instantly. Receive SMS verification codes in real-time." />
       <meta property="og:url" content="https://www.textlix.com/" />
     </Helmet>
-    <div className="min-h-screen bg-white font-body">
+    <div className="min-h-screen bg-white dark:bg-gray-950 font-body">
 
       {/* Navbar */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
+      <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
           <Logo textClassName="text-xl" />
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pricing</Link>
-            <Link to="/docs" className="text-sm font-medium text-gray-600 hover:text-gray-900">Docs</Link>
-            <Link to="/blog" className="text-sm font-medium text-gray-600 hover:text-gray-900">Blog</Link>
-            <Link to="/about" className="text-sm font-medium text-gray-600 hover:text-gray-900">About</Link>
-            <Link to="/faq" className="text-sm font-medium text-gray-600 hover:text-gray-900">FAQ</Link>
+            <Link to="/pricing" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Pricing</Link>
+            <Link to="/docs" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Docs</Link>
+            <Link to="/blog" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Blog</Link>
+            <Link to="/about" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">About</Link>
+            <Link to="/faq" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">FAQ</Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Sign in</Link>
             <Link to="/register" className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
               Get Started
             </Link>
@@ -147,17 +149,17 @@ export default function LandingPage() {
       </section>
 
       {/* Two modes */}
-      <section className="py-20 px-4 bg-gray-50" id="how-it-works">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900" id="how-it-works">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">Two Ways to Verify</h2>
-          <p className="text-gray-500 text-center mb-12">Pick the mode that fits your use case</p>
+          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Two Ways to Verify</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Pick the mode that fits your use case</p>
           <div className="grid md:grid-cols-2 gap-6">
             {/* OTP */}
-            <div className="bg-white rounded-2xl p-8 border border-brand-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-brand-100 shadow-sm">
               <div className="text-4xl mb-4">⚡</div>
-              <h3 className="font-display font-bold text-xl text-gray-900 mb-2">One-Time OTP</h3>
-              <p className="text-gray-500 text-sm mb-5">Instantly rent a number, receive one SMS verification code, done. Unused numbers auto-expire and credits are refunded.</p>
-              <ul className="space-y-2 text-sm text-gray-600 mb-6">
+              <h3 className="font-display font-bold text-xl text-gray-900 dark:text-white mb-2">One-Time OTP</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">Instantly rent a number, receive one SMS verification code, done. Unused numbers auto-expire and credits are refunded.</p>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-6">
                 <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Get a number in seconds</li>
                 <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> SMS pushed live to your dashboard</li>
                 <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Auto-refund if no code arrives in 20 min</li>
@@ -168,11 +170,11 @@ export default function LandingPage() {
               </Link>
             </div>
             {/* Rental */}
-            <div className="bg-white rounded-2xl p-8 border border-brand-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-brand-100 shadow-sm">
               <div className="text-4xl mb-4">📅</div>
-              <h3 className="font-display font-bold text-xl text-gray-900 mb-2">Long-Term Rental</h3>
-              <p className="text-gray-500 text-sm mb-5">Rent a number for days or weeks. Keep receiving codes on the same number — perfect for accounts that need repeated verification.</p>
-              <ul className="space-y-2 text-sm text-gray-600 mb-6">
+              <h3 className="font-display font-bold text-xl text-gray-900 dark:text-white mb-2">Long-Term Rental</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">Rent a number for days or weeks. Keep receiving codes on the same number — perfect for accounts that need repeated verification.</p>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-6">
                 <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Daily rental pricing</li>
                 <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Same number stays yours</li>
                 <li className="flex items-center gap-2"><span className="text-brand-500 font-bold">✓</span> Unlimited SMS on the rental period</li>
@@ -187,9 +189,9 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-12">How It Works</h2>
+          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-12">How It Works</h2>
           <div className="grid md:grid-cols-4 gap-6">
             {[
               { step: '1', icon: '💳', title: 'Buy Credits', desc: 'Top up with a card or crypto (USDT, BTC, ETH). Credits never expire.' },
@@ -197,10 +199,10 @@ export default function LandingPage() {
               { step: '3', icon: '📱', title: 'Get Your Number', desc: 'A real virtual number is assigned instantly from your chosen country.' },
               { step: '4', icon: '📩', title: 'Receive the Code', desc: 'SMS arrives live on your dashboard within seconds. Copy and use it.' },
             ].map((item) => (
-              <div key={item.step} className="bg-gray-50 rounded-xl p-6 text-center relative">
+              <div key={item.step} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 text-center relative">
                 <div className="text-3xl mb-3">{item.icon}</div>
                 <div className="inline-flex items-center justify-center w-6 h-6 bg-brand-600 text-white text-xs font-bold rounded-full mb-3">{item.step}</div>
-                <h3 className="font-display font-semibold text-base text-gray-900 mb-2">{item.title}</h3>
+                <h3 className="font-display font-semibold text-base text-gray-900 dark:text-white mb-2">{item.title}</h3>
                 <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
               </div>
             ))}
@@ -209,15 +211,15 @@ export default function LandingPage() {
       </section>
 
       {/* Smart success scoring callout */}
-      <section className="py-16 px-4 bg-gradient-to-r from-brand-50 to-brand-100">
+      <section className="py-16 px-4 bg-gradient-to-r from-brand-50 to-brand-100 dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
                 <FiTrendingUp size={13} /> Smart Recommendations
               </div>
-              <h2 className="font-display font-bold text-3xl text-gray-900 mb-4">Know Your Odds Before You Buy</h2>
-              <p className="text-gray-500 mb-6">Every service and country shows a live success score pulled directly from our SMS provider. Green means high chance of delivery. We surface the best country for your chosen service automatically — no guessing.</p>
+              <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white mb-4">Know Your Odds Before You Buy</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">Every service and country shows a live success score pulled directly from our SMS provider. Green means high chance of delivery. We surface the best country for your chosen service automatically — no guessing.</p>
               <ul className="space-y-3 text-sm text-gray-700">
                 <li className="flex items-start gap-3">
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-xs">✓</span>
@@ -233,8 +235,8 @@ export default function LandingPage() {
                 </li>
               </ul>
             </div>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Example — WhatsApp service scores</p>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 p-6 space-y-3">
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">Example — WhatsApp service scores</p>
               {[
                 { flag: '🇺🇸', country: 'United States', score: 97, badge: 'Best Match' },
                 { flag: '🇬🇧', country: 'United Kingdom', score: 93 },
@@ -243,7 +245,7 @@ export default function LandingPage() {
                 { flag: '🇧🇷', country: 'Brazil', score: 74 },
               ].map((row) => (
                 <div key={row.country} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">{row.flag} {row.country}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{row.flag} {row.country}</span>
                   <div className="flex items-center gap-2">
                     {row.badge && <span className="text-xs bg-brand-100 text-brand-700 font-semibold px-2 py-0.5 rounded-full">{row.badge}</span>}
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${row.score >= 90 ? 'bg-green-50 text-green-700' : row.score >= 75 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
@@ -258,7 +260,7 @@ export default function LandingPage() {
       </section>
 
       {/* Services */}
-      <section className="py-16 px-4">
+      <section className="py-16 px-4 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="font-display font-bold text-2xl text-gray-900 mb-3">Works With Every App</h2>
           <p className="text-gray-500 mb-8">Hundreds of services supported — if it sends an SMS, textlix works with it</p>
@@ -284,10 +286,10 @@ export default function LandingPage() {
       </section>
 
       {/* Features grid */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">Why textlix?</h2>
-          <p className="text-gray-500 text-center mb-12">Built for speed, reliability, and transparency</p>
+          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Why textlix?</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Built for speed, reliability, and transparency</p>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               { icon: <FiZap className="text-brand-600" size={22} />, title: 'Real-Time SMS Delivery', desc: 'Codes are pushed live to your dashboard via WebSocket the instant they arrive. No page refresh needed.' },
@@ -300,7 +302,7 @@ export default function LandingPage() {
               { icon: <FiClock className="text-brand-600" size={22} />, title: '24/7 Availability', desc: 'Platform runs around the clock with automated number expiry and SMS cleanup jobs.' },
               { icon: <FiShield className="text-brand-600" size={22} />, title: 'Your Data, Your Control', desc: 'We never sell or share your data with third parties. Your order history is yours to view and export anytime.' },
             ].map((f, i) => (
-              <div key={i} className="bg-gray-50 rounded-xl p-6 flex gap-4">
+              <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 flex gap-4">
                 <div className="flex-shrink-0 w-10 h-10 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm">{f.icon}</div>
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-1 text-sm">{f.title}</h3>
@@ -315,8 +317,8 @@ export default function LandingPage() {
       {/* Pricing */}
       <section id="pricing" className="py-20 px-4 bg-gray-50">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">Simple Pricing</h2>
-          <p className="text-gray-500 text-center mb-12">1 credit = $0.01. Numbers from 10–500 credits. Credits never expire.</p>
+          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Simple Pricing</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-center mb-12">1 credit = $0.01. Numbers from 10–500 credits. Credits never expire.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {PACKAGES.map((pkg) => (
               <div key={pkg.label} className={`border rounded-xl p-5 text-center relative ${pkg.popular ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-white'}`}>
@@ -343,9 +345,9 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 dark:bg-gray-950">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">Common Questions</h2>
+          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Common Questions</h2>
           <p className="text-gray-500 text-center mb-10">Quick answers to what people ask most</p>
           <div className="space-y-3 mb-8">
             {[
@@ -380,41 +382,41 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 py-12 px-4 bg-white">
+      <footer className="border-t border-gray-200 dark:border-gray-800 py-12 px-4 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
             <div>
               <Logo textClassName="text-xl" className="mb-2" />
-              <p className="text-sm text-gray-500 max-w-xs">Virtual phone numbers for instant SMS verification from 150+ countries. OTP and long-term rental.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">Virtual phone numbers for instant SMS verification from 150+ countries. OTP and long-term rental.</p>
             </div>
             <div className="flex gap-16">
               <div>
-                <p className="font-semibold text-gray-900 text-sm mb-3">Product</p>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Product</p>
                 <div className="space-y-2">
-                  <a href="#pricing" className="block text-sm text-gray-500 hover:text-gray-700">Pricing</a>
-                  <Link to="/faq" className="block text-sm text-gray-500 hover:text-gray-700">FAQ</Link>
-                  <Link to="/support" className="block text-sm text-gray-500 hover:text-gray-700">Support</Link>
-                  <Link to="/docs" className="block text-sm text-gray-500 hover:text-gray-700">Docs</Link>
-                  <Link to="/blog" className="block text-sm text-gray-500 hover:text-gray-700">Blog</Link>
+                  <a href="#pricing" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">Pricing</a>
+                  <Link to="/faq" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">FAQ</Link>
+                  <Link to="/support" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">Support</Link>
+                  <Link to="/docs" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">Docs</Link>
+                  <Link to="/blog" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">Blog</Link>
                 </div>
               </div>
               <div>
-                <p className="font-semibold text-gray-900 text-sm mb-3">Legal</p>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Legal</p>
                 <div className="space-y-2">
-                  <Link to="/terms" className="block text-sm text-gray-500 hover:text-gray-700">Terms of Service</Link>
-                  <Link to="/privacy" className="block text-sm text-gray-500 hover:text-gray-700">Privacy Policy</Link>
+                  <Link to="/terms" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">Terms of Service</Link>
+                  <Link to="/privacy" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">Privacy Policy</Link>
                 </div>
               </div>
               <div>
-                <p className="font-semibold text-gray-900 text-sm mb-3">Contact</p>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Contact</p>
                 <div className="space-y-2">
-                  <a href="mailto:support@textlix.com" className="block text-sm text-gray-500 hover:text-gray-700">support@textlix.com</a>
+                  <a href="mailto:support@textlix.com" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">support@textlix.com</a>
                 </div>
               </div>
             </div>
           </div>
-          <div className="border-t border-gray-200 pt-6 text-center">
-            <p className="text-sm text-gray-400">© {new Date().getFullYear()} textlix. All rights reserved.</p>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 text-center">
+            <p className="text-sm text-gray-400 dark:text-gray-500">© {new Date().getFullYear()} textlix. All rights reserved.</p>
           </div>
         </div>
       </footer>
