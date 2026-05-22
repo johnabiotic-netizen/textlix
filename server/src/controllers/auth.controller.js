@@ -384,16 +384,16 @@ exports.mainSsoInit = async (req, res, next) => {
   try {
     const token = req.cookies.refreshToken;
     const redirect = req.query.redirect || 'https://www.textlix.com/dashboard';
-    if (!token) return res.redirect(`${redirect}?sso_failed=1`);
+    const sep = redirect.includes('?') ? '&' : '?';
+    if (!token) return res.redirect(`${redirect}${sep}sso_failed=1`);
     const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(payload.userId);
-    if (!user) return res.redirect(`${redirect}?sso_failed=1`);
+    if (!user) return res.redirect(`${redirect}${sep}sso_failed=1`);
     const ssoToken = jwt.sign(
       { userId: user._id, type: 'main_sso' },
       process.env.JWT_ACCESS_SECRET,
       { expiresIn: '90s' }
     );
-    const sep = redirect.includes('?') ? '&' : '?';
     return res.redirect(`${redirect}${sep}sso=${ssoToken}`);
   } catch { return res.redirect('https://www.textlix.com/login'); }
 };

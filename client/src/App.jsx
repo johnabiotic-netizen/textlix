@@ -136,46 +136,59 @@ export default function App() {
       }
     };
 
+    const cleanSsoParams = () => {
+      const search = window.location.search
+        .replace(/[?&]sso=[^&]*/g, '')
+        .replace(/[?&]sso_failed=[^&]*/g, '')
+        .replace(/^&/, '?');
+      const clean = window.location.pathname + search;
+      if (clean !== window.location.pathname + window.location.search) {
+        window.history.replaceState({}, '', clean || window.location.pathname);
+      }
+    };
+
     const initAuth = async () => {
-      // First: check for ?sso= token from SSO bridge redirect
       const params = new URLSearchParams(window.location.search);
       const ssoToken = params.get('sso');
-      if (ssoToken && !params.get('sso_failed')) {
+      const ssoFailed = params.get('sso_failed');
+
+      // Clean any SSO params from URL upfront
+      cleanSsoParams();
+
+      // Exchange SSO token if present (came back from SSO bridge)
+      if (ssoToken && !ssoFailed) {
         try {
           const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
           const { data } = await axios.post(`${apiBase}/auth/sso/exchange-main`, { ssoToken }, { withCredentials: true });
           const token = data.data.accessToken;
           useAuthStore.getState().setAccessToken(token);
           const userRes = await api.get('/user/me');
-          setAuth(userRes.data.data.user, token);
+          setAuth(userRes.data.data.user, token); // setAuth also clears mainSsoTried
           scheduleProactiveRefresh(token, doRefresh);
-          // Clean up URL
-          const clean = window.location.pathname + window.location.search.replace(/[?&]sso=[^&]*/g, '').replace(/^&/, '?');
-          window.history.replaceState({}, '', clean || window.location.pathname);
           return;
         } catch {}
       }
 
+      // Try normal cookie refresh
       try {
         const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
         const { data } = await axios.post(`${apiBase}/auth/refresh`, {}, { withCredentials: true });
         const token = data.data.accessToken;
         useAuthStore.getState().setAccessToken(token);
         const userRes = await api.get('/user/me');
-        setAuth(userRes.data.data.user, token);
+        setAuth(userRes.data.data.user, token); // setAuth also clears mainSsoTried
         scheduleProactiveRefresh(token, doRefresh);
-        sessionStorage.removeItem('mainSsoTried');
       } catch {
-        // Refresh via XHR failed — try SSO bridge via browser navigation (cookies sent automatically)
+        // XHR refresh failed — try SSO bridge (browser navigation sends cookies automatically)
         const tried = sessionStorage.getItem('mainSsoTried');
-        if (!tried && !isCreatorSubdomain) {
+        if (!tried && !isCreatorSubdomain && !ssoFailed) {
           sessionStorage.setItem('mainSsoTried', '1');
           const apiBase = import.meta.env.VITE_API_URL || '';
-          const redirect = window.location.href.split('?')[0] + window.location.search.replace(/[?&]sso=[^&]*/g, '');
-          window.location.href = `${apiBase}/api/v1/auth/sso/main?redirect=${encodeURIComponent(redirect)}`;
+          const currentPath = window.location.pathname + window.location.search
+            .replace(/[?&]sso=[^&]*/g, '').replace(/[?&]sso_failed=[^&]*/g, '').replace(/^&/, '?');
+          window.location.href = `${apiBase}/api/v1/auth/sso/main?redirect=${encodeURIComponent(window.location.origin + currentPath)}`;
           return;
         }
-        sessionStorage.removeItem('mainSsoTried');
         setLoading(false);
       }
     };
