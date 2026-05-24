@@ -13,7 +13,8 @@ const DURATION_MAP = {
 };
 
 // Service slug → Get-SMS rental service ID
-// IDs confirmed from getdatacountry endpoint
+// Curated overrides ensure clean URL slugs for the most common services
+// (the dynamic catalog below provides full coverage for everything else)
 const SERVICE_ID = {
   airbnb:     2,
   amazon:     6,
@@ -37,7 +38,112 @@ const SERVICE_ID = {
   ebay:       88, // bundled with PayPal
 };
 
-const toServiceId = (slug) => SERVICE_ID[slug] || null;
+// Reverse map: numeric id → preferred slug (so the catalog uses our clean slug)
+const ID_TO_SLUG = Object.fromEntries(
+  Object.entries(SERVICE_ID).filter(([slug, id]) => slug !== 'ebay').map(([slug, id]) => [id, slug])
+);
+
+// Generate a URL-safe slug from a raw Get-SMS service name.
+// Strips parens content, truncates at &/+/| (multi-service bundles), and lowercases.
+const slugify = (name) => {
+  return String(name)
+    .replace(/\([^)]*\)/g, '')      // remove parens content e.g. "Google (GMail, ...)"
+    .replace(/\s*[&+|/].*$/, '')     // truncate at +, &, |, /
+    .replace(/\.[a-z]{2,4}$/i, '')   // strip TLD like .com .ai .io
+    .replace(/[^a-zA-Z0-9]/g, '')    // alphanumeric only
+    .toLowerCase()
+    .trim();
+};
+
+// Prettify a Get-SMS service name for display (just strip parens content)
+const prettifyName = (name) => {
+  return String(name).replace(/\([^)]*\)/g, '').trim();
+};
+
+// ─── Supported rental countries (dynamic, cached) ────────────────────────────
+let _countriesCache = null;
+let _countriesExpires = 0;
+const COUNTRIES_TTL = 60 * 60 * 1000;
+
+const getSupportedCountries = async () => {
+  if (_countriesCache && Date.now() < _countriesExpires) return _countriesCache;
+  try {
+    const raw = await call({ method: 'countries' });
+    const list = raw?.data?.countries;
+    if (!Array.isArray(list)) return _countriesCache || new Set();
+    // Convert provider-specific code back to ISO (e.g. UK → GB)
+    const REVERSE_MAP = Object.fromEntries(Object.entries(COUNTRY_CODE_MAP).map(([iso, prov]) => [prov, iso]));
+    const isoCodes = new Set(list.map((c) => REVERSE_MAP[c.code] || c.code));
+    _countriesCache = isoCodes;
+    _countriesExpires = Date.now() + COUNTRIES_TTL;
+    return isoCodes;
+  } catch (err) {
+    logger.warn(`GetSMS getSupportedCountries: ${err.message}`);
+    return _countriesCache || new Set();
+  }
+};
+
+// ─── Service catalog (dynamic, cached) ────────────────────────────────────────
+// Pulled from Get-SMS UK (largest service list — 120+ services).
+// Cached for 1 hour. Slug → numeric ID map is built alongside.
+let _catalogCache = null;
+let _slugToIdCache = null;
+let _catalogExpires = 0;
+const CATALOG_TTL = 60 * 60 * 1000;
+
+const getServiceCatalog = async () => {
+  if (_catalogCache && Date.now() < _catalogExpires) return _catalogCache;
+  try {
+    const services = await getCountryData('GB'); // GB → UK via COUNTRY_CODE_MAP
+    if (!services || services.length === 0) return _catalogCache || [];
+
+    const catalog = [];
+    const slugMap = {};
+    const seenSlugs = new Set();
+
+    // Seed slug map with curated overrides first (so they win on collisions)
+    for (const [slug, id] of Object.entries(SERVICE_ID)) {
+      slugMap[slug] = id;
+    }
+
+    for (const s of services) {
+      const rawName = s.name;
+      const id = Number(s.id);
+      // Prefer curated slug if we have one for this ID, else derive from name
+      const slug = ID_TO_SLUG[id] || slugify(rawName);
+      if (!slug || slug === 'anyother') continue;
+      if (seenSlugs.has(slug)) continue;
+
+      seenSlugs.add(slug);
+      catalog.push({
+        id,
+        slug,
+        name: prettifyName(rawName),
+      });
+      if (!slugMap[slug]) slugMap[slug] = id;
+    }
+
+    _catalogCache = catalog;
+    _slugToIdCache = slugMap;
+    _catalogExpires = Date.now() + CATALOG_TTL;
+    return catalog;
+  } catch (err) {
+    logger.warn(`GetSMS getServiceCatalog: ${err.message}`);
+    return _catalogCache || [];
+  }
+};
+
+// Slug → numeric ID lookup. Async because it may need to load the catalog.
+const toServiceId = async (slug) => {
+  if (!slug) return null;
+  // Try curated static map first (instant)
+  if (SERVICE_ID[slug]) return SERVICE_ID[slug];
+  // Fall back to dynamic catalog
+  if (!_slugToIdCache || Date.now() >= _catalogExpires) {
+    await getServiceCatalog();
+  }
+  return _slugToIdCache?.[slug] || null;
+};
 
 // Get-SMS uses non-standard ISO codes for some countries (e.g. UK instead of GB).
 // Translate our ISO codes (DB) to what Get-SMS expects on the wire.
@@ -100,7 +206,7 @@ const getCountryData = async (countryIso) => {
 // Get rental pricing for a country + service.
 // Returns: { count: N, prices: { 7: X, 14: X, 30: X } } with USD prices
 const getPrices = async (countryIso, serviceSlug) => {
-  const serviceId = toServiceId(serviceSlug);
+  const serviceId = await toServiceId(serviceSlug);
   if (!serviceId) return null;
   try {
     const services = await getCountryData(countryIso);
@@ -123,7 +229,7 @@ const getPrices = async (countryIso, serviceSlug) => {
 
 // Rent a number. days must be one of [7, 14, 30]
 const getNumber = async (countryIso, serviceSlug, days) => {
-  const serviceId = toServiceId(serviceSlug);
+  const serviceId = await toServiceId(serviceSlug);
   const duration = DURATION_MAP[days];
   if (!serviceId) throw new Error(`GetSMS: unsupported service ${serviceSlug}`);
   if (!duration) throw new Error(`GetSMS: unsupported duration ${days} days`);
@@ -174,4 +280,7 @@ module.exports = {
   DURATION_MAP,
   SERVICE_ID,
   toServiceId,
+  getServiceCatalog,
+  getSupportedCountries,
+  COUNTRY_CODE_MAP,
 };

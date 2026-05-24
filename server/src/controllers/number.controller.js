@@ -388,12 +388,22 @@ exports.getServiceList = async (req, res, next) => {
     const { mode = 'otp' } = req.query;
 
     if (mode === 'rental') {
-      // Return all enabled services that Get-SMS supports (have a known service code)
-      const services = await Service.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
-      const supportedSlugs = new Set(Object.keys(getsms.SERVICE_ID));
-      const result = services
-        .filter((s) => supportedSlugs.has(s.slug))
-        .map((s) => ({ id: s._id, slug: s.slug, name: s.name, icon: s.icon }));
+      // Dynamic catalog from Get-SMS — every service they sell is rentable
+      const catalog = await getsms.getServiceCatalog();
+      // Enrich with DB Service icon/displayName where one exists
+      const dbServices = await Service.find({ slug: { $in: catalog.map((c) => c.slug) }, isEnabled: true });
+      const dbBySlug = Object.fromEntries(dbServices.map((s) => [s.slug, s]));
+      const result = catalog
+        .map((c) => {
+          const db = dbBySlug[c.slug];
+          return {
+            id: db?._id?.toString() || c.slug, // ObjectId if we have a DB record, else slug
+            slug: c.slug,
+            name: db?.name || c.name,
+            icon: db?.icon || null,
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
       return success(res, { services: result });
     }
 
@@ -496,8 +506,12 @@ exports.getCountriesForService = async (req, res, next) => {
     const { mode = 'otp' } = req.query;
 
     if (mode === 'rental') {
-      const allCountries = await Country.find({ isEnabled: true });
+      const [allCountries, supportedIso] = await Promise.all([
+        Country.find({ isEnabled: true }),
+        getsms.getSupportedCountries(),
+      ]);
       const result = allCountries
+        .filter((c) => supportedIso.size === 0 || supportedIso.has(c.code))
         .map((c) => ({ id: c._id, name: c.name, code: c.code, flagEmoji: c.flagEmoji }))
         .sort((a, b) => a.name.localeCompare(b.name));
       return success(res, { countries: result });
@@ -550,10 +564,15 @@ exports.getCountries = async (req, res, next) => {
     const countries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
 
     if (mode === 'rental') {
-      const allCountries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
-      const result = allCountries.map((c) => ({
-        id: c._id, name: c.name, code: c.code, flagEmoji: c.flagEmoji,
-      }));
+      const [allCountries, supportedIso] = await Promise.all([
+        Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 }),
+        getsms.getSupportedCountries(),
+      ]);
+      const result = allCountries
+        .filter((c) => supportedIso.size === 0 || supportedIso.has(c.code))
+        .map((c) => ({
+          id: c._id, name: c.name, code: c.code, flagEmoji: c.flagEmoji,
+        }));
       return success(res, { countries: result });
     }
 
@@ -939,14 +958,21 @@ exports.getRentalPrice = async (req, res, next) => {
     const country = await Country.findById(countryId);
     if (!country || !country.isEnabled) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
-    // API now uses ISO codes directly — all countries are potentially supported
-
-    const service = serviceId
-      ? await Service.findById(serviceId)
-      : slugParam
-        ? await Service.findOne({ slug: slugParam })
-        : null;
-    const serviceSlug = service?.slug || slugParam || 'whatsapp';
+    // serviceId may be a Mongo ObjectId (legacy DB-backed service) OR a raw slug
+    // (dynamic catalog entry that has no DB record yet). Handle both.
+    let service = null;
+    if (serviceId && mongoose.Types.ObjectId.isValid(serviceId)) {
+      service = await Service.findById(serviceId);
+    }
+    if (!service && (slugParam || serviceId)) {
+      const lookupSlug = slugParam || serviceId;
+      service = await Service.findOne({ slug: lookupSlug });
+    }
+    const serviceSlug =
+      service?.slug ||
+      slugParam ||
+      (serviceId && !mongoose.Types.ObjectId.isValid(serviceId) ? serviceId : null) ||
+      'whatsapp';
 
     const prices = await getGetSmsRentalPrices(country.code, serviceSlug);
 
@@ -958,10 +984,18 @@ exports.getRentalPrice = async (req, res, next) => {
 
     const available = !!prices && options.some((o) => o.price !== null);
 
+    let serviceInfo = service ? { name: service.name, slug: service.slug } : null;
+    if (!serviceInfo) {
+      // Look up display name from dynamic catalog so the UI still has something to show
+      const catalog = await getsms.getServiceCatalog();
+      const entry = catalog.find((c) => c.slug === serviceSlug);
+      if (entry) serviceInfo = { name: entry.name, slug: entry.slug };
+    }
+
     success(res, {
       available,
       country: { name: country.name, flagEmoji: country.flagEmoji },
-      service: service ? { name: service.name, slug: service.slug } : null,
+      service: serviceInfo,
       options: available ? options : [],
     });
   } catch (err) {
@@ -990,7 +1024,26 @@ exports.orderRental = async (req, res, next) => {
     const country = await Country.findById(countryId);
     if (!country) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
-    const service = serviceId ? await Service.findById(serviceId) : null;
+    // serviceId may be a Mongo ObjectId OR a raw slug from the dynamic catalog.
+    // Resolve to a Service record, lazy-creating one if the slug exists in the catalog.
+    let service = null;
+    if (serviceId && mongoose.Types.ObjectId.isValid(serviceId)) {
+      service = await Service.findById(serviceId);
+    }
+    if (!service && serviceId && !mongoose.Types.ObjectId.isValid(serviceId)) {
+      service = await Service.findOne({ slug: serviceId });
+      if (!service) {
+        const catalog = await getsms.getServiceCatalog();
+        const entry = catalog.find((c) => c.slug === serviceId);
+        if (entry) {
+          service = await Service.findOneAndUpdate(
+            { slug: entry.slug },
+            { $setOnInsert: { slug: entry.slug, name: entry.name, isEnabled: true } },
+            { upsert: true, new: true }
+          );
+        }
+      }
+    }
     if (!service) throw new AppError('VALIDATION_ERROR', 400, 'serviceId is required for rental');
 
     const prices = await getGetSmsRentalPrices(country.code, service.slug);
