@@ -1180,10 +1180,10 @@ exports.getRecentSms = async (req, res, next) => {
   try {
     const userId = req.user.userId;
 
-    // OTP single-SMS orders
+    // OTP single-SMS orders (skip scrubbed placeholders)
     const otpOrders = await NumberOrder.find({
       userId,
-      smsContent: { $ne: null },
+      smsContent: { $nin: [null, '[deleted]'] },
       smsReceivedAt: { $ne: null },
     })
       .sort({ smsReceivedAt: -1 })

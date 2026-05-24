@@ -71,7 +71,7 @@ const settings = [
   { key: 'number_timeout_minutes', value: '20', description: 'Minutes before a number order expires' },
   { key: 'max_active_numbers', value: '5', description: 'Maximum active number orders per user' },
   { key: 'min_topup_usd', value: '2', description: 'Minimum top-up amount in USD' },
-  { key: 'sms_retention_hours', value: '24', description: 'Hours to retain SMS content before deletion' },
+  { key: 'sms_retention_hours', value: '2160', description: 'Hours to retain SMS content before deletion (90 days)' },
   { key: 'primary_sms_provider', value: '5sim', description: 'Primary SMS provider (5sim or smsactivate)' },
   { key: 'paystack_enabled', value: 'true', description: 'Enable Paystack payment method' },
   { key: 'crypto_enabled', value: 'true', description: 'Enable crypto payment method' },
