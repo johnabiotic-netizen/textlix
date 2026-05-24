@@ -39,6 +39,13 @@ const SERVICE_ID = {
 
 const toServiceId = (slug) => SERVICE_ID[slug] || null;
 
+// Get-SMS uses non-standard ISO codes for some countries (e.g. UK instead of GB).
+// Translate our ISO codes (DB) to what Get-SMS expects on the wire.
+const COUNTRY_CODE_MAP = {
+  GB: 'UK',
+};
+const toProviderCountry = (iso) => COUNTRY_CODE_MAP[iso] || iso;
+
 const call = async (params) => {
   const { data } = await axios.get(BASE_URL, {
     params: { userkey: process.env.GETSMS_API_KEY, ...params },
@@ -58,6 +65,7 @@ const SUCCESS_TTL = 30 * 60 * 1000;
 const FAILURE_TTL = 60 * 1000;
 
 const getCountryData = async (countryIso) => {
+  const providerCode = toProviderCountry(countryIso);
   const cached = _countryCache.get(countryIso);
   if (cached && Date.now() < cached.expires) return cached.services;
 
@@ -66,7 +74,7 @@ const getCountryData = async (countryIso) => {
 
   const promise = (async () => {
     try {
-      const raw = await call({ method: 'getdatacountry', country: countryIso });
+      const raw = await call({ method: 'getdatacountry', country: providerCode });
       if (!raw?.data?.services) {
         _countryCache.set(countryIso, { expires: Date.now() + FAILURE_TTL, services: null });
         return null;
@@ -122,7 +130,7 @@ const getNumber = async (countryIso, serviceSlug, days) => {
 
   const raw = await call({
     method: 'createorder',
-    country: countryIso,
+    country: toProviderCountry(countryIso),
     services: serviceId,
     type: duration.type,
     period: duration.period,
