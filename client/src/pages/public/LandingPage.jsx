@@ -6,6 +6,8 @@ import { FiZap, FiGlobe, FiShield, FiClock, FiRefreshCw, FiTrendingUp, FiStar, F
 import { getPublicStats } from '../../api/numbers';
 import Logo from '../../components/common/Logo';
 import ThemeToggle from '../../components/common/ThemeToggle';
+import Reveal from '../../components/common/Reveal';
+import OtpDemoWidget from '../../components/landing/OtpDemoWidget';
 
 const PACKAGES = [
   { label: 'Starter', usd: '$2', credits: '200 credits' },
@@ -126,36 +128,45 @@ export default function LandingPage() {
       <LiveStatsBanner />
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-24 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-            <span className="text-yellow-300">★</span> Smart success scoring — know before you buy
-          </div>
-          <h1 className="font-display font-extrabold text-5xl md:text-6xl mb-6 leading-tight">
-            Get Verified Anywhere, Instantly
-          </h1>
-          <p className="text-lg md:text-xl text-brand-100 mb-10 max-w-2xl mx-auto">
-            Virtual phone numbers from 150+ countries. One-time OTP or long-term rental. SMS delivered in real-time — with a full refund if it never arrives.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register" className="bg-white text-brand-600 font-semibold text-lg px-8 py-4 rounded-xl hover:bg-brand-50 transition-colors shadow-lg">
-              Get Started Free
-            </Link>
-            <a href="#how-it-works" className="border-2 border-white/40 text-white font-semibold text-lg px-8 py-4 rounded-xl hover:bg-white/10 transition-colors">
-              See How It Works
-            </a>
-          </div>
+      <section className="relative bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-20 md:py-24 px-4 overflow-hidden">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <Reveal y={20} duration={0.7}>
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+                <span className="text-yellow-300">★</span> Smart success scoring — know before you buy
+              </div>
+              <h1 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl mb-6 leading-tight">
+                Get Verified Anywhere, Instantly
+              </h1>
+              <p className="text-lg md:text-xl text-brand-100 mb-10 max-w-xl mx-auto lg:mx-0">
+                Virtual phone numbers from 150+ countries. One-time OTP or long-term rental. SMS delivered in real-time — with a full refund if it never arrives.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link to="/register" className="bg-white text-brand-600 font-semibold text-lg px-8 py-4 rounded-xl hover:bg-brand-50 transition-colors shadow-lg">
+                  Get Started Free
+                </Link>
+                <a href="#how-it-works" className="border-2 border-white/40 text-white font-semibold text-lg px-8 py-4 rounded-xl hover:bg-white/10 transition-colors">
+                  See How It Works
+                </a>
+              </div>
+            </div>
+          </Reveal>
+          <Reveal y={30} delay={0.15} duration={0.8}>
+            <OtpDemoWidget />
+          </Reveal>
         </div>
       </section>
 
       {/* Two modes */}
       <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900" id="how-it-works">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Two Ways to Verify</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Pick the mode that fits your use case</p>
+          <Reveal>
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Two Ways to Verify</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Pick the mode that fits your use case</p>
+          </Reveal>
           <div className="grid md:grid-cols-2 gap-6">
             {/* OTP */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-brand-100 shadow-sm">
+            <Reveal delay={0.05} className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-brand-100 shadow-sm">
               <div className="text-4xl mb-4">⚡</div>
               <h3 className="font-display font-bold text-xl text-gray-900 dark:text-white mb-2">One-Time OTP</h3>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">Instantly rent a number, receive one SMS verification code, done. Unused numbers auto-expire and credits are refunded.</p>
@@ -168,9 +179,9 @@ export default function LandingPage() {
               <Link to="/register" className="inline-block bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
                 Try OTP Numbers →
               </Link>
-            </div>
+            </Reveal>
             {/* Rental */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-brand-100 shadow-sm">
+            <Reveal delay={0.15} className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-brand-100 shadow-sm">
               <div className="text-4xl mb-4">📅</div>
               <h3 className="font-display font-bold text-xl text-gray-900 dark:text-white mb-2">Long-Term Rental</h3>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">Rent a number for days or weeks. Keep receiving codes on the same number — perfect for accounts that need repeated verification.</p>
@@ -183,7 +194,7 @@ export default function LandingPage() {
               <Link to="/register" className="inline-block bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
                 Try Rental Numbers →
               </Link>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -191,20 +202,22 @@ export default function LandingPage() {
       {/* How it works */}
       <section className="py-20 px-4 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-12">How It Works</h2>
+          <Reveal>
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-12">How It Works</h2>
+          </Reveal>
           <div className="grid md:grid-cols-4 gap-6">
             {[
               { step: '1', icon: '💳', title: 'Buy Credits', desc: 'Top up with a card or crypto (USDT, BTC, ETH). Credits never expire.' },
               { step: '2', icon: '🎯', title: 'Pick a Service', desc: 'Choose the app you need to verify. See live success scores before you buy.' },
               { step: '3', icon: '📱', title: 'Get Your Number', desc: 'A real virtual number is assigned instantly from your chosen country.' },
               { step: '4', icon: '📩', title: 'Receive the Code', desc: 'SMS arrives live on your dashboard within seconds. Copy and use it.' },
-            ].map((item) => (
-              <div key={item.step} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 text-center relative">
+            ].map((item, i) => (
+              <Reveal key={item.step} delay={i * 0.08} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 text-center relative">
                 <div className="text-3xl mb-3">{item.icon}</div>
                 <div className="inline-flex items-center justify-center w-6 h-6 bg-brand-600 text-white text-xs font-bold rounded-full mb-3">{item.step}</div>
                 <h3 className="font-display font-semibold text-base text-gray-900 dark:text-white mb-2">{item.title}</h3>
                 <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{item.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -214,7 +227,7 @@ export default function LandingPage() {
       <section className="py-16 px-4 bg-gradient-to-r from-brand-50 to-brand-100 dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-10 items-center">
-            <div>
+            <Reveal>
               <div className="inline-flex items-center gap-2 bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
                 <FiTrendingUp size={13} /> Smart Recommendations
               </div>
@@ -234,8 +247,8 @@ export default function LandingPage() {
                   "Best Match" badge highlights the recommended pick
                 </li>
               </ul>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-3">
+            </Reveal>
+            <Reveal delay={0.1} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-3">
               <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">Example — WhatsApp service scores</p>
               {[
                 { flag: '🇺🇸', country: 'United States', score: 97, badge: 'Best Match' },
@@ -254,7 +267,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -288,8 +301,10 @@ export default function LandingPage() {
       {/* Features grid */}
       <section className="py-20 px-4 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Why textlix?</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Built for speed, reliability, and transparency</p>
+          <Reveal>
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Why textlix?</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Built for speed, reliability, and transparency</p>
+          </Reveal>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               { icon: <FiZap className="text-brand-600" size={22} />, title: 'Real-Time SMS Delivery', desc: 'Codes are pushed live to your dashboard via WebSocket the instant they arrive. No page refresh needed.' },
@@ -302,13 +317,13 @@ export default function LandingPage() {
               { icon: <FiClock className="text-brand-600" size={22} />, title: '24/7 Availability', desc: 'Platform runs around the clock with automated number expiry and SMS cleanup jobs.' },
               { icon: <FiShield className="text-brand-600" size={22} />, title: 'Your Data, Your Control', desc: 'We never sell or share your data with third parties. Your order history is yours to view and export anytime.' },
             ].map((f, i) => (
-              <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 flex gap-4">
+              <Reveal key={i} delay={(i % 3) * 0.08} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 flex gap-4">
                 <div className="flex-shrink-0 w-10 h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl flex items-center justify-center shadow-sm">{f.icon}</div>
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm">{f.title}</h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -317,17 +332,19 @@ export default function LandingPage() {
       {/* Pricing */}
       <section id="pricing" className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Simple Pricing</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-center mb-12">1 credit = $0.01. Numbers from 10–500 credits. Credits never expire.</p>
+          <Reveal>
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Simple Pricing</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-12">1 credit = $0.01. Numbers from 10–500 credits. Credits never expire.</p>
+          </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {PACKAGES.map((pkg) => (
-              <div key={pkg.label} className={`border rounded-xl p-5 text-center relative ${pkg.popular ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 dark:border-brand-400' : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'}`}>
+            {PACKAGES.map((pkg, i) => (
+              <Reveal key={pkg.label} delay={i * 0.06} className={`border rounded-xl p-5 text-center relative ${pkg.popular ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 dark:border-brand-400' : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'}`}>
                 {pkg.popular && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full">Popular</div>}
                 <p className="font-display font-bold text-2xl text-gray-900 dark:text-white">{pkg.usd}</p>
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mt-1">{pkg.credits}</p>
                 {pkg.bonus && <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">{pkg.bonus}</p>}
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{pkg.label}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
           <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -347,8 +364,10 @@ export default function LandingPage() {
       {/* FAQ */}
       <section className="py-20 px-4 dark:bg-gray-950">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Common Questions</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-center mb-10">Quick answers to what people ask most</p>
+          <Reveal>
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Common Questions</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-10">Quick answers to what people ask most</p>
+          </Reveal>
           <div className="space-y-3 mb-8">
             {[
               { q: 'What happens if I don\'t receive an SMS?', a: 'If no SMS arrives within 20 minutes, your number expires and credits are automatically refunded — no need to contact support.' },
@@ -357,11 +376,11 @@ export default function LandingPage() {
               { q: 'Which payment methods are accepted?', a: 'You can pay by card (via Paystack) or with cryptocurrency — USDT, Bitcoin, or Ethereum via CoinGate.' },
               { q: 'Which services can I verify with?', a: 'Any service that sends an SMS — WhatsApp, Telegram, Google, Facebook, TikTok, Instagram, and hundreds more.' },
               { q: 'Do credits expire?', a: 'No. Your credits never expire and stay on your account indefinitely.' },
-            ].map((item) => (
-              <div key={item.q} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+            ].map((item, i) => (
+              <Reveal key={item.q} delay={i * 0.05} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
                 <p className="font-semibold text-gray-900 dark:text-white text-sm mb-1">{item.q}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{item.a}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
           <div className="text-center">
@@ -372,13 +391,13 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="py-20 px-4 bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white">
-        <div className="max-w-2xl mx-auto text-center">
+        <Reveal className="max-w-2xl mx-auto text-center">
           <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-4">Ready to get started?</h2>
           <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with textlix — real-time delivery, live success scores, and a full refund if it doesn't work.</p>
           <Link to="/register" className="bg-white text-brand-600 font-semibold text-lg px-8 py-4 rounded-xl hover:bg-brand-50 transition-colors shadow-lg inline-block">
             Create Free Account
           </Link>
-        </div>
+        </Reveal>
       </section>
 
       {/* Footer */}
