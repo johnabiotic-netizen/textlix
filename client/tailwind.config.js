@@ -5,9 +5,12 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Plus Jakarta Sans', 'sans-serif'],
-        body: ['Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        // 'Twemoji Country Flags' is unicode-range scoped to flag emoji
+        // codepoints only — it doesn't affect text rendering, just supplies
+        // colored flag glyphs on Windows browsers.
+        display: ['Twemoji Country Flags', 'Plus Jakarta Sans', 'sans-serif'],
+        body: ['Twemoji Country Flags', 'Inter', 'sans-serif'],
+        mono: ['Twemoji Country Flags', 'JetBrains Mono', 'monospace'],
       },
       colors: {
         brand: {
