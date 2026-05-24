@@ -2,6 +2,8 @@ const express = require('express');
 const passport = require('../config/passport');
 const authController = require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/auth.middleware');
+const validate = require('../middleware/validate.middleware');
+const schemas = require('../schemas/auth.schemas');
 const rateLimit = require('express-rate-limit');
 
 const router = express.Router();
@@ -27,18 +29,20 @@ const resetLimiter = rateLimit({
   message: { success: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Too many reset attempts' } },
 });
 
-router.post('/register', authLimiter, authController.register);
-router.post('/login', authLimiter, authController.login);
+router.post('/register', authLimiter, validate(schemas.registerSchema), authController.register);
+router.post('/login', authLimiter, validate(schemas.loginSchema), authController.login);
 router.post('/refresh', refreshLimiter, authController.refresh);
 router.post('/logout', authenticate, authController.logout);
-router.post('/forgot-password', authLimiter, authController.forgotPassword);
-router.post('/reset-password', resetLimiter, authController.resetPassword);
+router.post('/forgot-password', authLimiter, validate(schemas.forgotPasswordSchema), authController.forgotPassword);
+router.post('/reset-password', resetLimiter, validate(schemas.resetPasswordSchema), authController.resetPassword);
 router.get('/verify-email/:token', authController.verifyEmail);
 
 // Google OAuth — ref code stored in a short-lived cookie (more reliable than state param)
 router.get('/google', (req, res, next) => {
-  if (req.query.ref) {
-    res.cookie('oauthRef', req.query.ref, {
+  // Validate ref so attackers can't stuff arbitrary content into a session cookie.
+  const ref = String(req.query.ref || '').trim();
+  if (ref && /^[A-Z0-9_-]{3,20}$/i.test(ref)) {
+    res.cookie('oauthRef', ref.toUpperCase(), {
       maxAge: 10 * 60 * 1000,
       httpOnly: true,
       secure: true,
@@ -71,8 +75,8 @@ router.post('/2fa/complete',              authController.twoFAComplete);
 
 // SSO bridges (browser navigation carries cookies, XHR may not)
 router.get('/sso/main', authController.mainSsoInit);
-router.post('/sso/exchange-main', authController.mainSsoExchange);
+router.post('/sso/exchange-main', validate(schemas.ssoExchangeSchema), authController.mainSsoExchange);
 router.get('/sso/creator', authController.creatorSsoInit);
-router.post('/sso/exchange', authController.creatorSsoExchange);
+router.post('/sso/exchange', validate(schemas.ssoExchangeSchema), authController.creatorSsoExchange);
 
 module.exports = router;

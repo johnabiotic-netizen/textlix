@@ -379,22 +379,52 @@ exports.twoFAComplete = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// Hosts where we'll attach an SSO token. Anything else is treated as an
+// open-redirect attempt and falls back to the safe default.
+const ALLOWED_SSO_HOSTS = new Set([
+  'www.textlix.com',
+  'textlix.com',
+  'creator.textlix.com',
+]);
+const SAFE_SSO_DEFAULT = 'https://www.textlix.com/dashboard';
+
+function sanitizeSsoRedirect(raw) {
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== 'https:') return new URL(SAFE_SSO_DEFAULT);
+    if (!ALLOWED_SSO_HOSTS.has(u.hostname)) return new URL(SAFE_SSO_DEFAULT);
+    // Strip any pre-existing sso/sso_failed params attackers might have set
+    u.searchParams.delete('sso');
+    u.searchParams.delete('sso_failed');
+    return u;
+  } catch {
+    return new URL(SAFE_SSO_DEFAULT);
+  }
+}
+
 // GET /auth/sso/main — restore session on www.textlix.com via cookie (browser navigation)
 exports.mainSsoInit = async (req, res, next) => {
   try {
     const token = req.cookies.refreshToken;
-    const redirect = req.query.redirect || 'https://www.textlix.com/dashboard';
-    const sep = redirect.includes('?') ? '&' : '?';
-    if (!token) return res.redirect(`${redirect}${sep}sso_failed=1`);
+    const target = sanitizeSsoRedirect(req.query.redirect || SAFE_SSO_DEFAULT);
+
+    if (!token) {
+      target.searchParams.set('sso_failed', '1');
+      return res.redirect(target.toString());
+    }
     const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(payload.userId);
-    if (!user) return res.redirect(`${redirect}${sep}sso_failed=1`);
+    if (!user) {
+      target.searchParams.set('sso_failed', '1');
+      return res.redirect(target.toString());
+    }
     const ssoToken = jwt.sign(
       { userId: user._id, type: 'main_sso' },
       process.env.JWT_ACCESS_SECRET,
       { expiresIn: '90s' }
     );
-    return res.redirect(`${redirect}${sep}sso=${ssoToken}`);
+    target.searchParams.set('sso', ssoToken);
+    return res.redirect(target.toString());
   } catch { return res.redirect('https://www.textlix.com/login'); }
 };
 

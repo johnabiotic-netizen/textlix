@@ -28,7 +28,15 @@ app.set('trust proxy', 1);
 app.use(compression());
 
 // Security
-app.use(helmet());
+// Helmet with explicit hardening for a finance / PII app.
+// 2-year HSTS w/ preload, strict CORP, same-origin opener. CSP uses defaults
+// — tighten when the asset origin list is stable (CDNs, Sentry, etc.).
+app.use(helmet({
+  hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'same-site' },
+  referrerPolicy: { policy: 'no-referrer' },
+}));
 app.use(
   cors({
     origin: (origin, callback) => {

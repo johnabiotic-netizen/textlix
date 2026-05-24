@@ -110,23 +110,31 @@ const sendPasswordResetEmail = async (email, token) => {
   });
 };
 
+// HTML-escape interpolated user / provider content to prevent injection in emails.
+// SMS bodies arrive from third-party providers and are attacker-controlled.
+const escHtml = (s) =>
+  String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
 const sendSmsNotificationEmail = async (email, { phoneNumber, smsCode, smsContent }) => {
   const dashboardUrl = `${(process.env.FRONTEND_URL || '').trim()}/numbers/active`;
+  const safePhone = escHtml(phoneNumber);
+  const safeCode = escHtml(smsCode);
+  const safeContent = escHtml(smsContent);
   const body = `
     <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">Your verification code arrived</h1>
     <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.6;">
-      An SMS was received on <strong style="color:#111827;">${phoneNumber}</strong>.
+      An SMS was received on <strong style="color:#111827;">${safePhone}</strong>.
     </p>
 
     ${smsCode ? `
     <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
       <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:1px;text-transform:uppercase;">Verification Code</p>
-      <p style="margin:0;font-size:42px;font-weight:800;color:#fff;letter-spacing:8px;">${smsCode}</p>
+      <p style="margin:0;font-size:42px;font-weight:800;color:#fff;letter-spacing:8px;">${safeCode}</p>
     </div>
     ` : ''}
 
     <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin:0 0 24px;">
-      <p style="margin:0;font-size:12px;color:#6b7280;font-family:monospace;word-break:break-word;">${smsContent}</p>
+      <p style="margin:0;font-size:12px;color:#6b7280;font-family:monospace;word-break:break-word;">${safeContent}</p>
     </div>
 
     <div style="text-align:center;">

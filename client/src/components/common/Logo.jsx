@@ -9,13 +9,14 @@ function TIcon({ className = '' }) {
 }
 
 export default function Logo({ className = '', iconClassName = '', textClassName = '', dark = false }) {
-  const iconColor = dark ? 'text-white' : 'text-[#0A1B31]';
-  const textColor = dark ? 'text-white' : 'text-[#0A1B31]';
+  // `dark` prop forces white (for use on dark backgrounds like the navy hero).
+  // Otherwise auto-adapt: navy in light mode, white in dark mode via Tailwind.
+  const colorClass = dark ? 'text-white' : 'text-[#0A1B31] dark:text-white';
 
   return (
     <span className={`inline-flex items-center gap-1.5 ${className}`}>
-      <TIcon className={`w-6 h-6 ${iconColor} ${iconClassName}`} />
-      <span className={`font-display font-bold tracking-tight ${textColor} ${textClassName}`}>
+      <TIcon className={`w-6 h-6 ${colorClass} ${iconClassName}`} />
+      <span className={`font-display font-bold tracking-tight ${colorClass} ${textClassName}`}>
         textlix
       </span>
     </span>

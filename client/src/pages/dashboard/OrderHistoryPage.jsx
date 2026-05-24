@@ -12,6 +12,19 @@ import Button from '../../components/common/Button';
 
 const TABS = ['All', 'COMPLETED', 'EXPIRED', 'REFUNDED', 'CANCELLED'];
 
+// HTML-escape any user / provider-supplied string before interpolation.
+// SMS content arrives from third-party providers and is attacker-controlled.
+const escHtml = (s) =>
+  String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+// CSV-escape: wrap in quotes, escape internal quotes, and prefix
+// formula-trigger characters so spreadsheets don't execute them.
+const escCsv = (v) => {
+  const s = String(v ?? '').replace(/"/g, '""');
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+  return `"${safe}"`;
+};
+
 function downloadCSV(orders) {
   const headers = ['Date', 'Country', 'Service', 'Phone Number', 'Status', 'Credits Charged', 'SMS Code', 'SMS Content', 'SMS Received At'];
   const rows = orders.map((o) => [
@@ -22,11 +35,11 @@ function downloadCSV(orders) {
     o.status || '',
     o.creditsCharged || 0,
     o.smsCode && o.smsContent !== '[deleted]' ? o.smsCode : '',
-    o.smsContent && o.smsContent !== '[deleted]' ? o.smsContent.replace(/,/g, ';').replace(/\n/g, ' ') : '',
+    o.smsContent && o.smsContent !== '[deleted]' ? o.smsContent.replace(/\n/g, ' ') : '',
     o.smsReceivedAt ? dayjs(o.smsReceivedAt).format('YYYY-MM-DD HH:mm:ss') : '',
   ]);
 
-  const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
+  const csv = [headers, ...rows].map((r) => r.map(escCsv).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -39,14 +52,14 @@ function downloadCSV(orders) {
 function printHistory(orders) {
   const rows = orders.map((o) => `
     <tr>
-      <td>${dayjs(o.createdAt).format('MMM D, YYYY HH:mm')}</td>
-      <td>${o.countryId?.flagEmoji || ''} ${o.countryId?.name || ''}</td>
-      <td>${o.serviceId?.name || ''}</td>
-      <td style="font-family:monospace">${o.phoneNumber || ''}</td>
-      <td>${o.status || ''}</td>
-      <td>${o.creditsCharged || 0} cr</td>
-      <td style="font-family:monospace;font-weight:bold">${o.smsCode && o.smsContent !== '[deleted]' ? o.smsCode : '—'}</td>
-      <td style="font-size:11px;max-width:200px">${o.smsContent && o.smsContent !== '[deleted]' ? o.smsContent : '—'}</td>
+      <td>${escHtml(dayjs(o.createdAt).format('MMM D, YYYY HH:mm'))}</td>
+      <td>${escHtml(o.countryId?.flagEmoji || '')} ${escHtml(o.countryId?.name || '')}</td>
+      <td>${escHtml(o.serviceId?.name || '')}</td>
+      <td style="font-family:monospace">${escHtml(o.phoneNumber || '')}</td>
+      <td>${escHtml(o.status || '')}</td>
+      <td>${Number(o.creditsCharged) || 0} cr</td>
+      <td style="font-family:monospace;font-weight:bold">${escHtml(o.smsCode && o.smsContent !== '[deleted]' ? o.smsCode : '—')}</td>
+      <td style="font-size:11px;max-width:200px">${escHtml(o.smsContent && o.smsContent !== '[deleted]' ? o.smsContent : '—')}</td>
     </tr>`).join('');
 
   const win = window.open('', '_blank');
@@ -64,7 +77,7 @@ function printHistory(orders) {
     </style></head>
     <body>
       <h1>textlix — Order History</h1>
-      <p class="sub">Exported ${dayjs().format('MMMM D, YYYY')} &nbsp;|&nbsp; ${orders.length} orders shown</p>
+      <p class="sub">Exported ${escHtml(dayjs().format('MMMM D, YYYY'))} &nbsp;|&nbsp; ${orders.length} orders shown</p>
       <table>
         <thead><tr>
           <th>Date</th><th>Country</th><th>Service</th><th>Phone Number</th>

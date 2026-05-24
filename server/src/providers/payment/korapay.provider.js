@@ -32,10 +32,24 @@ const verifyCharge = async (reference) => {
 const hmac = (key, body) =>
   crypto.createHmac('sha256', key).update(body).digest('hex');
 
+// Timing-safe comparison — never use === on signatures.
+const safeEqual = (a, b) => {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const A = Buffer.from(a, 'utf8');
+  const B = Buffer.from(b, 'utf8');
+  if (A.length !== B.length) return false;
+  return crypto.timingSafeEqual(A, B);
+};
+
 const verifyWebhookSignature = (rawBody, signature) => {
+  if (!signature) return false;
   const encKey = process.env.KORAPAY_ENCRYPTION_KEY || '';
   const secKey = process.env.KORAPAY_SECRET_KEY || '';
-  return hmac(encKey, rawBody) === signature || hmac(secKey, rawBody) === signature;
+  if (!encKey && !secKey) return false;
+  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(String(rawBody), 'utf8');
+  if (encKey && safeEqual(hmac(encKey, body), signature)) return true;
+  if (secKey && safeEqual(hmac(secKey, body), signature)) return true;
+  return false;
 };
 
 module.exports = { initializeCharge, verifyCharge, verifyWebhookSignature };

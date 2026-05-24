@@ -79,12 +79,27 @@ function AdminRoute({ children }) {
   return children;
 }
 
+// Allow-list redirects to *.textlix.com hostnames only — protects against open
+// redirects like `evil.textlix.com.attacker.com` that pass a naive substring match.
+function isSafeTextlixRedirect(raw) {
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== 'https:') return false;
+    return u.hostname === 'textlix.com' || u.hostname.endsWith('.textlix.com');
+  } catch {
+    return false;
+  }
+}
+
 function PublicRoute({ children }) {
   const { user, isLoading } = useAuthStore();
   if (isLoading) return null;
   if (user) {
     const redirect = new URLSearchParams(window.location.search).get('redirect');
-    if (redirect?.includes('.textlix.com')) { window.location.href = redirect; return null; }
+    if (redirect && isSafeTextlixRedirect(redirect)) {
+      window.location.href = redirect;
+      return null;
+    }
     return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/dashboard'} replace />;
   }
   return children;
