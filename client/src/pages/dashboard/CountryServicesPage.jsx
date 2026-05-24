@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiCheckCircle, FiSearch, FiCalendar, FiStar } from 'react-icons/fi';
@@ -63,7 +63,10 @@ export default function CountryServicesPage({ mode: modeProp }) {
     staleTime: 60 * 60 * 1000,
   });
 
-  // Populate rentalService ID once the service list loads
+  // Populate rentalService ID once the service list loads, and auto-open the
+  // rental modal if the user came in with ?service= (e.g. picked the service
+  // on the previous page and only needs to confirm duration).
+  const didAutoOpenRental = useRef(false);
   useEffect(() => {
     if (!rentalServicesData?.services?.length) return;
     const services = rentalServicesData.services;
@@ -72,7 +75,34 @@ export default function CountryServicesPage({ mode: modeProp }) {
     if (target && (!rentalService.id || rentalService.slug !== target.slug)) {
       setRentalService({ id: target.id, slug: target.slug, name: target.name });
     }
+    if (preselectedService && match && !didAutoOpenRental.current) {
+      didAutoOpenRental.current = true;
+      setRentalDays(7);
+      setShowRentalModal(true);
+    }
   }, [rentalServicesData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // OTP: auto-open the order modal if the user came in with ?service= and the
+  // service is actually available at this country. Otherwise let them pick.
+  const didAutoOpenOtp = useRef(false);
+  useEffect(() => {
+    if (mode !== 'otp') return;
+    if (didAutoOpenOtp.current) return;
+    if (!preselectedService) return;
+    const services = servicesData?.services;
+    if (!services?.length) return;
+
+    const match = services.find((s) => s.slug === preselectedService);
+    if (!match) return;
+    const lix1Avail = match.servers?.lix1?.available;
+    const lix2Avail = match.servers?.lix2?.available;
+    const lix3Avail = match.servers?.lix3?.available;
+    if (!(lix1Avail || lix2Avail || lix3Avail)) return;
+
+    didAutoOpenOtp.current = true;
+    setSelectedServer(lix1Avail ? 'lix1' : lix2Avail ? 'lix2' : 'lix3');
+    setSelectedService(match);
+  }, [mode, preselectedService, servicesData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Rental: pricing (re-fetches when selected service changes)
   const { data: rentalData, isLoading: rentalLoading } = useQuery({
