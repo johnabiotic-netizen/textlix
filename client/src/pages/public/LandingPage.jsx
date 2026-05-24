@@ -203,7 +203,7 @@ export default function LandingPage() {
                 <div className="text-3xl mb-3">{item.icon}</div>
                 <div className="inline-flex items-center justify-center w-6 h-6 bg-brand-600 text-white text-xs font-bold rounded-full mb-3">{item.step}</div>
                 <h3 className="font-display font-semibold text-base text-gray-900 dark:text-white mb-2">{item.title}</h3>
-                <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -215,12 +215,12 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+              <div className="inline-flex items-center gap-2 bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
                 <FiTrendingUp size={13} /> Smart Recommendations
               </div>
               <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white mb-4">Know Your Odds Before You Buy</h2>
               <p className="text-gray-500 dark:text-gray-400 mb-6">Every service and country shows a live success score pulled directly from our SMS provider. Green means high chance of delivery. We surface the best country for your chosen service automatically — no guessing.</p>
-              <ul className="space-y-3 text-sm text-gray-700">
+              <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
                 <li className="flex items-start gap-3">
                   <span className="mt-0.5 flex-shrink-0 w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-xs">✓</span>
                   Live success % on every service card
@@ -235,7 +235,7 @@ export default function LandingPage() {
                 </li>
               </ul>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 p-6 space-y-3">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-3">
               <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">Example — WhatsApp service scores</p>
               {[
                 { flag: '🇺🇸', country: 'United States', score: 97, badge: 'Best Match' },
@@ -247,7 +247,7 @@ export default function LandingPage() {
                 <div key={row.country} className="flex items-center justify-between">
                   <span className="text-sm text-gray-700 dark:text-gray-300">{row.flag} {row.country}</span>
                   <div className="flex items-center gap-2">
-                    {row.badge && <span className="text-xs bg-brand-100 text-brand-700 font-semibold px-2 py-0.5 rounded-full">{row.badge}</span>}
+                    {row.badge && <span className="text-xs bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-200 font-semibold px-2 py-0.5 rounded-full">{row.badge}</span>}
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${row.score >= 90 ? 'bg-green-50 text-green-700' : row.score >= 75 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
                       {row.score}%
                     </span>
@@ -262,11 +262,11 @@ export default function LandingPage() {
       {/* Services */}
       <section className="py-16 px-4 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto text-center">
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-3">Works With Every App</h2>
-          <p className="text-gray-500 mb-8">Hundreds of services supported — if it sends an SMS, textlix works with it</p>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-3">Works With Every App</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">Hundreds of services supported — if it sends an SMS, textlix works with it</p>
           <div className="flex flex-wrap gap-3 justify-center">
             {SERVICES.map((s) => (
-              <div key={s.name} className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-700">
+              <div key={s.name} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <span>{s.emoji}</span> {s.name}
               </div>
             ))}
@@ -275,10 +275,10 @@ export default function LandingPage() {
       </section>
 
       {/* Countries */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-5xl mx-auto text-center">
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-3">150+ Countries Available</h2>
-          <p className="text-gray-500 mb-8">We cover all major markets worldwide</p>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-3">150+ Countries Available</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">We cover all major markets worldwide</p>
           <div className="flex flex-wrap gap-3 justify-center text-3xl">
             {COUNTRIES.map((flag, i) => <span key={i} className="hover:scale-110 transition-transform cursor-default">{flag}</span>)}
           </div>
@@ -303,10 +303,10 @@ export default function LandingPage() {
               { icon: <FiShield className="text-brand-600" size={22} />, title: 'Your Data, Your Control', desc: 'We never sell or share your data with third parties. Your order history is yours to view and export anytime.' },
             ].map((f, i) => (
               <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm">{f.icon}</div>
+                <div className="flex-shrink-0 w-10 h-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl flex items-center justify-center shadow-sm">{f.icon}</div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1 text-sm">{f.title}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">{f.desc}</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm">{f.title}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -315,22 +315,22 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 px-4 bg-gray-50">
+      <section id="pricing" className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-5xl mx-auto">
           <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Simple Pricing</h2>
           <p className="text-gray-500 dark:text-gray-400 text-center mb-12">1 credit = $0.01. Numbers from 10–500 credits. Credits never expire.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {PACKAGES.map((pkg) => (
-              <div key={pkg.label} className={`border rounded-xl p-5 text-center relative ${pkg.popular ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-white'}`}>
+              <div key={pkg.label} className={`border rounded-xl p-5 text-center relative ${pkg.popular ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 dark:border-brand-400' : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'}`}>
                 {pkg.popular && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full">Popular</div>}
-                <p className="font-display font-bold text-2xl text-gray-900">{pkg.usd}</p>
-                <p className="text-sm font-semibold text-gray-700 mt-1">{pkg.credits}</p>
-                {pkg.bonus && <p className="text-xs text-green-600 font-medium mt-1">{pkg.bonus}</p>}
-                <p className="text-xs text-gray-400 mt-1">{pkg.label}</p>
+                <p className="font-display font-bold text-2xl text-gray-900 dark:text-white">{pkg.usd}</p>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mt-1">{pkg.credits}</p>
+                {pkg.bonus && <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">{pkg.bonus}</p>}
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{pkg.label}</p>
               </div>
             ))}
           </div>
-          <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-gray-500">
+          <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
             <span className="flex items-center gap-1.5">💳 Card via Paystack</span>
             <span className="flex items-center gap-1.5">₿ Bitcoin</span>
             <span className="flex items-center gap-1.5">💎 USDT</span>
@@ -348,7 +348,7 @@ export default function LandingPage() {
       <section className="py-20 px-4 dark:bg-gray-950">
         <div className="max-w-3xl mx-auto">
           <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Common Questions</h2>
-          <p className="text-gray-500 text-center mb-10">Quick answers to what people ask most</p>
+          <p className="text-gray-500 dark:text-gray-400 text-center mb-10">Quick answers to what people ask most</p>
           <div className="space-y-3 mb-8">
             {[
               { q: 'What happens if I don\'t receive an SMS?', a: 'If no SMS arrives within 20 minutes, your number expires and credits are automatically refunded — no need to contact support.' },
@@ -358,9 +358,9 @@ export default function LandingPage() {
               { q: 'Which services can I verify with?', a: 'Any service that sends an SMS — WhatsApp, Telegram, Google, Facebook, TikTok, Instagram, and hundreds more.' },
               { q: 'Do credits expire?', a: 'No. Your credits never expire and stay on your account indefinitely.' },
             ].map((item) => (
-              <div key={item.q} className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-                <p className="font-semibold text-gray-900 text-sm mb-1">{item.q}</p>
-                <p className="text-sm text-gray-500">{item.a}</p>
+              <div key={item.q} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+                <p className="font-semibold text-gray-900 dark:text-white text-sm mb-1">{item.q}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{item.a}</p>
               </div>
             ))}
           </div>
