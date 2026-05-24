@@ -22,11 +22,11 @@ function BrowserNotifButton() {
     else toast.error('Notification permission denied');
   };
 
-  if (permission === 'unsupported') return <span className="text-xs text-gray-400">Not supported</span>;
-  if (permission === 'granted') return <span className="text-xs text-green-600 font-medium">Enabled ✓</span>;
-  if (permission === 'denied') return <span className="text-xs text-red-500">Blocked — allow in browser settings</span>;
+  if (permission === 'unsupported') return <span className="text-xs text-gray-400 dark:text-gray-500">Not supported</span>;
+  if (permission === 'granted') return <span className="text-xs text-green-600 dark:text-green-400 font-medium">Enabled ✓</span>;
+  if (permission === 'denied') return <span className="text-xs text-red-500 dark:text-red-400">Blocked — allow in browser settings</span>;
   return (
-    <button onClick={handleEnable} className="text-sm font-medium text-brand-600 hover:underline">Enable</button>
+    <button onClick={handleEnable} className="text-sm font-medium text-brand-600 dark:text-brand-300 hover:underline">Enable</button>
   );
 }
 
@@ -78,20 +78,20 @@ function TwoFACard({ user }) {
   if (user?.twoFAEnabled && phase === 'idle') return (
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-900">Two-factor authentication</p>
-        <p className="text-xs text-green-600 mt-0.5 font-medium">✓ Enabled — your account is protected</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">Two-factor authentication</p>
+        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 font-medium">✓ Enabled — your account is protected</p>
       </div>
-      <button onClick={() => setPhase('disabling')} className="text-sm text-red-500 hover:underline">Disable</button>
+      <button onClick={() => setPhase('disabling')} className="text-sm text-red-500 dark:text-red-400 hover:underline">Disable</button>
     </div>
   );
 
   if (phase === 'disabling') return (
     <div className="space-y-3">
-      <p className="text-sm font-medium text-gray-900">Disable Two-Factor Authentication</p>
-      <p className="text-xs text-gray-500">Enter your 6-digit authenticator code to confirm</p>
+      <p className="text-sm font-medium text-gray-900 dark:text-white">Disable Two-Factor Authentication</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Enter your 6-digit authenticator code to confirm</p>
       <div className="flex gap-2">
         <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="000000" maxLength={6}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono w-32 focus:ring-2 focus:ring-brand-500 outline-none" />
+          className="border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm font-mono w-32 focus:ring-2 focus:ring-brand-500 outline-none" />
         <Button size="sm" variant="outline" onClick={() => setPhase('idle')}>Cancel</Button>
         <Button size="sm" loading={loading} onClick={disableTwoFA} className="bg-red-600 hover:bg-red-700 text-white border-red-600">Disable</Button>
       </div>
@@ -100,15 +100,15 @@ function TwoFACard({ user }) {
 
   if (phase === 'setup') return (
     <div className="space-y-4">
-      <p className="text-sm font-medium text-gray-900">Scan with Google Authenticator or Authy</p>
-      {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="2FA QR Code" className="w-44 h-44 border border-gray-200 rounded-xl" />}
-      <details className="text-xs text-gray-500">
-        <summary className="cursor-pointer hover:text-gray-700">Can't scan? Enter key manually</summary>
-        <code className="block mt-2 bg-gray-50 px-3 py-2 rounded-lg font-mono text-xs break-all">{secret}</code>
+      <p className="text-sm font-medium text-gray-900 dark:text-white">Scan with Google Authenticator or Authy</p>
+      {qrCodeDataUrl && <img src={qrCodeDataUrl} alt="2FA QR Code" className="w-44 h-44 border border-gray-200 dark:border-gray-700 rounded-xl" />}
+      <details className="text-xs text-gray-500 dark:text-gray-400">
+        <summary className="cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">Can't scan? Enter key manually</summary>
+        <code className="block mt-2 bg-gray-50 dark:bg-gray-900 dark:text-gray-200 px-3 py-2 rounded-lg font-mono text-xs break-all">{secret}</code>
       </details>
       <div className="flex gap-2">
         <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="6-digit code"
-          maxLength={6} className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono w-36 focus:ring-2 focus:ring-brand-500 outline-none" />
+          maxLength={6} className="border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm font-mono w-36 focus:ring-2 focus:ring-brand-500 outline-none" />
         <Button size="sm" loading={loading} onClick={enableTwoFA}>Verify & Enable</Button>
         <Button size="sm" variant="outline" onClick={() => setPhase('idle')}>Cancel</Button>
       </div>
@@ -118,8 +118,8 @@ function TwoFACard({ user }) {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-900">Two-factor authentication</p>
-        <p className="text-xs text-gray-500 mt-0.5">Add an extra layer of security to your account</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">Two-factor authentication</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Add an extra layer of security to your account</p>
       </div>
       <Button size="sm" loading={loading} onClick={startSetup}>Enable 2FA</Button>
     </div>
@@ -194,11 +194,11 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <h1 className="font-display font-bold text-2xl text-gray-900">Profile & Settings</h1>
+      <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white">Profile & Settings</h1>
 
       {/* Profile */}
       <Card className="p-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Profile</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Profile</h2>
         <form onSubmit={handleProfileSave} className="space-y-4">
           <div className="flex items-center gap-4 mb-4">
             {user?.avatar ? (
@@ -209,9 +209,9 @@ export default function SettingsPage() {
               </div>
             )}
             <div>
-              <p className="font-semibold text-gray-900">{user?.name}</p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{user?.provider}</span>
+              <p className="font-semibold text-gray-900 dark:text-white">{user?.name}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
+              <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">{user?.provider}</span>
             </div>
           </div>
           <Input label="Full name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
@@ -223,30 +223,30 @@ export default function SettingsPage() {
       {/* Referral Program */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-1">
-          <FiGift className="text-brand-600" size={18} />
-          <h2 className="font-semibold text-gray-900">Referral Program</h2>
+          <FiGift className="text-brand-600 dark:text-brand-300" size={18} />
+          <h2 className="font-semibold text-gray-900 dark:text-white">Referral Program</h2>
         </div>
-        <p className="text-sm text-gray-500 mb-5">
-          Share your link. When a friend signs up and makes their first purchase, you get <strong className="text-gray-700">10% of their credits</strong> as a bonus.
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          Share your link. When a friend signs up and makes their first purchase, you get <strong className="text-gray-700 dark:text-gray-200">10% of their credits</strong> as a bonus.
         </p>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="bg-brand-50 rounded-xl p-4 text-center">
-            <FiUsers className="mx-auto text-brand-600 mb-1" size={20} />
-            <p className="text-2xl font-bold text-gray-900">{referralData?.referredCount ?? '—'}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Friends referred</p>
+          <div className="bg-brand-50 dark:bg-brand-900/30 rounded-xl p-4 text-center">
+            <FiUsers className="mx-auto text-brand-600 dark:text-brand-300 mb-1" size={20} />
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{referralData?.referredCount ?? '—'}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Friends referred</p>
           </div>
-          <div className="bg-green-50 rounded-xl p-4 text-center">
-            <FiGift className="mx-auto text-green-600 mb-1" size={20} />
-            <p className="text-2xl font-bold text-gray-900">{referralData?.bonusEarned ?? '—'}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Bonus credits earned</p>
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 text-center">
+            <FiGift className="mx-auto text-green-600 dark:text-green-400 mb-1" size={20} />
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{referralData?.bonusEarned ?? '—'}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Bonus credits earned</p>
           </div>
         </div>
 
         {/* Link + copy */}
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-600 truncate font-mono">
+          <div className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 truncate font-mono">
             {referralData?.referralLink ?? 'Loading...'}
           </div>
           <button
@@ -261,26 +261,26 @@ export default function SettingsPage() {
 
       {/* Notifications */}
       <Card className="p-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Notifications</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Notifications</h2>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-900">SMS arrival emails</p>
-            <p className="text-xs text-gray-500 mt-0.5">Get an email with your verification code the moment an SMS arrives</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">SMS arrival emails</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Get an email with your verification code the moment an SMS arrives</p>
           </div>
           <button
             disabled={notifSaving}
             onClick={() => handleNotifToggle(!emailNotifications)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${emailNotifications ? 'bg-brand-600' : 'bg-gray-300'}`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${emailNotifications ? 'bg-brand-600' : 'bg-gray-300 dark:bg-gray-600'}`}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${emailNotifications ? 'translate-x-6' : 'translate-x-1'}`}
             />
           </button>
         </div>
-        <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100 dark:border-gray-700">
           <div>
-            <p className="text-sm font-medium text-gray-900">Browser notifications</p>
-            <p className="text-xs text-gray-500 mt-0.5">Get notified when SMS arrives even if you're on another tab</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">Browser notifications</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Get notified when SMS arrives even if you're on another tab</p>
           </div>
           <BrowserNotifButton />
         </div>
@@ -288,14 +288,14 @@ export default function SettingsPage() {
 
       {/* Two-Factor Authentication */}
       <Card className="p-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Two-Factor Authentication</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Two-Factor Authentication</h2>
         <TwoFACard user={user} />
       </Card>
 
       {/* Security */}
       {user?.provider === 'LOCAL' && (
         <Card className="p-6">
-          <h2 className="font-semibold text-gray-900 mb-4">Change Password</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Change Password</h2>
           <form onSubmit={handlePasswordSave} className="space-y-4">
             <Input label="Current password" type="password" value={password.currentPassword} onChange={(e) => setPassword({ ...password, currentPassword: e.target.value })} required />
             <Input label="New password" type="password" value={password.newPassword} onChange={(e) => setPassword({ ...password, newPassword: e.target.value })} required placeholder="Min. 8 characters" />
@@ -307,19 +307,19 @@ export default function SettingsPage() {
 
       {/* Account info */}
       <Card className="p-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Account Information</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Account Information</h2>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Member since</span>
-            <span className="text-gray-900">{new Date(user?.createdAt).toLocaleDateString()}</span>
+            <span className="text-gray-500 dark:text-gray-400">Member since</span>
+            <span className="text-gray-900 dark:text-white">{new Date(user?.createdAt).toLocaleDateString()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Account type</span>
-            <span className="text-gray-900">{user?.provider}</span>
+            <span className="text-gray-500 dark:text-gray-400">Account type</span>
+            <span className="text-gray-900 dark:text-white">{user?.provider}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Email verified</span>
-            <span className={user?.isEmailVerified ? 'text-green-600' : 'text-yellow-600'}>{user?.isEmailVerified ? 'Verified' : 'Not verified'}</span>
+            <span className="text-gray-500 dark:text-gray-400">Email verified</span>
+            <span className={user?.isEmailVerified ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>{user?.isEmailVerified ? 'Verified' : 'Not verified'}</span>
           </div>
         </div>
       </Card>

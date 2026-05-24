@@ -4,16 +4,16 @@ import Logo from '../../components/common/Logo';
 
 export default function CreatorLandingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Header */}
-      <header className="border-b border-gray-100 px-6 py-4">
+      <header className="border-b border-gray-100 dark:border-gray-700 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex flex-col">
             <Logo textClassName="text-lg" />
             <span className="text-xs text-brand-600 font-medium ml-7 -mt-0.5">Creator Program</span>
           </div>
           <div className="flex gap-3">
-            <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 px-4 py-2">
+            <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-4 py-2">
               Sign In
             </Link>
             <Link to="/apply" className="text-sm font-medium bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors">
@@ -45,25 +45,25 @@ export default function CreatorLandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-20 px-6 bg-gray-50">
+      <section className="py-20 px-6 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-3">How it works</h2>
-          <p className="text-gray-500 text-center mb-12">Three steps to start earning</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-3">How it works</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Three steps to start earning</p>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { icon: FiLink, step: '01', title: 'Apply & get approved', desc: 'Submit your social media handles and audience proof. We review within 24–48 hours.' },
               { icon: FiUsers, step: '02', title: 'Share your link', desc: 'Post your unique referral link on WhatsApp, TikTok, Instagram, Facebook — anywhere your audience is.' },
               { icon: FiDollarSign, step: '03', title: 'Earn 10% on every top-up', desc: 'Every time your referral buys credits, you earn 10% in Naira. Withdraw once you hit ₦50,000.' },
             ].map(({ icon: Icon, step, title, desc }) => (
-              <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div key={title} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center">
                     <Icon size={20} className="text-brand-600" />
                   </div>
                   <span className="text-xs font-bold text-brand-400 uppercase tracking-widest">{step}</span>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
@@ -75,7 +75,7 @@ export default function CreatorLandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Why join our creator program?</h2>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Why join our creator program?</h2>
               <ul className="space-y-4">
                 {[
                   '10% commission on every credit top-up — no cap',
@@ -85,9 +85,9 @@ export default function CreatorLandingPage() {
                   'Works on WhatsApp, TikTok, Instagram, Facebook & more',
                   'No minimum audience size required to apply',
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm text-gray-700">
-                    <span className="w-5 h-5 bg-brand-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                      <FiCheck size={12} className="text-brand-700" />
+                  <li key={item} className="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-200">
+                    <span className="w-5 h-5 bg-brand-100 dark:bg-brand-900/20 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                      <FiCheck size={12} className="text-brand-700 dark:text-brand-300" />
                     </span>
                     {item}
                   </li>
@@ -129,9 +129,9 @@ export default function CreatorLandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-gray-100 py-6 text-center text-sm text-gray-400">
+      <footer className="border-t border-gray-100 dark:border-gray-700 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
         © {new Date().getFullYear()} textlix ·{' '}
-        <a href="https://www.textlix.com" className="hover:text-gray-600">Main Platform</a>
+        <a href="https://www.textlix.com" className="hover:text-gray-600 dark:hover:text-gray-300">Main Platform</a>
       </footer>
     </div>
   );

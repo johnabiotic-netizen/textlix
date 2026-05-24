@@ -43,17 +43,17 @@ const FAQS = [
 function FaqItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       <button
-        className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         onClick={() => setOpen(!open)}
       >
-        <span className="font-medium text-gray-900 text-sm">{q}</span>
-        {open ? <FiChevronUp className="text-gray-400 flex-shrink-0 ml-3" /> : <FiChevronDown className="text-gray-400 flex-shrink-0 ml-3" />}
+        <span className="font-medium text-gray-900 dark:text-white text-sm">{q}</span>
+        {open ? <FiChevronUp className="text-gray-400 dark:text-gray-500 flex-shrink-0 ml-3" /> : <FiChevronDown className="text-gray-400 dark:text-gray-500 flex-shrink-0 ml-3" />}
       </button>
       {open && (
-        <div className="px-5 py-4 bg-gray-50 border-t border-gray-200">
-          <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
+        <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{a}</p>
         </div>
       )}
     </div>
@@ -68,14 +68,14 @@ export default function FaqPage() {
       <meta name="description" content="Frequently asked questions about textlix virtual phone numbers. Learn how to receive SMS verification codes, top up credits, and more." />
       <link rel="canonical" href="https://www.textlix.com/faq" />
     </Helmet>
-    <div className="min-h-screen bg-white font-body">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-white dark:bg-gray-900 font-body">
+      <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
+          <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 dark:text-white">
             <span>✓</span> textlix
           </Link>
           <div className="flex items-center gap-3">
-            <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
+            <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Sign in</Link>
             <Link to="/register" className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">Get Started</Link>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function FaqPage() {
         <div className="max-w-3xl mx-auto space-y-12">
           {FAQS.map((section) => (
             <div key={section.category}>
-              <h2 className="font-display font-bold text-xl text-gray-900 mb-4">{section.category}</h2>
+              <h2 className="font-display font-bold text-xl text-gray-900 dark:text-white mb-4">{section.category}</h2>
               <div className="space-y-3">
                 {section.items.map((item) => (
                   <FaqItem key={item.q} q={item.q} a={item.a} />
@@ -101,9 +101,9 @@ export default function FaqPage() {
             </div>
           ))}
 
-          <div className="bg-brand-50 border border-brand-200 rounded-2xl p-8 text-center">
-            <h3 className="font-display font-bold text-xl text-gray-900 mb-2">Still have questions?</h3>
-            <p className="text-gray-500 mb-6">Our support team is here to help.</p>
+          <div className="bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800 rounded-2xl p-8 text-center">
+            <h3 className="font-display font-bold text-xl text-gray-900 dark:text-white mb-2">Still have questions?</h3>
+            <p className="text-gray-500 dark:text-gray-300 mb-6">Our support team is here to help.</p>
             <Link to="/support" className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors inline-block">
               Contact Support
             </Link>
@@ -111,14 +111,14 @@ export default function FaqPage() {
         </div>
       </section>
 
-      <footer className="border-t border-gray-200 py-10 px-4">
+      <footer className="border-t border-gray-200 dark:border-gray-800 py-10 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} textlix. All rights reserved.</p>
-          <div className="flex gap-6 text-sm text-gray-500">
-            <Link to="/faq" className="hover:text-gray-700">FAQ</Link>
-            <Link to="/support" className="hover:text-gray-700">Support</Link>
-            <Link to="/terms" className="hover:text-gray-700">Terms</Link>
-            <Link to="/privacy" className="hover:text-gray-700">Privacy</Link>
+          <p className="text-sm text-gray-500 dark:text-gray-400">© {new Date().getFullYear()} textlix. All rights reserved.</p>
+          <div className="flex gap-6 text-sm text-gray-500 dark:text-gray-400">
+            <Link to="/faq" className="hover:text-gray-700 dark:hover:text-gray-200">FAQ</Link>
+            <Link to="/support" className="hover:text-gray-700 dark:hover:text-gray-200">Support</Link>
+            <Link to="/terms" className="hover:text-gray-700 dark:hover:text-gray-200">Terms</Link>
+            <Link to="/privacy" className="hover:text-gray-700 dark:hover:text-gray-200">Privacy</Link>
           </div>
         </div>
       </footer>

@@ -69,16 +69,16 @@ function GenerateKeyModal({ isOpen, onClose, onGenerated }) {
     <Modal isOpen={isOpen} onClose={handleClose} title="Generate API Key" size="sm">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Key Name *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Key Name *</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Production App, My Script"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
             autoFocus
             required
           />
-          <p className="text-xs text-gray-400 mt-1">A descriptive label to identify where this key is used.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">A descriptive label to identify where this key is used.</p>
         </div>
         <div className="flex justify-end gap-3 pt-1">
           <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
@@ -95,17 +95,17 @@ function NewKeyRevealModal({ isOpen, keyData, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Your New API Key" size="md">
       <div className="space-y-4">
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <FiAlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-800 font-semibold leading-snug">
+          <p className="text-sm text-amber-800 dark:text-amber-300 font-semibold leading-snug">
             This key will not be shown again. Copy and store it somewhere safe now.
           </p>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">API Key</label>
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-            <code className="flex-1 text-sm font-mono text-gray-800 break-all select-all">
+          <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">API Key</label>
+          <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3">
+            <code className="flex-1 text-sm font-mono text-gray-800 dark:text-gray-200 break-all select-all">
               {keyData.key}
             </code>
             <CopyButton text={keyData.key} />
@@ -114,12 +114,12 @@ function NewKeyRevealModal({ isOpen, keyData, onClose }) {
 
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Name</p>
-            <p className="text-gray-800">{keyData.name}</p>
+            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Name</p>
+            <p className="text-gray-800 dark:text-gray-200">{keyData.name}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Prefix</p>
-            <p className="font-mono text-gray-600">{keyData.prefix}…</p>
+            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Prefix</p>
+            <p className="font-mono text-gray-600 dark:text-gray-300">{keyData.prefix}…</p>
           </div>
         </div>
 
@@ -134,14 +134,14 @@ function NewKeyRevealModal({ isOpen, keyData, onClose }) {
 function DeleteConfirmModal({ isOpen, apiKey, onClose, onConfirm, loading }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Delete API Key" size="sm">
-      <p className="text-sm text-gray-600 mb-2">
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
         Are you sure you want to delete the key{' '}
-        <span className="font-mono font-semibold text-gray-900">{apiKey?.prefix}…</span>
+        <span className="font-mono font-semibold text-gray-900 dark:text-white">{apiKey?.prefix}…</span>
         {apiKey?.name && (
-          <span className="text-gray-500"> ({apiKey.name})</span>
+          <span className="text-gray-500 dark:text-gray-400"> ({apiKey.name})</span>
         )}?
       </p>
-      <p className="text-sm text-red-600 mb-6">Any apps using this key will immediately stop working.</p>
+      <p className="text-sm text-red-600 dark:text-red-400 mb-6">Any apps using this key will immediately stop working.</p>
       <div className="flex justify-end gap-3">
         <Button variant="outline" onClick={onClose}>Cancel</Button>
         <Button variant="danger" loading={loading} onClick={onConfirm}>Delete Key</Button>
@@ -194,8 +194,8 @@ export default function ApiKeysPage() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display font-bold text-2xl text-gray-900">API Keys</h1>
-          <p className="text-sm text-gray-500 mt-1">Use API keys to access textlix programmatically.</p>
+          <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white">API Keys</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Use API keys to access textlix programmatically.</p>
         </div>
         <Button
           onClick={() => setShowGenerate(true)}
@@ -208,9 +208,9 @@ export default function ApiKeysPage() {
 
       {/* API base URL callout */}
       <Card className="p-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">API Base URL</p>
+        <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">API Base URL</p>
         <div className="flex items-center gap-3">
-          <code className="flex-1 text-sm font-mono text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+          <code className="flex-1 text-sm font-mono text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2">
             {API_BASE_URL}
           </code>
           <button
@@ -223,9 +223,9 @@ export default function ApiKeysPage() {
             {copiedBaseUrl ? 'Copied!' : 'Copy'}
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2">
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
           Authenticate all requests with{' '}
-          <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">Authorization: Bearer {'<key>'}</code>.
+          <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-200">Authorization: Bearer {'<key>'}</code>.
           All authenticated API endpoints are available to API keys.
         </p>
       </Card>
@@ -233,19 +233,19 @@ export default function ApiKeysPage() {
       {/* Keys list */}
       <Card className="overflow-hidden">
         {isLoading ? (
-          <p className="text-center py-8 text-gray-400 text-sm">Loading...</p>
+          <p className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading...</p>
         ) : !keys.length ? (
           <div className="text-center py-12">
-            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <FiKey size={22} className="text-gray-400" />
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <FiKey size={22} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <p className="text-gray-500 text-sm font-medium">No API keys yet</p>
-            <p className="text-gray-400 text-xs mt-1">Generate your first key to get started.</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">No API keys yet</p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Generate your first key to get started.</p>
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="border-b border-gray-200">
-              <tr className="text-xs text-gray-400 uppercase tracking-wide">
+            <thead className="border-b border-gray-200 dark:border-gray-700">
+              <tr className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                 <th className="text-left px-4 py-3">Name</th>
                 <th className="text-left px-4 py-3">Key Prefix</th>
                 <th className="text-left px-4 py-3">Created</th>
@@ -253,19 +253,19 @@ export default function ApiKeysPage() {
                 <th className="text-right px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {keys.map((k) => (
-                <tr key={k._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{k.name || <span className="text-gray-400 font-normal">Unnamed</span>}</td>
-                  <td className="px-4 py-3 font-mono text-gray-600">{k.prefix}…</td>
-                  <td className="px-4 py-3 text-gray-500">{dayjs(k.createdAt).format('MMM D, YYYY')}</td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {k.lastUsedAt ? dayjs(k.lastUsedAt).format('MMM D, YYYY') : <span className="text-gray-300">Never</span>}
+                <tr key={k._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{k.name || <span className="text-gray-400 dark:text-gray-500 font-normal">Unnamed</span>}</td>
+                  <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-300">{k.prefix}…</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{dayjs(k.createdAt).format('MMM D, YYYY')}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                    {k.lastUsedAt ? dayjs(k.lastUsedAt).format('MMM D, YYYY') : <span className="text-gray-300 dark:text-gray-600">Never</span>}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => setDeleteTarget(k)}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
+                      className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                       title="Delete key"
                     >
                       <FiTrash2 size={16} />
@@ -277,7 +277,7 @@ export default function ApiKeysPage() {
           </table>
         )}
         {atLimit && (
-          <div className="px-4 py-3 bg-amber-50 border-t border-amber-100 text-xs text-amber-700 font-medium">
+          <div className="px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-100 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-300 font-medium">
             You have reached the maximum of {MAX_KEYS} API keys. Delete an existing key to create a new one.
           </div>
         )}

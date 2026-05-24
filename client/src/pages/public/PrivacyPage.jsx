@@ -2,21 +2,21 @@ import { Link } from 'react-router-dom';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-white font-body">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-white dark:bg-gray-900 font-body">
+      <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
+          <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 dark:text-white">
             <span>✓</span> textlix
           </Link>
-          <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
+          <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Sign in</Link>
         </div>
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-16">
-        <h1 className="font-display font-extrabold text-4xl text-gray-900 mb-2">Privacy Policy</h1>
-        <p className="text-gray-400 text-sm mb-10">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        <h1 className="font-display font-extrabold text-4xl text-gray-900 dark:text-white mb-2">Privacy Policy</h1>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mb-10">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
 
-        <div className="space-y-8 text-sm text-gray-600 leading-relaxed">
+        <div className="space-y-8 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
           {[
             { title: '1. Information We Collect', body: 'We collect your name, email address, and payment information when you create an account or make a purchase. We also collect usage data such as numbers ordered and SMS received.' },
             { title: '2. How We Use Your Information', body: 'Your information is used to provide and improve the Service, process payments, send account-related emails, and comply with legal obligations. We do not sell your personal data to third parties.' },
@@ -30,21 +30,21 @@ export default function PrivacyPage() {
             { title: '10. Contact', body: 'For privacy-related questions or requests, contact us at support@textlix.com.' },
           ].map((section) => (
             <div key={section.title}>
-              <h2 className="font-display font-bold text-lg text-gray-900 mb-2">{section.title}</h2>
+              <h2 className="font-display font-bold text-lg text-gray-900 dark:text-white mb-2">{section.title}</h2>
               <p>{section.body}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <footer className="border-t border-gray-200 py-10 px-4">
+      <footer className="border-t border-gray-200 dark:border-gray-800 py-10 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} textlix. All rights reserved.</p>
-          <div className="flex gap-6 text-sm text-gray-500">
-            <Link to="/faq" className="hover:text-gray-700">FAQ</Link>
-            <Link to="/support" className="hover:text-gray-700">Support</Link>
-            <Link to="/terms" className="hover:text-gray-700">Terms</Link>
-            <Link to="/privacy" className="hover:text-gray-700">Privacy</Link>
+          <p className="text-sm text-gray-500 dark:text-gray-400">© {new Date().getFullYear()} textlix. All rights reserved.</p>
+          <div className="flex gap-6 text-sm text-gray-500 dark:text-gray-400">
+            <Link to="/faq" className="hover:text-gray-700 dark:hover:text-gray-200">FAQ</Link>
+            <Link to="/support" className="hover:text-gray-700 dark:hover:text-gray-200">Support</Link>
+            <Link to="/terms" className="hover:text-gray-700 dark:hover:text-gray-200">Terms</Link>
+            <Link to="/privacy" className="hover:text-gray-700 dark:hover:text-gray-200">Privacy</Link>
           </div>
         </div>
       </footer>

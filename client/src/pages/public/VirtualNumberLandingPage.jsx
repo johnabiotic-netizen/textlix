@@ -56,19 +56,19 @@ const STEPS = [
 function FaqItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       <button
-        className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         onClick={() => setOpen(!open)}
       >
-        <span className="font-medium text-gray-900 text-sm">{q}</span>
+        <span className="font-medium text-gray-900 dark:text-white text-sm">{q}</span>
         {open
-          ? <FiChevronUp className="text-gray-400 flex-shrink-0 ml-3" />
-          : <FiChevronDown className="text-gray-400 flex-shrink-0 ml-3" />}
+          ? <FiChevronUp className="text-gray-400 dark:text-gray-500 flex-shrink-0 ml-3" />
+          : <FiChevronDown className="text-gray-400 dark:text-gray-500 flex-shrink-0 ml-3" />}
       </button>
       {open && (
-        <div className="px-5 py-4 bg-gray-50 border-t border-gray-200">
-          <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
+        <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{a}</p>
         </div>
       )}
     </div>
@@ -126,21 +126,21 @@ export default function VirtualNumberLandingPage() {
         <meta property="og:url" content={canonical} />
       </Helmet>
 
-      <div className="min-h-screen bg-white font-body">
+      <div className="min-h-screen bg-white dark:bg-gray-900 font-body">
 
         {/* Navbar */}
-        <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
+        <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
           <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
+            <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 dark:text-white">
               <span>✓</span> textlix
             </Link>
             <nav className="hidden md:flex items-center gap-6">
-              <Link to="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pricing</Link>
-              <Link to="/docs" className="text-sm font-medium text-gray-600 hover:text-gray-900">Docs</Link>
-              <Link to="/faq" className="text-sm font-medium text-gray-600 hover:text-gray-900">FAQ</Link>
+              <Link to="/pricing" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Pricing</Link>
+              <Link to="/docs" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Docs</Link>
+              <Link to="/faq" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">FAQ</Link>
             </nav>
             <div className="flex items-center gap-3">
-              <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign in</Link>
+              <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Sign in</Link>
               <Link
                 to="/register"
                 className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -181,21 +181,21 @@ export default function VirtualNumberLandingPage() {
         </section>
 
         {/* How it works */}
-        <section className="py-20 px-4 bg-gray-50">
+        <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-5xl mx-auto">
-            <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">
               How to Verify {serviceName} with {article} {countryName} Number
             </h2>
-            <p className="text-gray-500 text-center mb-12">Four simple steps — takes under two minutes</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Four simple steps — takes under two minutes</p>
             <div className="grid md:grid-cols-4 gap-6">
               {STEPS.map((item) => (
-                <div key={item.step} className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
+                <div key={item.step} className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center shadow-sm border border-gray-100 dark:border-gray-700">
                   <div className="text-3xl mb-3">{item.icon}</div>
                   <div className="inline-flex items-center justify-center w-6 h-6 bg-brand-600 text-white text-xs font-bold rounded-full mb-3">
                     {item.step}
                   </div>
-                  <h3 className="font-display font-semibold text-base text-gray-900 mb-2">{item.title}</h3>
-                  <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
+                  <h3 className="font-display font-semibold text-base text-gray-900 dark:text-white mb-2">{item.title}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -205,10 +205,10 @@ export default function VirtualNumberLandingPage() {
         {/* Why textlix / trust signals */}
         <section className="py-20 px-4">
           <div className="max-w-5xl mx-auto">
-            <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">
               Why Use textlix for {serviceName}?
             </h2>
-            <p className="text-gray-500 text-center mb-12">Built for reliability — not just cheapness</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-12">Built for reliability — not just cheapness</p>
             <div className="grid md:grid-cols-3 gap-5">
               {[
                 {
@@ -242,10 +242,10 @@ export default function VirtualNumberLandingPage() {
                   desc: `Your real number stays hidden. ${serviceName} only sees the virtual number — your identity stays yours.`,
                 },
               ].map((f, i) => (
-                <div key={i} className="bg-gray-50 rounded-xl p-6">
+                <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6">
                   <div className="text-3xl mb-3">{f.icon}</div>
-                  <h3 className="font-semibold text-gray-900 mb-2 text-sm">{f.title}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">{f.desc}</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">{f.title}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
                 </div>
               ))}
             </div>
@@ -255,10 +255,10 @@ export default function VirtualNumberLandingPage() {
         {/* Pricing callout */}
         <section className="py-16 px-4 bg-gradient-to-r from-brand-50 to-brand-100">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="font-display font-bold text-3xl text-gray-900 mb-3">
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white mb-3">
               Simple Credit Pricing
             </h2>
-            <p className="text-gray-500 mb-8">
+            <p className="text-gray-500 dark:text-gray-400 mb-8">
               1 credit = $0.01. {countryName} {serviceName} numbers typically cost 50–300 credits. Credits never expire.
             </p>
             <div className="grid sm:grid-cols-3 gap-4 mb-8">
@@ -269,8 +269,8 @@ export default function VirtualNumberLandingPage() {
               ].map((pkg) => (
                 <div
                   key={pkg.label}
-                  className={`border rounded-xl p-5 text-center relative bg-white ${
-                    pkg.popular ? 'border-brand-500' : 'border-gray-200'
+                  className={`border rounded-xl p-5 text-center relative bg-white dark:bg-gray-800 ${
+                    pkg.popular ? 'border-brand-500' : 'border-gray-200 dark:border-gray-700'
                   }`}
                 >
                   {pkg.popular && (
@@ -278,9 +278,9 @@ export default function VirtualNumberLandingPage() {
                       Most Popular
                     </div>
                   )}
-                  <p className="font-display font-bold text-2xl text-gray-900">{pkg.usd}</p>
-                  <p className="text-sm font-semibold text-gray-700 mt-1">{pkg.credits}</p>
-                  <p className="text-xs text-green-600 font-medium mt-1">{pkg.note}</p>
+                  <p className="font-display font-bold text-2xl text-gray-900 dark:text-white">{pkg.usd}</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mt-1">{pkg.credits}</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">{pkg.note}</p>
                 </div>
               ))}
             </div>
@@ -296,10 +296,10 @@ export default function VirtualNumberLandingPage() {
         {/* FAQ */}
         <section className="py-20 px-4">
           <div className="max-w-3xl mx-auto">
-            <h2 className="font-display font-bold text-3xl text-gray-900 text-center mb-3">
+            <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">
               Common Questions
             </h2>
-            <p className="text-gray-500 text-center mb-10">
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-10">
               About {countryName} virtual numbers for {serviceName}
             </p>
             <div className="space-y-3 mb-10">
@@ -308,7 +308,7 @@ export default function VirtualNumberLandingPage() {
               ))}
             </div>
             <div className="text-center">
-              <Link to="/faq" className="text-brand-600 font-semibold hover:underline text-sm">
+              <Link to="/faq" className="text-brand-600 dark:text-brand-400 font-semibold hover:underline text-sm">
                 View all FAQs →
               </Link>
             </div>
@@ -343,20 +343,20 @@ export default function VirtualNumberLandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 py-10 px-4 bg-white">
+        <footer className="border-t border-gray-200 dark:border-gray-800 py-10 px-4 bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900">
+            <Link to="/" className="flex items-center gap-2 font-display font-bold text-xl text-gray-900 dark:text-white">
               <span>✓</span> textlix
             </Link>
-            <div className="flex gap-6 text-sm text-gray-500">
-              <Link to="/pricing" className="hover:text-gray-700">Pricing</Link>
-              <Link to="/faq" className="hover:text-gray-700">FAQ</Link>
-              <Link to="/docs" className="hover:text-gray-700">Docs</Link>
-              <Link to="/support" className="hover:text-gray-700">Support</Link>
-              <Link to="/terms" className="hover:text-gray-700">Terms</Link>
-              <Link to="/privacy" className="hover:text-gray-700">Privacy</Link>
+            <div className="flex gap-6 text-sm text-gray-500 dark:text-gray-400">
+              <Link to="/pricing" className="hover:text-gray-700 dark:hover:text-gray-200">Pricing</Link>
+              <Link to="/faq" className="hover:text-gray-700 dark:hover:text-gray-200">FAQ</Link>
+              <Link to="/docs" className="hover:text-gray-700 dark:hover:text-gray-200">Docs</Link>
+              <Link to="/support" className="hover:text-gray-700 dark:hover:text-gray-200">Support</Link>
+              <Link to="/terms" className="hover:text-gray-700 dark:hover:text-gray-200">Terms</Link>
+              <Link to="/privacy" className="hover:text-gray-700 dark:hover:text-gray-200">Privacy</Link>
             </div>
-            <p className="text-sm text-gray-400">© {new Date().getFullYear()} textlix</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">© {new Date().getFullYear()} textlix</p>
           </div>
         </footer>
       </div>

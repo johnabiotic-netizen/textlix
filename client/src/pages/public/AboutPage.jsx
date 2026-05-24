@@ -4,10 +4,10 @@ import { FiGlobe, FiShield, FiZap, FiHeart } from 'react-icons/fi';
 import PublicLayout from '../../components/layout/PublicLayout';
 
 const VALUES = [
-  { icon: <FiZap size={22} className="text-brand-600" />, title: 'Speed first', desc: 'Verification codes delivered in seconds, not minutes. We poll providers every 5 seconds so you never wait.' },
-  { icon: <FiShield size={22} className="text-brand-600" />, title: 'Privacy by design', desc: 'We never sell your data. Numbers are temporary, SMS content is automatically cleaned after 30 days.' },
-  { icon: <FiGlobe size={22} className="text-brand-600" />, title: 'Global reach', desc: 'Numbers from 1150+ countries so you can verify on any platform, from anywhere in the world.' },
-  { icon: <FiHeart size={22} className="text-brand-600" />, title: 'Fair pricing', desc: 'Credits never expire. Cancel before SMS arrives and get a full refund. No tricks, no traps.' },
+  { icon: <FiZap size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Speed first', desc: 'Verification codes delivered in seconds, not minutes. We poll providers every 5 seconds so you never wait.' },
+  { icon: <FiShield size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Privacy by design', desc: 'We never sell your data. Numbers are temporary, SMS content is automatically cleaned after 30 days.' },
+  { icon: <FiGlobe size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Global reach', desc: 'Numbers from 1150+ countries so you can verify on any platform, from anywhere in the world.' },
+  { icon: <FiHeart size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Fair pricing', desc: 'Credits never expire. Cancel before SMS arrives and get a full refund. No tricks, no traps.' },
 ];
 
 export default function AboutPage() {
@@ -34,13 +34,13 @@ export default function AboutPage() {
       {/* Mission */}
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-6">Our mission</h2>
-          <p className="text-gray-600 text-lg leading-relaxed mb-6">
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-6">Our mission</h2>
+          <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed mb-6">
             Phone number verification has become the standard for account security — but not everyone has access
             to the right number at the right time. Whether you're protecting your privacy, testing an app,
             or managing multiple accounts, you deserve a reliable way to receive SMS codes without exposing your real number.
           </p>
-          <p className="text-gray-600 text-lg leading-relaxed">
+          <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed">
             textlix gives you instant access to virtual numbers from 1150+ countries. Real-time delivery,
             fair credit-based pricing, and a no-nonsense refund policy if the SMS never arrives.
           </p>
@@ -48,17 +48,17 @@ export default function AboutPage() {
       </section>
 
       {/* Values */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto">
-          <h2 className="font-display font-bold text-2xl text-gray-900 text-center mb-12">What we stand for</h2>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white text-center mb-12">What we stand for</h2>
           <div className="grid sm:grid-cols-2 gap-6">
             {VALUES.map((v) => (
-              <div key={v.title} className="bg-white border border-gray-100 rounded-2xl p-6">
-                <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center mb-4">
+              <div key={v.title} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6">
+                <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-xl flex items-center justify-center mb-4">
                   {v.icon}
                 </div>
-                <h3 className="font-display font-semibold text-gray-900 mb-2">{v.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{v.desc}</p>
+                <h3 className="font-display font-semibold text-gray-900 dark:text-white mb-2">{v.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{v.desc}</p>
               </div>
             ))}
           </div>
@@ -68,7 +68,7 @@ export default function AboutPage() {
       {/* Stats */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-12">textlix by the numbers</h2>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-12">textlix by the numbers</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { value: '150+', label: 'Countries' },
@@ -77,8 +77,8 @@ export default function AboutPage() {
               { value: '24/7', label: 'Platform uptime' },
             ].map((s) => (
               <div key={s.label}>
-                <p className="font-display font-extrabold text-4xl text-brand-600 mb-1">{s.value}</p>
-                <p className="text-sm text-gray-500">{s.label}</p>
+                <p className="font-display font-extrabold text-4xl text-brand-600 dark:text-brand-400 mb-1">{s.value}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{s.label}</p>
               </div>
             ))}
           </div>

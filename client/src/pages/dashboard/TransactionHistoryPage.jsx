@@ -20,27 +20,27 @@ export default function TransactionHistoryPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <h1 className="font-display font-bold text-2xl text-gray-900">Transaction History</h1>
+      <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white">Transaction History</h1>
 
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
         {TABS.map((t) => (
           <button key={t} onClick={() => { setTab(t); setPage(1); }}
-            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
             {t}
           </button>
         ))}
       </div>
 
       {isLoading ? (
-        <p className="text-gray-400 text-sm text-center py-8">Loading...</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">Loading...</p>
       ) : !data?.transactions?.length ? (
         <EmptyState icon="📊" title="No transactions" description="Buy credits to see your transaction history." />
       ) : (
         <>
-          <Card className="divide-y divide-gray-100 overflow-x-auto">
+          <Card className="divide-y divide-gray-100 dark:divide-gray-700 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs text-gray-400 uppercase tracking-wide">
+                <tr className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                   <th className="text-left px-4 py-3">Date</th>
                   <th className="text-left px-4 py-3">Type</th>
                   <th className="text-left px-4 py-3">Description</th>
@@ -48,16 +48,16 @@ export default function TransactionHistoryPage() {
                   <th className="text-right px-4 py-3">Balance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {data.transactions.map((tx) => (
-                  <tr key={tx._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{dayjs(tx.createdAt).format('MMM D, HH:mm')}</td>
+                  <tr key={tx._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{dayjs(tx.createdAt).format('MMM D, HH:mm')}</td>
                     <td className="px-4 py-3"><Badge label={tx.type} variant={tx.type} /></td>
-                    <td className="px-4 py-3 text-gray-700">{tx.description}</td>
-                    <td className={`px-4 py-3 text-right font-mono-num font-semibold whitespace-nowrap ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{tx.description}</td>
+                    <td className={`px-4 py-3 text-right font-mono-num font-semibold whitespace-nowrap ${tx.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                       {tx.amount > 0 ? '+' : ''}{tx.amount}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono-num text-gray-500">{tx.balanceAfter}</td>
+                    <td className="px-4 py-3 text-right font-mono-num text-gray-500 dark:text-gray-400">{tx.balanceAfter}</td>
                   </tr>
                 ))}
               </tbody>

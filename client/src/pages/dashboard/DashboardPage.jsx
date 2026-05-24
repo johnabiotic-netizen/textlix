@@ -27,11 +27,11 @@ const QUICK_SERVICES = [
 function OnboardingModal({ onDismiss }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-8 shadow-2xl">
         <div className="text-center mb-6">
           <div className="text-5xl mb-3">👋</div>
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-2">Welcome to textlix!</h2>
-          <p className="text-gray-500 text-sm">Get your first SMS verification number in 3 simple steps</p>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-2">Welcome to textlix!</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Get your first SMS verification number in 3 simple steps</p>
         </div>
         <div className="space-y-4 mb-8">
           {[
@@ -40,10 +40,10 @@ function OnboardingModal({ onDismiss }) {
             { step: '3', icon: '📨', title: 'Receive Your Code', desc: 'The SMS arrives in your dashboard in seconds.' },
           ].map((s) => (
             <div key={s.step} className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-sm font-bold shrink-0">{s.step}</div>
+              <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm font-bold shrink-0">{s.step}</div>
               <div>
-                <p className="font-semibold text-gray-900">{s.icon} {s.title}</p>
-                <p className="text-sm text-gray-500">{s.desc}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{s.icon} {s.title}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{s.desc}</p>
               </div>
             </div>
           ))}
@@ -52,7 +52,7 @@ function OnboardingModal({ onDismiss }) {
           <Link to="/credits" onClick={onDismiss} className="flex-1 bg-brand-600 text-white text-center font-semibold py-3 rounded-xl hover:bg-brand-700 transition-colors">
             Buy Credits
           </Link>
-          <button onClick={onDismiss} className="px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors text-sm">
+          <button onClick={onDismiss} className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
             Skip
           </button>
         </div>
@@ -213,14 +213,14 @@ export default function DashboardPage() {
             value: dayjs(user?.createdAt).format('MMM YYYY'),
             sub: dayjs(user?.createdAt).fromNow(),
             emoji: '🗓️',
-            color: 'text-gray-700',
+            color: 'text-gray-700 dark:text-gray-200',
           },
         ].map((s) => (
           <Card key={s.label} className="p-4">
             <div className="text-2xl mb-2">{s.emoji}</div>
             <p className={`font-display font-bold text-2xl ${s.color}`}>{s.value}</p>
-            <p className="text-xs font-medium text-gray-600 mt-0.5">{s.label}</p>
-            <p className="text-xs text-gray-400">{s.sub}</p>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">{s.label}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{s.sub}</p>
           </Card>
         ))}
       </div>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
       {/* ── Quick-pick services ─────────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display font-semibold text-gray-900">Quick Pick</h2>
+          <h2 className="font-display font-semibold text-gray-900 dark:text-white">Quick Pick</h2>
           <Link to="/numbers" className="text-sm text-brand-600 hover:underline">All services →</Link>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -248,7 +248,7 @@ export default function DashboardPage() {
       {/* ── Active numbers ──────────────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display font-semibold text-gray-900">Active Numbers</h2>
+          <h2 className="font-display font-semibold text-gray-900 dark:text-white">Active Numbers</h2>
           {orders.length > 0 && (
             <Link to="/numbers/active" className="text-sm text-brand-600 hover:underline">View all →</Link>
           )}
@@ -270,10 +270,10 @@ export default function DashboardPage() {
         ) : (
           <Card className="p-5">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex items-center gap-6 text-sm text-gray-500 flex-wrap">
+              <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
                 {['Pick a service', 'Choose a country', 'Receive SMS instantly'].map((step, i) => (
                   <div key={step} className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xs font-bold shrink-0">
+                    <span className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 flex items-center justify-center text-xs font-bold shrink-0">
                       {i + 1}
                     </span>
                     {step}
@@ -297,14 +297,14 @@ export default function DashboardPage() {
         {/* Recent activity */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display font-semibold text-gray-900">Recent Activity</h2>
+            <h2 className="font-display font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
             <Link to="/transactions" className="text-sm text-brand-600 hover:underline">View all →</Link>
           </div>
-          <Card className="divide-y divide-gray-100">
+          <Card className="divide-y divide-gray-100 dark:divide-gray-700">
             {loadingTx ? (
-              <div className="p-6 text-center text-gray-400 text-sm">Loading…</div>
+              <div className="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">Loading…</div>
             ) : !txData?.transactions?.length ? (
-              <div className="p-8 text-center text-gray-400 text-sm">
+              <div className="p-8 text-center text-gray-400 dark:text-gray-500 text-sm">
                 No transactions yet. Buy credits to get started.
               </div>
             ) : (
@@ -312,19 +312,19 @@ export default function DashboardPage() {
                 <div key={tx._id} className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      tx.type === 'PURCHASE' ? 'bg-green-100'
-                      : tx.type === 'SPEND'   ? 'bg-red-100'
-                      :                         'bg-blue-100'
+                      tx.type === 'PURCHASE' ? 'bg-green-100 dark:bg-green-900/30'
+                      : tx.type === 'SPEND'   ? 'bg-red-100 dark:bg-red-900/30'
+                      :                         'bg-blue-100 dark:bg-blue-900/30'
                     }`}>
                       {tx.type === 'PURCHASE' ? '💳' : tx.type === 'SPEND' ? '📱' : '↩️'}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 leading-snug">{tx.description}</p>
-                      <p className="text-xs text-gray-400">{dayjs(tx.createdAt).fromNow()}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white leading-snug">{tx.description}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{dayjs(tx.createdAt).fromNow()}</p>
                     </div>
                   </div>
                   <span className={`font-mono font-semibold text-sm shrink-0 ml-4 ${
-                    tx.amount > 0 ? 'text-green-600' : 'text-red-500'
+                    tx.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
                   }`}>
                     {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()}
                   </span>
@@ -337,18 +337,18 @@ export default function DashboardPage() {
         {/* Referral card */}
         {referralLink && (
           <div className="lg:w-72 shrink-0">
-            <h2 className="font-display font-semibold text-gray-900 mb-3">Refer & Earn</h2>
-            <Card className="p-5 bg-gradient-to-br from-brand-50 to-brand-100 border-brand-200">
+            <h2 className="font-display font-semibold text-gray-900 dark:text-white mb-3">Refer & Earn</h2>
+            <Card className="p-5 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-900/10 border-brand-200 dark:border-brand-800">
               <div className="text-3xl mb-3">🎁</div>
-              <p className="font-semibold text-gray-900 mb-1">Invite friends, earn credits</p>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="font-semibold text-gray-900 dark:text-white mb-1">Invite friends, earn credits</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300 mb-4">
                 Earn{' '}
-                <span className="font-semibold text-brand-600">10% of your friend's first top-up</span>
+                <span className="font-semibold text-brand-600 dark:text-brand-300">10% of your friend's first top-up</span>
                 {' '}in bonus credits — automatically.
               </p>
-              <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 mb-3">
-                <p className="text-xs text-gray-400 mb-0.5">Your referral code</p>
-                <p className="font-mono font-bold text-brand-600 tracking-widest text-lg">{user.referralCode}</p>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 mb-3">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Your referral code</p>
+                <p className="font-mono font-bold text-brand-600 dark:text-brand-300 tracking-widest text-lg">{user.referralCode}</p>
               </div>
               <button
                 onClick={copyReferral}

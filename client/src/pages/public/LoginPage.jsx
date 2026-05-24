@@ -31,18 +31,18 @@ function TwoFAStep({ tempToken, onSuccess }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="text-center mb-2">
         <p className="text-2xl mb-2">🔐</p>
-        <h2 className="font-display font-bold text-xl text-gray-900">Two-Factor Authentication</h2>
-        <p className="text-sm text-gray-500 mt-1">Enter the 6-digit code from your authenticator app</p>
+        <h2 className="font-display font-bold text-xl text-gray-900 dark:text-white">Two-Factor Authentication</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter the 6-digit code from your authenticator app</p>
       </div>
       <input
         value={code}
         onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
         placeholder="000000"
-        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-brand-500 outline-none"
+        className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-brand-500 outline-none"
         autoFocus
         maxLength={6}
       />
-      {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+      {error && <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>}
       <Button type="submit" loading={loading} className="w-full" disabled={code.length !== 6}>Verify</Button>
     </form>
   );
@@ -79,14 +79,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/"><Logo textClassName="text-2xl" className="mb-2" /></Link>
-          <h1 className="text-xl font-semibold text-gray-900">Sign in to your account</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Sign in to your account</h1>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
           {twoFAState ? (
             <TwoFAStep
               tempToken={twoFAState.tempToken}
@@ -104,12 +104,12 @@ export default function LoginPage() {
               </form>
 
               <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
-                <div className="relative flex justify-center text-sm"><span className="bg-white px-3 text-gray-400">or continue with</span></div>
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200 dark:border-gray-600" /></div>
+                <div className="relative flex justify-center text-sm"><span className="bg-white dark:bg-gray-800 px-3 text-gray-400 dark:text-gray-400">or continue with</span></div>
               </div>
 
               <div className="flex">
-                <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google`} className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                <a href={`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/google`} className="w-full flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <FcGoogle size={18} /> Continue with Google
                 </a>
               </div>
@@ -117,7 +117,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <p className="text-center mt-6 text-sm text-gray-500">
+        <p className="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">
           Don't have an account? <Link to="/register" className="text-brand-600 font-semibold hover:underline">Sign up</Link>
         </p>
       </div>

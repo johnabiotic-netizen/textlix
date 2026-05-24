@@ -49,40 +49,40 @@ export default function PricingPage() {
       {/* Credit packages */}
       <section className="py-20 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-2xl text-gray-900 text-center mb-3">Credit packages</h2>
-          <p className="text-gray-500 text-center mb-12">1 credit = $0.01 USD. Numbers cost 50–500 credits depending on country and service.</p>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white text-center mb-3">Credit packages</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-center mb-12">1 credit = $0.01 USD. Numbers cost 50–500 credits depending on country and service.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {packages.map((pkg) => (
-              <div key={pkg.id || pkg.label} className={`relative border rounded-2xl p-6 ${pkg.popular ? 'border-brand-500 shadow-lg shadow-brand-100' : 'border-gray-200'}`}>
+              <div key={pkg.id || pkg.label} className={`relative border rounded-2xl p-6 bg-white dark:bg-gray-800 ${pkg.popular ? 'border-brand-500 shadow-lg shadow-brand-100 dark:shadow-none' : 'border-gray-200 dark:border-gray-700'}`}>
                 {pkg.popular && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
                     Most popular
                   </span>
                 )}
-                <p className="font-display font-bold text-lg text-gray-900 mb-1">{pkg.label}</p>
-                <p className="font-extrabold text-4xl text-gray-900 mb-1">${pkg.amountUSD ?? pkg.usd}</p>
-                <p className="text-brand-600 font-semibold mb-1">{(pkg.totalCredits ?? (pkg.credits + (pkg.bonus || 0))).toLocaleString()} credits</p>
-                {(pkg.bonus ?? 0) > 0 && <p className="text-xs text-green-600 font-medium mb-4">+{pkg.bonus} bonus credits</p>}
-                {(pkg.bonus ?? 0) === 0 && <p className="text-xs text-gray-400 mb-4">{pkg.totalCredits ?? pkg.credits} credits</p>}
-                <Link to="/register" className={`block text-center text-sm font-semibold py-2.5 rounded-xl transition-colors ${pkg.popular ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
+                <p className="font-display font-bold text-lg text-gray-900 dark:text-white mb-1">{pkg.label}</p>
+                <p className="font-extrabold text-4xl text-gray-900 dark:text-white mb-1">${pkg.amountUSD ?? pkg.usd}</p>
+                <p className="text-brand-600 dark:text-brand-400 font-semibold mb-1">{(pkg.totalCredits ?? (pkg.credits + (pkg.bonus || 0))).toLocaleString()} credits</p>
+                {(pkg.bonus ?? 0) > 0 && <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-4">+{pkg.bonus} bonus credits</p>}
+                {(pkg.bonus ?? 0) === 0 && <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">{pkg.totalCredits ?? pkg.credits} credits</p>}
+                <Link to="/register" className={`block text-center text-sm font-semibold py-2.5 rounded-xl transition-colors ${pkg.popular ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white'}`}>
                   Get started
                 </Link>
               </div>
             ))}
           </div>
-          <p className="text-center text-sm text-gray-400 mt-8">Pay with KoraPay (card, bank transfer in NGN) or 0xProcessing (USDT, BTC, ETH and more)</p>
+          <p className="text-center text-sm text-gray-400 dark:text-gray-500 mt-8">Pay with KoraPay (card, bank transfer in NGN) or 0xProcessing (USDT, BTC, ETH and more)</p>
         </div>
       </section>
 
       {/* What's included */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-10">Everything included in every plan</h2>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-10">Everything included in every plan</h2>
           <div className="grid sm:grid-cols-2 gap-4 text-left">
             {FEATURES.map((f) => (
-              <div key={f} className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-3">
+              <div key={f} className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-3">
                 <FiCheck size={16} className="text-green-500 shrink-0" />
-                <span className="text-sm text-gray-700">{f}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">{f}</span>
               </div>
             ))}
           </div>
@@ -92,7 +92,7 @@ export default function PricingPage() {
       {/* How credits work */}
       <section className="py-16 px-4">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-display font-bold text-2xl text-gray-900 mb-8 text-center">How credits work</h2>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-8 text-center">How credits work</h2>
           <div className="space-y-4">
             {[
               { q: 'How much does a number cost?', a: 'Numbers cost between 50 and 500 credits ($0.50–$5.00) depending on the country and service. UK WhatsApp is typically around 180 credits, while US Google can be as low as 60 credits.' },
@@ -100,9 +100,9 @@ export default function PricingPage() {
               { q: 'What if no SMS arrives?', a: 'If you cancel before receiving an SMS, you get a full refund to your credit balance instantly.' },
               { q: 'Can I get a refund to my card?', a: 'Credit purchases are non-refundable to card/crypto. Unused credits stay in your account indefinitely.' },
             ].map((item) => (
-              <div key={item.q} className="border border-gray-200 rounded-xl p-5">
-                <p className="font-semibold text-gray-900 mb-2">{item.q}</p>
-                <p className="text-sm text-gray-600">{item.a}</p>
+              <div key={item.q} className="border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+                <p className="font-semibold text-gray-900 dark:text-white mb-2">{item.q}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{item.a}</p>
               </div>
             ))}
           </div>

@@ -72,7 +72,7 @@ export default function PaymentVerifyPage() {
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600 mx-auto mb-4" />
-        <p className="text-gray-600">Verifying payment...</p>
+        <p className="text-gray-600 dark:text-gray-300">Verifying payment...</p>
       </div>
     </div>
   );
@@ -81,12 +81,12 @@ export default function PaymentVerifyPage() {
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center max-w-sm">
         <div className="text-6xl mb-4">⏳</div>
-        <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Payment Submitted</h1>
-        <p className="text-gray-500 mb-2">Your crypto payment was received. Credits will be added to your account once the transaction is confirmed on-chain.</p>
-        <p className="text-sm text-gray-400 mb-8">This page will update automatically — you can also check your balance in a few minutes.</p>
+        <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-2">Payment Submitted</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-2">Your crypto payment was received. Credits will be added to your account once the transaction is confirmed on-chain.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mb-8">This page will update automatically — you can also check your balance in a few minutes.</p>
         <div className="flex gap-3 justify-center">
           <Link to="/dashboard" className="bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-brand-700 transition-colors">Go to Dashboard</Link>
-          <Link to="/credits" className="border border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors">Buy More</Link>
+          <Link to="/credits" className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Buy More</Link>
         </div>
       </div>
     </div>
@@ -96,12 +96,12 @@ export default function PaymentVerifyPage() {
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center max-w-sm">
         <div className="text-6xl mb-4">✅</div>
-        <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Payment Successful!</h1>
-        <p className="text-gray-500 mb-2">Your credits have been added to your account.</p>
-        <p className="text-sm text-gray-400 mb-8">Redirecting to dashboard in {countdown}s…</p>
+        <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-2">Payment Successful!</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-2">Your credits have been added to your account.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mb-8">Redirecting to dashboard in {countdown}s…</p>
         <div className="flex gap-3 justify-center">
           <Link to="/dashboard" className="bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-brand-700 transition-colors">Go to Dashboard</Link>
-          <Link to="/numbers" className="border border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors">Get a Number</Link>
+          <Link to="/numbers" className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Get a Number</Link>
         </div>
       </div>
     </div>
@@ -111,8 +111,8 @@ export default function PaymentVerifyPage() {
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center max-w-sm">
         <div className="text-6xl mb-4">↩️</div>
-        <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Payment Cancelled</h1>
-        <p className="text-gray-500 mb-8">No charge was made. You can try again whenever you're ready.</p>
+        <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-2">Payment Cancelled</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">No charge was made. You can try again whenever you're ready.</p>
         <Link to="/credits" className="bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-brand-700 transition-colors">Back to Buy Credits</Link>
       </div>
     </div>
@@ -122,8 +122,8 @@ export default function PaymentVerifyPage() {
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center max-w-sm">
         <div className="text-6xl mb-4">❌</div>
-        <h1 className="font-display font-bold text-2xl text-gray-900 mb-2">Verification Failed</h1>
-        <p className="text-gray-500 mb-8">Something went wrong. Please try again.</p>
+        <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-2">Verification Failed</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">Something went wrong. Please try again.</p>
         <Link to="/credits" className="bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-brand-700 transition-colors">Try Again</Link>
       </div>
     </div>

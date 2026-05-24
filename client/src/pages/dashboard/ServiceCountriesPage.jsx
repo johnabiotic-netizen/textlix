@@ -42,22 +42,22 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link to={`/numbers/${mode === 'rental' ? 'rental' : 'otp'}?browse=service`} className="text-gray-400 hover:text-gray-600">
+        <Link to={`/numbers/${mode === 'rental' ? 'rental' : 'otp'}?browse=service`} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <FiArrowLeft size={20} />
         </Link>
         <div>
           <div className="flex items-center gap-2">
             <span className="text-2xl">{emoji}</span>
-            <h1 className="font-display font-bold text-2xl text-gray-900">{serviceName}</h1>
+            <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white">{serviceName}</h1>
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {mode === 'otp' ? 'Select a country for a one-time OTP number' : 'Select a country to rent a number'}
           </p>
         </div>
       </div>
 
       {/* Mode badge */}
-      <div className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium ${mode === 'otp' ? 'bg-brand-50 text-brand-700' : 'bg-brand-50 text-brand-700'}`}>
+      <div className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium ${mode === 'otp' ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-200' : 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-200'}`}>
         {mode === 'otp' ? '⚡ One-Time OTP' : '📅 Rental — 1 to 30 days'}
       </div>
 
@@ -88,12 +88,12 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
               <div className="flex items-start justify-between mb-3">
                 <span className="text-3xl">{country.flagEmoji}</span>
                 {country.successRate != null && (
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${country.successRate >= 90 ? 'bg-green-50 text-green-700' : country.successRate >= 75 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${country.successRate >= 90 ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' : country.successRate >= 75 ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'}`}>
                     {country.successRate}%
                   </span>
                 )}
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">{country.name}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{country.name}</h3>
               <p className={`text-xs font-medium mt-1 ${mode === 'otp' ? 'text-brand-600' : 'text-brand-600'}`}>
                 {mode === 'rental'
                   ? `${country.pricePerDay} cr / day`

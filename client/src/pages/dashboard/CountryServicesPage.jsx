@@ -159,14 +159,14 @@ export default function CountryServicesPage({ mode: modeProp }) {
           to={preselectedService
             ? `/numbers/${mode}/service/${preselectedService}`
             : `/numbers/${mode}`}
-          className="text-gray-400 hover:text-gray-600"
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
         >
           <FiArrowLeft size={20} />
         </Link>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             {country && <span className="text-2xl">{country.flagEmoji}</span>}
-            <h1 className="font-display font-bold text-2xl text-gray-900">{country?.name || 'Loading...'}</h1>
+            <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white">{country?.name || 'Loading...'}</h1>
             {isTopCountry && mode === 'otp' && (
               <span className="flex items-center gap-1 text-xs bg-brand-600 text-white px-2 py-1 rounded-full font-semibold">
                 <FiStar size={11} /> Best Match
@@ -174,7 +174,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {mode === 'rental' ? 'Rent a number for days' : 'One-time OTP verification'}
           </p>
         </div>
@@ -183,7 +183,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
       {/* ─── RENTAL MODE ────────────────────────────────────────────────────── */}
       {mode === 'rental' && (
         <div>
-          <p className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wide">Choose a platform</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">Choose a platform</p>
           <Input
             type="search"
             placeholder="Search platforms (e.g. WhatsApp, Telegram...)"
@@ -197,7 +197,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filteredRentalServices.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-gray-400 dark:text-gray-500">
               <FiSearch size={32} className="mx-auto mb-3 opacity-40" />
               <p className="font-medium">No platforms found{rentalSearch ? ` for "${rentalSearch}"` : ''}</p>
             </div>
@@ -215,15 +215,15 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   className="p-5 cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-xl">
+                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-xl">
                       {serviceEmoji(svc.slug)}
                     </div>
-                    <span className="flex items-center gap-1 text-xs text-brand-600">
+                    <span className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-300">
                       <FiCalendar size={11} />Multi-day
                     </span>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1">{svc.name}</h3>
-                  <p className="text-xs text-gray-400">1 week · 2 · 3 weeks · 1 month</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{svc.name}</h3>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">1 week · 2 · 3 weeks · 1 month</p>
                 </Card>
               ))}
             </div>
@@ -234,7 +234,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
       {/* ─── OTP MODE ───────────────────────────────────────────────────────── */}
       {mode === 'otp' && (
         <div>
-          <p className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wide">Choose a service</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">Choose a service</p>
           <Input
             type="search"
             placeholder="Search services (e.g. WhatsApp, Netflix...)"
@@ -248,7 +248,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filteredServices.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-gray-400 dark:text-gray-500">
               <FiSearch size={32} className="mx-auto mb-3 opacity-40" />
               <p className="font-medium">No services found{search ? ` for "${search}"` : ''}</p>
             </div>
@@ -272,38 +272,38 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     className={`p-5 ${!anyAvail ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-xl">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-xl">
                         {serviceEmoji(service.slug)}
                       </div>
                       {anyAvail ? (
-                        <span className="flex items-center gap-1 text-xs text-green-600">
+                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                           <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />Available
                         </span>
                       ) : (
-                        <span className="text-xs text-gray-400">Unavailable</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Unavailable</span>
                       )}
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">{service.name}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{service.name}</h3>
                     <div className="flex gap-2 flex-wrap">
                       {lix1Avail && (
-                        <span className="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-xs bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 px-2 py-0.5 rounded-full font-medium">
                           LIX 1 · {service.servers.lix1.price} cr
                         </span>
                       )}
                       {lix2Avail && (
-                        <span className="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-xs bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 px-2 py-0.5 rounded-full font-medium">
                           LIX 2 · {service.servers.lix2.price} cr
                         </span>
                       )}
                       {lix3Avail && (
-                        <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">
                           LIX 3 · {service.servers.lix3.price} cr
                         </span>
                       )}
                     </div>
                     {service.successRate != null && (
                       <div className="mt-2">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${service.successRate >= 90 ? 'bg-green-50 text-green-700' : service.successRate >= 75 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'}`}>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${service.successRate >= 90 ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : service.successRate >= 75 ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
                           {service.successRate}% success
                         </span>
                       </div>
@@ -326,88 +326,88 @@ export default function CountryServicesPage({ mode: modeProp }) {
           <div className="space-y-4">
             {/* Server selector */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Select Server</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Select Server</p>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setSelectedServer('lix1')}
                   disabled={!selectedService.servers?.lix1?.available}
                   className={`p-3 rounded-xl border-2 text-left transition-all ${
-                    selectedServer === 'lix1' ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
+                    selectedServer === 'lix1' ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/30' : 'border-gray-200 dark:border-gray-700 hover:border-brand-300'
                   } ${!selectedService.servers?.lix1?.available ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs font-bold bg-brand-600 text-white px-1.5 py-0.5 rounded">LIX 1</span>
                     {selectedServer === 'lix1' && <FiCheckCircle size={13} className="text-brand-600" />}
                   </div>
-                  <p className="font-mono-num font-bold text-brand-700">
-                    {selectedService.servers?.lix1?.price ?? '—'} <span className="text-xs font-normal text-gray-500">cr</span>
+                  <p className="font-mono-num font-bold text-brand-700 dark:text-brand-300">
+                    {selectedService.servers?.lix1?.price ?? '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
                   {selectedService.servers?.lix1?.successRate != null
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix1.successRate)}`}>{selectedService.servers.lix1.successRate}% success</p>
-                    : <p className="text-xs text-gray-400 mt-0.5">Server 1</p>}
+                    : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Server 1</p>}
                 </button>
 
                 <button
                   onClick={() => setSelectedServer('lix2')}
                   disabled={!selectedService.servers?.lix2?.available}
                   className={`p-3 rounded-xl border-2 text-left transition-all ${
-                    selectedServer === 'lix2' ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
+                    selectedServer === 'lix2' ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/30' : 'border-gray-200 dark:border-gray-700 hover:border-brand-300'
                   } ${!selectedService.servers?.lix2?.available ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs font-bold bg-brand-600 text-white px-1.5 py-0.5 rounded">LIX 2</span>
                     {selectedServer === 'lix2' && <FiCheckCircle size={13} className="text-brand-600" />}
                   </div>
-                  <p className="font-mono-num font-bold text-brand-700">
-                    {selectedService.servers?.lix2?.price ?? '—'} <span className="text-xs font-normal text-gray-500">cr</span>
+                  <p className="font-mono-num font-bold text-brand-700 dark:text-brand-300">
+                    {selectedService.servers?.lix2?.price ?? '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
                   {selectedService.servers?.lix2?.successRate != null
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix2.successRate)}`}>{selectedService.servers.lix2.successRate}% success</p>
-                    : <p className="text-xs text-gray-400 mt-0.5">Server 2</p>}
+                    : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Server 2</p>}
                 </button>
 
                 <button
                   onClick={() => setSelectedServer('lix3')}
                   disabled={!selectedService.servers?.lix3?.available}
                   className={`p-3 rounded-xl border-2 text-left transition-all ${
-                    selectedServer === 'lix3' ? 'border-emerald-600 bg-emerald-50' : 'border-gray-200 hover:border-emerald-300'
+                    selectedServer === 'lix3' ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
                   } ${!selectedService.servers?.lix3?.available ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded">LIX 3</span>
                     {selectedServer === 'lix3' && <FiCheckCircle size={13} className="text-emerald-600" />}
                   </div>
-                  <p className="font-mono-num font-bold text-emerald-700">
-                    {selectedService.servers?.lix3?.price ?? '—'} <span className="text-xs font-normal text-gray-500">cr</span>
+                  <p className="font-mono-num font-bold text-emerald-700 dark:text-emerald-300">
+                    {selectedService.servers?.lix3?.price ?? '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">Server 3</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Server 3</p>
                 </button>
               </div>
             </div>
 
             {/* Summary */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Country</span>
+                <span className="text-gray-500 dark:text-gray-400">Country</span>
                 <span className="font-medium">{country?.flagEmoji} {country?.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Service</span>
+                <span className="text-gray-500 dark:text-gray-400">Service</span>
                 <span className="font-medium">{selectedService.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Server</span>
-                <span className={`font-medium ${selectedServer === 'lix1' ? 'text-brand-600' : selectedServer === 'lix2' ? 'text-brand-600' : 'text-emerald-600'}`}>
+                <span className="text-gray-500 dark:text-gray-400">Server</span>
+                <span className={`font-medium ${selectedServer === 'lix1' ? 'text-brand-600 dark:text-brand-300' : selectedServer === 'lix2' ? 'text-brand-600 dark:text-brand-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
                   {selectedServer === 'lix1' ? 'LIX 1' : selectedServer === 'lix2' ? 'LIX 2' : 'LIX 3'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Estimated cost</span>
-                <span className="font-mono-num font-bold text-brand-600">~{otpPrice} credits</span>
+                <span className="text-gray-500 dark:text-gray-400">Estimated cost</span>
+                <span className="font-mono-num font-bold text-brand-600 dark:text-brand-300">~{otpPrice} credits</span>
               </div>
-              <div className="flex justify-between text-sm border-t border-gray-200 pt-3">
-                <span className="text-gray-500">Balance after</span>
-                <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - otpPrice < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+              <div className="flex justify-between text-sm border-t border-gray-200 dark:border-gray-700 pt-3">
+                <span className="text-gray-500 dark:text-gray-400">Balance after</span>
+                <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - otpPrice < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                   {(user?.creditBalance || 0) - otpPrice} credits
                 </span>
               </div>
@@ -426,11 +426,11 @@ export default function CountryServicesPage({ mode: modeProp }) {
                 <FiCheckCircle size={16} /> Confirm & Get Number
               </Button>
             </div>
-            <p className="text-xs text-gray-400 text-center">
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
               Final price confirmed at order time and may vary slightly.
             </p>
             {(user?.creditBalance || 0) < otpPrice && (
-              <p className="text-xs text-red-600 text-center">
+              <p className="text-xs text-red-600 dark:text-red-400 text-center">
                 Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link>
               </p>
             )}
@@ -445,22 +445,22 @@ export default function CountryServicesPage({ mode: modeProp }) {
         title={`Rent ${rentalService.name || ''} Number`}
       >
         {rentalLoading ? (
-          <div className="text-center py-10 text-gray-400">
+          <div className="text-center py-10 text-gray-400 dark:text-gray-500">
             <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-sm">Loading pricing…</p>
           </div>
         ) : !rentalData?.available ? (
           <div className="text-center py-8">
             <p className="text-4xl mb-3">📅</p>
-            <p className="font-medium text-gray-700">Not available for this country</p>
-            <p className="text-sm text-gray-400 mt-1">Try a different platform or country.</p>
+            <p className="font-medium text-gray-700 dark:text-gray-200">Not available for this country</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Try a different platform or country.</p>
             <Button variant="outline" onClick={() => setShowRentalModal(false)} className="mt-4">Close</Button>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Duration picker */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Duration</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Duration</p>
               <div className="grid grid-cols-4 gap-2">
                 {rentalOptions.map((opt) => (
                   <button
@@ -468,46 +468,46 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     onClick={() => setRentalDays(opt.days)}
                     className={`p-2.5 rounded-xl border-2 text-center transition-all ${
                       rentalDays === opt.days
-                        ? 'border-brand-600 bg-brand-50'
-                        : 'border-gray-200 hover:border-brand-300'
+                        ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/30'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-brand-300'
                     }`}
                   >
-                    <div className="font-semibold text-sm text-gray-900">{opt.label}</div>
-                    <div className="font-mono-num text-xs text-brand-700 mt-0.5">{opt.price ? `${opt.price.toLocaleString()} cr` : '—'}</div>
+                    <div className="font-semibold text-sm text-gray-900 dark:text-white">{opt.label}</div>
+                    <div className="font-mono-num text-xs text-brand-700 dark:text-brand-300 mt-0.5">{opt.price ? `${opt.price.toLocaleString()} cr` : '—'}</div>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Summary */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Country</span>
+                <span className="text-gray-500 dark:text-gray-400">Country</span>
                 <span className="font-medium">{country?.flagEmoji} {country?.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Platform</span>
-                <span className="font-medium text-brand-700">{rentalService.name}</span>
+                <span className="text-gray-500 dark:text-gray-400">Platform</span>
+                <span className="font-medium text-brand-700 dark:text-brand-300">{rentalService.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Duration</span>
+                <span className="text-gray-500 dark:text-gray-400">Duration</span>
                 <span className="font-medium">{rentalOptions.find(o => o.days === rentalDays)?.label || `${rentalDays} days`}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Total cost</span>
-                <span className="font-mono-num font-bold text-brand-600">
+                <span className="text-gray-500 dark:text-gray-400">Total cost</span>
+                <span className="font-mono-num font-bold text-brand-600 dark:text-brand-300">
                   {rentalPrice > 0 ? `${rentalPrice} credits` : '— credits'}
                 </span>
               </div>
-              <div className="flex justify-between text-sm border-t border-gray-200 pt-3">
-                <span className="text-gray-500">Balance after</span>
-                <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - rentalPrice < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+              <div className="flex justify-between text-sm border-t border-gray-200 dark:border-gray-700 pt-3">
+                <span className="text-gray-500 dark:text-gray-400">Balance after</span>
+                <span className={`font-mono-num font-semibold ${(user?.creditBalance || 0) - rentalPrice < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                   {(user?.creditBalance || 0) - rentalPrice} credits
                 </span>
               </div>
             </div>
 
-            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+            <p className="text-xs text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border dark:border-amber-800 rounded-lg px-3 py-2">
               Number is dedicated to {rentalService.name} for {rentalOptions.find(o => o.days === rentalDays)?.label || `${rentalDays} days`}. No refund after order is placed.
             </p>
 
@@ -525,7 +525,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
               </Button>
             </div>
             {rentalPrice > 0 && (user?.creditBalance || 0) < rentalPrice && (
-              <p className="text-xs text-red-600 text-center">
+              <p className="text-xs text-red-600 dark:text-red-400 text-center">
                 Insufficient credits. <Link to="/credits" className="underline">Buy more →</Link>
               </p>
             )}

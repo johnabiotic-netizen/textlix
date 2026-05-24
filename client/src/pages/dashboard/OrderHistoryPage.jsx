@@ -101,8 +101,8 @@ export default function OrderHistoryPage() {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-display font-bold text-2xl text-gray-900">Order History</h1>
-          <p className="text-sm text-gray-500 mt-1">Every number you've rented, with SMS codes received</p>
+          <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white">Order History</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Every number you've rented, with SMS codes received</p>
         </div>
         {ordersForExport.length > 0 && (
           <div className="flex gap-2">
@@ -116,25 +116,25 @@ export default function OrderHistoryPage() {
         )}
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         {TABS.map((t) => (
           <button key={t} onClick={() => { setTab(t); setPage(1); }}
-            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === t ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === t ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
             {t.charAt(0) + t.slice(1).toLowerCase()}
           </button>
         ))}
       </div>
 
       {isLoading ? (
-        <p className="text-gray-400 text-sm text-center py-8">Loading...</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">Loading...</p>
       ) : !data?.orders?.length ? (
         <EmptyState icon="📱" title="No orders" description="Your number rental history will appear here." />
       ) : (
         <>
-          <Card className="divide-y divide-gray-100 overflow-x-auto">
+          <Card className="divide-y divide-gray-100 dark:divide-gray-700 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs text-gray-400 uppercase tracking-wide">
+                <tr className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                   <th className="text-left px-4 py-3">Date</th>
                   <th className="text-left px-4 py-3">Country</th>
                   <th className="text-left px-4 py-3">Service</th>
@@ -146,16 +146,16 @@ export default function OrderHistoryPage() {
                   <th className="text-center px-4 py-3 w-8"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {data.orders.map((order) => (
                   <Fragment key={order._id}>
                     <tr
-                      className={`hover:bg-gray-50 ${order.smsContent ? 'cursor-pointer' : ''}`}
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${order.smsContent ? 'cursor-pointer' : ''}`}
                       onClick={() => order.smsContent && setExpanded(expanded === order._id ? null : order._id)}
                     >
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                         <div>{dayjs(order.createdAt).format('MMM D, YYYY')}</div>
-                        <div className="text-xs text-gray-400">{dayjs(order.createdAt).format('HH:mm')}</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">{dayjs(order.createdAt).format('HH:mm')}</div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="mr-1">{order.countryId?.flagEmoji}</span>
@@ -168,15 +168,15 @@ export default function OrderHistoryPage() {
                       </td>
                       <td className="px-4 py-3 text-right font-mono-num">
                         <div>{order.creditsCharged} cr</div>
-                        <div className="text-xs text-gray-400">${(order.creditsCharged / 100).toFixed(2)}</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">${(order.creditsCharged / 100).toFixed(2)}</div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         {order.smsCode && order.smsContent !== '[deleted]' ? (
                           <span className="font-mono font-bold text-brand-600 text-sm">{order.smsCode}</span>
                         ) : order.smsContent === '[deleted]' ? (
-                          <span className="text-gray-400 text-xs">deleted</span>
+                          <span className="text-gray-400 dark:text-gray-500 text-xs">deleted</span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-gray-300 dark:text-gray-600">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -190,30 +190,30 @@ export default function OrderHistoryPage() {
                           </Link>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center text-gray-400">
+                      <td className="px-4 py-3 text-center text-gray-400 dark:text-gray-500">
                         {order.smsContent && order.smsContent !== '[deleted]' && (
                           expanded === order._id ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                         )}
                       </td>
                     </tr>
                     {expanded === order._id && order.smsContent && (
-                      <tr className="bg-indigo-50">
+                      <tr className="bg-indigo-50 dark:bg-indigo-900/20">
                         <td colSpan="9" className="px-4 py-4">
                           <div className="space-y-2">
                             {order.smsCode && (
                               <div className="flex items-center gap-3">
-                                <span className="text-xs text-gray-500 uppercase tracking-wide font-medium w-20">Code</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium w-20">Code</span>
                                 <span className="font-mono font-bold text-2xl text-brand-600 tracking-widest">{order.smsCode}</span>
                               </div>
                             )}
                             <div className="flex items-start gap-3">
-                              <span className="text-xs text-gray-500 uppercase tracking-wide font-medium w-20 pt-0.5">Full SMS</span>
-                              <p className="text-sm text-gray-700 flex-1">{order.smsContent}</p>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium w-20 pt-0.5">Full SMS</span>
+                              <p className="text-sm text-gray-700 dark:text-gray-200 flex-1">{order.smsContent}</p>
                             </div>
                             {order.smsReceivedAt && (
                               <div className="flex items-center gap-3">
-                                <span className="text-xs text-gray-500 uppercase tracking-wide font-medium w-20">Received</span>
-                                <span className="text-xs text-gray-500">{dayjs(order.smsReceivedAt).format('MMM D, YYYY HH:mm:ss')}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium w-20">Received</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">{dayjs(order.smsReceivedAt).format('MMM D, YYYY HH:mm:ss')}</span>
                               </div>
                             )}
                           </div>

@@ -32,7 +32,7 @@ function CopyButton({ text }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button onClick={handleCopy} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+    <button onClick={handleCopy} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1">
       {copied ? <FiCheck size={16} className="text-green-500" /> : <FiCopy size={16} />}
     </button>
   );
@@ -131,21 +131,21 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
     ? 'bg-red-100 text-red-700'
     : (!isRental && mins < 5) || (isRental && days === 0 && hrs < 1)
     ? 'bg-yellow-100 text-yellow-700'
-    : 'bg-gray-100 text-gray-600';
+    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300';
 
   const messages = order.smsMessages || [];
   const hasAnySms = isRental ? messages.length > 0 : !!order.smsContent;
 
   return (
-    <div className={`bg-white border rounded-xl p-5 shadow-sm transition-all ${hasAnySms ? 'border-green-300' : 'border-gray-200'}`}>
+    <div className={`bg-white dark:bg-gray-800 border rounded-xl p-5 shadow-sm transition-all ${hasAnySms ? 'border-green-300' : 'border-gray-200 dark:border-gray-700'}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">{country?.flagEmoji}</span>
-            <span className="text-sm text-gray-500">{country?.name}</span>
-            <span className="text-gray-300">·</span>
-            <span className="text-sm text-gray-500">{service?.name}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{country?.name}</span>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{service?.name}</span>
             {isRental && (
               <span className="flex items-center gap-1 text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">
                 <FiCalendar size={10} /> {order.rentalDays}d rental
@@ -153,7 +153,7 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono-num font-semibold text-xl text-gray-900 tracking-wider">{order.phoneNumber}</span>
+            <span className="font-mono-num font-semibold text-xl text-gray-900 dark:text-white tracking-wider">{order.phoneNumber}</span>
             <CopyButton text={order.phoneNumber} />
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
           <FiX size={14} /> Cancel & Refund
         </Button>
       ) : (
-        <Button variant="outline" size="sm" onClick={() => onCancel?.()} className="w-full mt-4 text-gray-500">
+        <Button variant="outline" size="sm" onClick={() => onCancel?.()} className="w-full mt-4 text-gray-500 dark:text-gray-400">
           Dismiss
         </Button>
       )}
@@ -219,12 +219,12 @@ function OtpSmsSection({ smsContent, smsCode }) {
     return (
       <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-0">
         <p className="text-xs text-green-600 font-medium mb-2">SMS Received ✓</p>
-        <p className="text-sm text-gray-700 mb-3">{smsContent}</p>
+        <p className="text-sm text-gray-700 dark:text-gray-200 mb-3">{smsContent}</p>
         {smsCode && (
           <>
-            <div className="bg-white border border-green-200 rounded-xl px-4 py-3 text-center mb-2">
-              <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Verification Code</p>
-              <span className="font-mono font-bold text-3xl text-gray-900 tracking-widest">{smsCode}</span>
+            <div className="bg-white dark:bg-gray-800 border border-green-200 rounded-xl px-4 py-3 text-center mb-2">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-wide">Verification Code</p>
+              <span className="font-mono font-bold text-3xl text-gray-900 dark:text-white tracking-widest">{smsCode}</span>
             </div>
             <BigCopyButton text={smsCode} />
           </>
@@ -233,10 +233,10 @@ function OtpSmsSection({ smsContent, smsCode }) {
     );
   }
   return (
-    <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3 text-gray-500">
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3 text-gray-500 dark:text-gray-400">
       <div className="flex gap-1">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+          <div key={i} className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
         ))}
       </div>
       <span className="text-sm">Waiting for SMS...</span>
@@ -247,10 +247,10 @@ function OtpSmsSection({ smsContent, smsCode }) {
 function RentalSmsSection({ messages }) {
   if (messages.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3 text-gray-500 mb-0">
+      <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3 text-gray-500 dark:text-gray-400 mb-0">
         <div className="flex gap-1">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+            <div key={i} className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
           ))}
         </div>
         <span className="text-sm">Waiting for SMS... (rental stays active)</span>
@@ -260,11 +260,11 @@ function RentalSmsSection({ messages }) {
 
   return (
     <div className="space-y-2 max-h-64 overflow-y-auto mb-0">
-      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{messages.length} message{messages.length !== 1 ? 's' : ''} received</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">{messages.length} message{messages.length !== 1 ? 's' : ''} received</p>
       {[...messages].reverse().map((msg, i) => (
         <div key={msg.fivesimId || i} className="bg-green-50 border border-green-200 rounded-xl p-3">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-400">{dayjs(msg.receivedAt).format('MMM D, HH:mm:ss')}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{dayjs(msg.receivedAt).format('MMM D, HH:mm:ss')}</span>
             {msg.code && (
               <div className="flex items-center gap-1">
                 <span className="font-mono font-bold text-brand-600">{msg.code}</span>
@@ -272,7 +272,7 @@ function RentalSmsSection({ messages }) {
               </div>
             )}
           </div>
-          <p className="text-sm text-gray-700">{msg.text}</p>
+          <p className="text-sm text-gray-700 dark:text-gray-200">{msg.text}</p>
         </div>
       ))}
     </div>

@@ -64,8 +64,8 @@ export default function ActiveNumbersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display font-bold text-2xl text-gray-900">Active Numbers</h1>
-          <p className="text-gray-500 text-sm mt-1">SMS arrives here in real-time</p>
+          <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white">Active Numbers</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">SMS arrives here in real-time</p>
         </div>
         <Link to="/numbers" className="text-sm text-brand-600 hover:underline font-medium">
           + Get Another

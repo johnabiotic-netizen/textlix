@@ -16,9 +16,9 @@ export default function CreatorEarningsPage() {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Earnings History</h1>
 
       {isLoading ? (
-        <div className="text-center py-12 text-gray-400">Loading...</div>
+        <div className="text-center py-12 text-gray-400 dark:text-gray-500">Loading...</div>
       ) : !data?.earnings?.length ? (
-        <div className="text-center py-12 text-gray-400 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+        <div className="text-center py-12 text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
           <p className="text-4xl mb-3">💸</p>
           <p className="font-medium dark:text-gray-300">No earnings yet</p>
           <p className="text-sm mt-1">Share your referral link to start earning</p>
@@ -39,7 +39,7 @@ export default function CreatorEarningsPage() {
                   <span className="text-gray-500 dark:text-gray-400">Top-up: ${e.amountUSD?.toFixed(2)} · ₦{e.usdNgnRate?.toLocaleString()}/USD</span>
                   <span className="font-bold text-brand-700 dark:text-brand-400">{fmt(e.commissionNaira)}</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">{new Date(e.createdAt).toLocaleDateString()}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(e.createdAt).toLocaleDateString()}</p>
               </div>
             ))}
           </div>
@@ -70,7 +70,7 @@ export default function CreatorEarningsPage() {
                           {e.status === 'withdrawn' ? 'Paid out' : 'Pending'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-400">{new Date(e.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-gray-400 dark:text-gray-500">{new Date(e.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -80,7 +80,7 @@ export default function CreatorEarningsPage() {
 
           {data.pages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-400">{data.total} total</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">{data.total} total</p>
               <div className="flex gap-2">
                 <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-40 dark:text-gray-300">Prev</button>
                 <span className="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">Page {page}/{data.pages}</span>

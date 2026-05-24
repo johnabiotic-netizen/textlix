@@ -60,12 +60,12 @@ export default function CreatorWithdrawalsPage() {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Withdrawals</h1>
 
       {/* Balance */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm text-gray-500">Available balance</p>
-            <p className="text-3xl font-bold text-brand-700">{fmt(creator?.pendingEarningsNaira)}</p>
-            <p className="text-xs text-gray-400 mt-1">Minimum: {fmt(creator?.minWithdrawalNaira)}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Available balance</p>
+            <p className="text-3xl font-bold text-brand-700 dark:text-brand-400">{fmt(creator?.pendingEarningsNaira)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Minimum: {fmt(creator?.minWithdrawalNaira)}</p>
           </div>
           <button
             onClick={handleWithdraw}
@@ -75,15 +75,15 @@ export default function CreatorWithdrawalsPage() {
             {requesting ? 'Requesting...' : 'Request Withdrawal'}
           </button>
         </div>
-        {!hasBank && <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">Set up your bank account below before requesting a withdrawal.</p>}
-        {creator?.pendingWithdrawal && <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2">You have a pending withdrawal being processed.</p>}
+        {!hasBank && <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">Set up your bank account below before requesting a withdrawal.</p>}
+        {creator?.pendingWithdrawal && <p className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2">You have a pending withdrawal being processed.</p>}
         {!canWithdraw && hasBank && !creator?.pendingWithdrawal && (
-          <p className="text-xs text-gray-400">You need {fmt((creator?.minWithdrawalNaira || 50000) - (creator?.pendingEarningsNaira || 0))} more to reach the minimum.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">You need {fmt((creator?.minWithdrawalNaira || 50000) - (creator?.pendingEarningsNaira || 0))} more to reach the minimum.</p>
         )}
       </div>
 
       {/* Bank account */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-900 dark:text-white">Bank Account</h2>
           {!editingBank && (
@@ -96,55 +96,55 @@ export default function CreatorWithdrawalsPage() {
         {editingBank ? (
           <form onSubmit={handleSaveBank} className="space-y-3">
             <input required placeholder="Bank Name (e.g. Access Bank)" value={bank.bankName} onChange={(e) => setBank({ ...bank, bankName: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
             <input required placeholder="Account Number" value={bank.accountNumber} onChange={(e) => setBank({ ...bank, accountNumber: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
             <input required placeholder="Account Name" value={bank.accountName} onChange={(e) => setBank({ ...bank, accountName: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
             <div className="flex gap-2">
               <button type="submit" disabled={savingBank} className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50">
                 {savingBank ? 'Saving...' : 'Save'}
               </button>
-              <button type="button" onClick={() => setEditingBank(false)} className="px-4 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">Cancel</button>
+              <button type="button" onClick={() => setEditingBank(false)} className="px-4 py-2 border border-gray-200 dark:border-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
             </div>
           </form>
         ) : hasBank ? (
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Bank</span><span className="font-medium">{creator.bankAccount.bankName}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Account Number</span><span className="font-medium font-mono">{creator.bankAccount.accountNumber}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Account Name</span><span className="font-medium">{creator.bankAccount.accountName}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Bank</span><span className="font-medium dark:text-gray-200">{creator.bankAccount.bankName}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Account Number</span><span className="font-medium font-mono dark:text-gray-200">{creator.bankAccount.accountNumber}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Account Name</span><span className="font-medium dark:text-gray-200">{creator.bankAccount.accountName}</span></div>
           </div>
         ) : (
-          <p className="text-sm text-gray-400">No bank account set up yet.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">No bank account set up yet.</p>
         )}
       </div>
 
       {/* Withdrawal history */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="font-semibold text-gray-900 dark:text-white">Withdrawal History</h2>
         </div>
         {!withdrawalsData?.withdrawals?.length ? (
-          <div className="text-center py-8 text-gray-400 text-sm">No withdrawal history</div>
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No withdrawal history</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Status</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
               {withdrawalsData.withdrawals.map((w) => (
                 <tr key={w._id}>
                   <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{fmt(w.amountNaira)}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${w.status === 'paid' ? 'bg-brand-100 text-brand-700' : w.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${w.status === 'paid' ? 'bg-brand-100 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300' : w.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-300' : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'}`}>
                       {w.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-gray-400">{new Date(w.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-gray-400 dark:text-gray-500">{new Date(w.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
