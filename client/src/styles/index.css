@@ -2,12 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Twemoji Country Flags polyfill — Windows browsers don't render colored
+   flag emojis natively. This font supplies them via the regional-indicator
+   unicode range only; everything else falls through to the regular font. */
+@font-face {
+  font-family: 'Twemoji Country Flags';
+  unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E0063, U+E0065, U+E0067, U+E006C, U+E006E, U+E0073-E0074, U+E0077, U+E007F;
+  src: url('https://cdn.jsdelivr.net/npm/country-flag-emoji-polyfill@0.1.8/dist/TwemojiCountryFlags.woff2') format('woff2');
+  font-display: swap;
+}
+
 @layer base {
   html {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Twemoji Country Flags', 'Inter', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Twemoji Country Flags', 'Plus Jakarta Sans', sans-serif;
   }
 }
 
