@@ -1097,3 +1097,150 @@ exports.orderRental = async (req, res, next) => {
     next(err);
   }
 };
+
+// ─── Dashboard widgets ────────────────────────────────────────────────────────
+
+/** GET /numbers/usage-sparkline — last 7 days of orders + credits spent */
+exports.getUsageSparkline = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const since = new Date(Date.now() - SEVEN_DAYS_MS);
+
+    const orderAgg = await NumberOrder.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId), createdAt: { $gte: since } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          orders: { $sum: 1 },
+          credits: { $sum: '$creditsCharged' },
+        },
+      },
+    ]);
+
+    const byDay = Object.fromEntries(orderAgg.map((d) => [d._id, { orders: d.orders, credits: d.credits }]));
+
+    // Build a contiguous 7-day series ending today
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const key = d.toISOString().slice(0, 10);
+      const entry = byDay[key] || { orders: 0, credits: 0 };
+      days.push({ date: key, orders: entry.orders, credits: entry.credits });
+    }
+
+    const totalOrders = days.reduce((s, d) => s + d.orders, 0);
+    const totalCredits = days.reduce((s, d) => s + d.credits, 0);
+
+    success(res, { days, totalOrders, totalCredits });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** GET /numbers/trending — global top services ordered in last 24h */
+exports.getTrendingServices = async (req, res, next) => {
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const agg = await NumberOrder.aggregate([
+      { $match: { createdAt: { $gte: since }, serviceId: { $ne: null } } },
+      { $group: { _id: '$serviceId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 8 },
+      {
+        $lookup: {
+          from: 'services',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'service',
+        },
+      },
+      { $unwind: { path: '$service', preserveNullAndEmptyArrays: false } },
+      {
+        $project: {
+          _id: 0,
+          id: '$service._id',
+          slug: '$service.slug',
+          name: '$service.name',
+          icon: '$service.icon',
+          count: 1,
+        },
+      },
+    ]);
+
+    success(res, { trending: agg });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** GET /numbers/recent-sms — last 10 received SMS across user's orders */
+exports.getRecentSms = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+
+    // OTP single-SMS orders
+    const otpOrders = await NumberOrder.find({
+      userId,
+      smsContent: { $ne: null },
+      smsReceivedAt: { $ne: null },
+    })
+      .sort({ smsReceivedAt: -1 })
+      .limit(15)
+      .populate('countryId', 'name flagEmoji')
+      .populate('serviceId', 'name slug')
+      .select('_id phoneNumber smsContent smsCode smsReceivedAt countryId serviceId rentalServiceSlug orderType');
+
+    // RENTAL orders with embedded smsMessages — fan out the messages
+    const rentalOrders = await NumberOrder.find({
+      userId,
+      orderType: 'RENTAL',
+      'smsMessages.0': { $exists: true },
+    })
+      .sort({ updatedAt: -1 })
+      .limit(15)
+      .populate('countryId', 'name flagEmoji')
+      .populate('serviceId', 'name slug')
+      .select('_id phoneNumber smsMessages countryId serviceId rentalServiceSlug orderType');
+
+    const items = [];
+
+    for (const o of otpOrders) {
+      items.push({
+        orderId: o._id,
+        phoneNumber: o.phoneNumber,
+        text: o.smsContent,
+        code: o.smsCode,
+        receivedAt: o.smsReceivedAt,
+        country: o.countryId ? { name: o.countryId.name, flagEmoji: o.countryId.flagEmoji } : null,
+        service: o.serviceId
+          ? { name: o.serviceId.name, slug: o.serviceId.slug }
+          : (o.rentalServiceSlug ? { name: o.rentalServiceSlug, slug: o.rentalServiceSlug } : null),
+        orderType: o.orderType,
+      });
+    }
+
+    for (const o of rentalOrders) {
+      for (const msg of o.smsMessages) {
+        items.push({
+          orderId: o._id,
+          phoneNumber: o.phoneNumber,
+          text: msg.text,
+          code: msg.code,
+          receivedAt: msg.receivedAt,
+          country: o.countryId ? { name: o.countryId.name, flagEmoji: o.countryId.flagEmoji } : null,
+          service: o.serviceId
+            ? { name: o.serviceId.name, slug: o.serviceId.slug }
+            : (o.rentalServiceSlug ? { name: o.rentalServiceSlug, slug: o.rentalServiceSlug } : null),
+          orderType: o.orderType,
+        });
+      }
+    }
+
+    items.sort((a, b) => new Date(b.receivedAt) - new Date(a.receivedAt));
+    success(res, { messages: items.slice(0, 10) });
+  } catch (err) {
+    next(err);
+  }
+};

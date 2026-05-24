@@ -25,3 +25,6 @@ export const getRentalPrice = (countryId, opts = {}) => {
 export const orderRental = (data) => api.post('/numbers/order/rental', data);
 export const getRecommendations = (serviceSlug) => api.get(`/numbers/services/${serviceSlug}/recommendations`);
 export const getOrder = (orderId) => api.get(`/numbers/${orderId}`);
+export const getUsageSparkline = () => api.get('/numbers/usage-sparkline');
+export const getTrendingServices = () => api.get('/numbers/trending');
+export const getRecentSms = () => api.get('/numbers/recent-sms');

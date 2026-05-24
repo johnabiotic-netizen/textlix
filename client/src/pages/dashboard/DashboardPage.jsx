@@ -11,6 +11,10 @@ import { getCreditHistory } from '../../api/payments';
 import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import NumberCard from '../../components/numbers/NumberCard';
+import UsageSparkline from '../../components/dashboard/UsageSparkline';
+import TrendingServices from '../../components/dashboard/TrendingServices';
+import RecentSmsInbox from '../../components/dashboard/RecentSmsInbox';
+import StreakTile from '../../components/dashboard/StreakTile';
 import useDismissedOrders from '../../hooks/useDismissedOrders';
 
 dayjs.extend(relativeTime);
@@ -223,6 +227,14 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-400 dark:text-gray-500">{s.sub}</p>
           </Card>
         ))}
+      </div>
+
+      {/* ── Insights row: usage chart + streak + trending + inbox ──────────── */}
+      <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
+        <UsageSparkline />
+        <StreakTile />
+        <TrendingServices />
+        <RecentSmsInbox />
       </div>
 
       {/* ── Quick-pick services ─────────────────────────────────────────────── */}

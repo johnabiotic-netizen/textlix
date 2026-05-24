@@ -29,6 +29,10 @@ router.post('/order', orderLimiter, numberController.orderNumber);
 router.post('/order/rental', orderLimiter, numberController.orderRental);
 router.get('/active', numberController.getActiveOrders);
 router.get('/history', numberController.getOrderHistory);
+// Dashboard widgets (must come before /:orderId to avoid being matched as an order id)
+router.get('/usage-sparkline', numberController.getUsageSparkline);
+router.get('/trending', numberController.getTrendingServices);
+router.get('/recent-sms', numberController.getRecentSms);
 router.get('/:orderId', numberController.getOrder);
 router.post('/:orderId/cancel', numberController.cancelOrder);
 router.post('/:orderId/resend', numberController.resendSMS);
