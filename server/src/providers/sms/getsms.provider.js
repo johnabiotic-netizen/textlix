@@ -42,7 +42,7 @@ const toServiceId = (slug) => SERVICE_ID[slug] || null;
 const call = async (params) => {
   const { data } = await axios.get(BASE_URL, {
     params: { userkey: process.env.GETSMS_API_KEY, ...params },
-    timeout: 15000,
+    timeout: 30000,
   });
   if (data?.status && data.status >= 400) {
     throw new Error(`GetSMS: ${data.data?.msg || data.status}`);
@@ -50,25 +50,43 @@ const call = async (params) => {
   return data;
 };
 
-// Cache country data (services + prices) per ISO code — 30 min TTL
+// Cache country data (services + prices) per ISO code
+// Success: 30 min TTL  |  Failure: 60s TTL so transient errors self-recover
 const _countryCache = new Map();
-const CACHE_TTL = 30 * 60 * 1000;
+const _inflight = new Map();
+const SUCCESS_TTL = 30 * 60 * 1000;
+const FAILURE_TTL = 60 * 1000;
 
 const getCountryData = async (countryIso) => {
   const cached = _countryCache.get(countryIso);
   if (cached && Date.now() < cached.expires) return cached.services;
-  try {
-    const raw = await call({ method: 'getdatacountry', country: countryIso });
-    if (!raw?.data?.services) return null;
-    _countryCache.set(countryIso, {
-      expires: Date.now() + CACHE_TTL,
-      services: raw.data.services,
-    });
-    return raw.data.services;
-  } catch (err) {
-    logger.warn(`GetSMS getCountryData(${countryIso}): ${err.message}`);
-    return null;
-  }
+
+  // Single-flight: if a request is already in flight for this country, await it
+  if (_inflight.has(countryIso)) return _inflight.get(countryIso);
+
+  const promise = (async () => {
+    try {
+      const raw = await call({ method: 'getdatacountry', country: countryIso });
+      if (!raw?.data?.services) {
+        _countryCache.set(countryIso, { expires: Date.now() + FAILURE_TTL, services: null });
+        return null;
+      }
+      _countryCache.set(countryIso, {
+        expires: Date.now() + SUCCESS_TTL,
+        services: raw.data.services,
+      });
+      return raw.data.services;
+    } catch (err) {
+      logger.warn(`GetSMS getCountryData(${countryIso}): ${err.message}`);
+      _countryCache.set(countryIso, { expires: Date.now() + FAILURE_TTL, services: null });
+      return null;
+    } finally {
+      _inflight.delete(countryIso);
+    }
+  })();
+
+  _inflight.set(countryIso, promise);
+  return promise;
 };
 
 // Get rental pricing for a country + service.

@@ -361,7 +361,8 @@ async function getGetSmsRentalPrices(countryIso, serviceSlug) {
   try {
     const raw = await getsms.getPrices(countryIso, serviceSlug);
     if (!raw?.prices) {
-      rentalPriceCache.set(cacheKey, { data: null, expiresAt: Date.now() + 5 * 60 * 1000 });
+      // Short negative-cache so transient provider failures self-recover quickly
+      rentalPriceCache.set(cacheKey, { data: null, expiresAt: Date.now() + 60 * 1000 });
       return null;
     }
     const result = {};
@@ -372,7 +373,8 @@ async function getGetSmsRentalPrices(countryIso, serviceSlug) {
       }
     }
     const data = Object.keys(result).length > 0 ? result : null;
-    rentalPriceCache.set(cacheKey, { data, expiresAt: Date.now() + 30 * 60 * 1000 });
+    const ttl = data ? 30 * 60 * 1000 : 60 * 1000;
+    rentalPriceCache.set(cacheKey, { data, expiresAt: Date.now() + ttl });
     return data;
   } catch (err) {
     logger.warn(`getGetSmsRentalPrices(${countryIso}/${serviceSlug}) failed: ${err.message}`);
