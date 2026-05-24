@@ -6,7 +6,7 @@ import PublicLayout from '../../components/layout/PublicLayout';
 const VALUES = [
   { icon: <FiZap size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Speed first', desc: 'Verification codes delivered in seconds, not minutes. We poll providers every 5 seconds so you never wait.' },
   { icon: <FiShield size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Privacy by design', desc: 'We never sell your data. Numbers are temporary, SMS content is automatically cleaned after 30 days.' },
-  { icon: <FiGlobe size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Global reach', desc: 'Numbers from 1150+ countries so you can verify on any platform, from anywhere in the world.' },
+  { icon: <FiGlobe size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Global reach', desc: 'Numbers from 150+ countries so you can verify on any platform, from anywhere in the world.' },
   { icon: <FiHeart size={22} className="text-brand-600 dark:text-brand-400" />, title: 'Fair pricing', desc: 'Credits never expire. Cancel before SMS arrives and get a full refund. No tricks, no traps.' },
 ];
 
@@ -15,10 +15,10 @@ export default function AboutPage() {
     <PublicLayout>
       <Helmet>
         <title>About textlix — Virtual Phone Numbers for SMS Verification</title>
-        <meta name="description" content="textlix provides virtual phone numbers from 1150+ countries for SMS verification. Learn about our mission, values, and the team behind the platform." />
+        <meta name="description" content="textlix provides virtual phone numbers from 150+ countries for SMS verification. Learn about our mission, values, and the team behind the platform." />
         <link rel="canonical" href="https://www.textlix.com/about" />
         <meta property="og:title" content="About textlix" />
-        <meta property="og:description" content="Virtual phone numbers for SMS verification from 1150+ countries. Learn about our mission and values." />
+        <meta property="og:description" content="Virtual phone numbers for SMS verification from 150+ countries. Learn about our mission and values." />
         <meta property="og:url" content="https://www.textlix.com/about" />
       </Helmet>
 
@@ -41,7 +41,7 @@ export default function AboutPage() {
             or managing multiple accounts, you deserve a reliable way to receive SMS codes without exposing your real number.
           </p>
           <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed">
-            textlix gives you instant access to virtual numbers from 1150+ countries. Real-time delivery,
+            textlix gives you instant access to virtual numbers from 150+ countries. Real-time delivery,
             fair credit-based pricing, and a no-nonsense refund policy if the SMS never arrives.
           </p>
         </div>

@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSettings, updateSettings } from '../../api/admin';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
 import toast from 'react-hot-toast';
 
 function SettingField({ label, description, value, onChange, type = 'text', min, max }) {

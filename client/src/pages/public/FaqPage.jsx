@@ -7,7 +7,7 @@ const FAQS = [
   {
     category: 'Getting Started',
     items: [
-      { q: 'What is textlix?', a: 'textlix is a platform that provides temporary virtual phone numbers from 50+ countries. You can use these numbers to receive SMS verification codes for any online service without using your real phone number.' },
+      { q: 'What is textlix?', a: 'textlix is a platform that provides temporary virtual phone numbers from 150+ countries. You can use these numbers to receive SMS verification codes for any online service without using your real phone number.' },
       { q: 'How do I get started?', a: 'Create a free account, buy credits (starting from $2), choose a country and service, get a virtual number, and receive your SMS code instantly on your dashboard.' },
       { q: 'Do I need a SIM card?', a: 'No. Everything is virtual. You receive SMS codes directly on your textlix dashboard in real-time.' },
     ],
@@ -17,14 +17,14 @@ const FAQS = [
     items: [
       { q: 'How does the credit system work?', a: '1 credit = $0.01 USD. Numbers cost between 50–500 credits depending on the country and service. Credits are deducted when you successfully receive an SMS.' },
       { q: 'What happens if I don\'t receive an SMS?', a: 'If no SMS is received within 20 minutes, your number expires and credits are automatically refunded to your account.' },
-      { q: 'What payment methods do you accept?', a: 'We accept card payments via Paystack (Visa, Mastercard) and cryptocurrency (USDT, BTC, ETH) via CoinGate.' },
+      { q: 'What payment methods do you accept?', a: 'We accept card and bank transfer payments via KoraPay (NGN) and cryptocurrency (USDT, BTC, ETH and more) via 0xProcessing.' },
       { q: 'Do credits expire?', a: 'No. Your credits never expire and remain on your account indefinitely.' },
     ],
   },
   {
     category: 'Numbers & SMS',
     items: [
-      { q: 'Which countries are available?', a: 'We support 50+ countries including USA, UK, India, Nigeria, Russia, Brazil, Germany, France, Canada, Australia, and many more.' },
+      { q: 'Which countries are available?', a: 'We support 150+ countries including USA, UK, India, Nigeria, Russia, Brazil, Germany, France, Canada, Australia, and many more.' },
       { q: 'How many numbers can I have at once?', a: 'By default, you can have up to 5 active numbers at the same time.' },
       { q: 'How long does a number stay active?', a: 'Numbers stay active for 20 minutes. If you receive an SMS before then, the number is marked as complete. If not, it expires and credits are refunded.' },
       { q: 'Can I use the same number twice?', a: 'No. Each number is single-use for privacy and security reasons.' },

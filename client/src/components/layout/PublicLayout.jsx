@@ -78,7 +78,7 @@ export default function PublicLayout({ children }) {
           <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
             <div>
               <Logo textClassName="text-xl" className="mb-2" />
-              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">Virtual phone numbers for instant SMS verification from 1150+ countries.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">Virtual phone numbers for instant SMS verification from 150+ countries.</p>
             </div>
             <div className="flex flex-wrap gap-12">
               <div>

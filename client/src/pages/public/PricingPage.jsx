@@ -6,7 +6,7 @@ import axios from 'axios';
 import PublicLayout from '../../components/layout/PublicLayout';
 
 const FEATURES = [
-  'Numbers from 1150+ countries',
+  'Numbers from 150+ countries',
   'Real-time SMS delivery',
   'WhatsApp, Telegram, Google & more',
   'Long-term number rental',
@@ -31,7 +31,7 @@ export default function PricingPage() {
     <PublicLayout>
       <Helmet>
         <title>Pricing — textlix Virtual Phone Numbers</title>
-        <meta name="description" content="Simple credit-based pricing. Buy credits from $2 and use them to get virtual phone numbers from 1150+ countries. Credits never expire. No subscriptions." />
+        <meta name="description" content="Simple credit-based pricing. Buy credits from $2 and use them to get virtual phone numbers from 150+ countries. Credits never expire. No subscriptions." />
         <link rel="canonical" href="https://www.textlix.com/pricing" />
         <meta property="og:title" content="Pricing — textlix Virtual Phone Numbers" />
         <meta property="og:description" content="Simple credit-based pricing starting from $2. No subscriptions, credits never expire." />

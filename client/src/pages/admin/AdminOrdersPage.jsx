@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { Link } from 'react-router-dom';
@@ -68,8 +68,8 @@ export default function AdminOrdersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {data?.orders?.length ? data.orders.map((order) => (
-                  <>
-                    <tr key={order._id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setExpanded(expanded === order._id ? null : order._id)}>
+                  <Fragment key={order._id}>
+                    <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => setExpanded(expanded === order._id ? null : order._id)}>
                       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{dayjs(order.createdAt).format('MMM D, HH:mm')}</td>
                       <td className="px-4 py-3">
                         <Link to={`/admin/users/${order.userId?._id}`} className="text-brand-600 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>
@@ -84,7 +84,7 @@ export default function AdminOrdersPage() {
                       <td className="px-4 py-3 text-center">{order.smsContent ? '✓' : '—'}</td>
                     </tr>
                     {expanded === order._id && (
-                      <tr key={`${order._id}-detail`} className="bg-gray-50">
+                      <tr className="bg-gray-50">
                         <td colSpan="8" className="px-4 py-3">
                           <div className="grid sm:grid-cols-2 gap-4 text-sm">
                             <div>
@@ -108,7 +108,7 @@ export default function AdminOrdersPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )) : (
                   <tr>
                     <td colSpan="8" className="px-4 py-8 text-center text-gray-400 text-sm">No orders found</td>

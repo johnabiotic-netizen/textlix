@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getRevenueReport } from '../../api/admin';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -51,12 +51,12 @@ export default function AdminReportsPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await exportTransactions();
+      const res = await exportTransactions({ period });
       const blob = new Blob([res.data], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `transactions-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Export downloaded');

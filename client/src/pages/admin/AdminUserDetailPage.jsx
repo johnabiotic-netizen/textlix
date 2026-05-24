@@ -11,15 +11,19 @@ import Pagination from '../../components/common/Pagination';
 import Modal from '../../components/common/Modal';
 import toast from 'react-hot-toast';
 import { MdArrowBack } from 'react-icons/md';
+import useAuthStore from '../../store/authStore';
 
 export default function AdminUserDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const currentUser = useAuthStore((s) => s.user);
+  const isSelf = currentUser && String(currentUser._id || currentUser.userId) === String(id);
   const [txPage, setTxPage] = useState(1);
   const [ordPage, setOrdPage] = useState(1);
   const [adjustModal, setAdjustModal] = useState(false);
   const [adjustForm, setAdjustForm] = useState({ amount: '', note: '' });
+  const [deleteModal, setDeleteModal] = useState(false);
 
   const { data: userData, isLoading } = useQuery({
     queryKey: ['adminUser', id],
@@ -55,9 +59,11 @@ export default function AdminUserDetailPage() {
   });
 
   const handleDelete = () => {
-    if (window.confirm(`Delete ${user?.name} (${user?.email})? This cannot be undone.`)) {
-      deleteMutation.mutate();
+    if (isSelf) {
+      toast.error("You can't delete your own admin account");
+      return;
     }
+    setDeleteModal(true);
   };
 
   const adjustMutation = useMutation({
@@ -109,10 +115,29 @@ export default function AdminUserDetailPage() {
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="secondary" onClick={() => setAdjustModal(true)}>Adjust Credits</Button>
-              <Button size="sm" variant={user?.isBanned ? 'secondary' : 'danger'} loading={banMutation.isPending} onClick={() => banMutation.mutate()}>
+              <Button
+                size="sm"
+                variant={user?.isBanned ? 'secondary' : 'danger'}
+                loading={banMutation.isPending}
+                onClick={() => {
+                  if (isSelf) { toast.error("You can't ban your own admin account"); return; }
+                  banMutation.mutate();
+                }}
+                disabled={isSelf}
+                title={isSelf ? "You can't ban yourself" : undefined}
+              >
                 {user?.isBanned ? 'Unban' : 'Ban'}
               </Button>
-              <Button size="sm" variant="danger" loading={deleteMutation.isPending} onClick={handleDelete}>Delete</Button>
+              <Button
+                size="sm"
+                variant="danger"
+                loading={deleteMutation.isPending}
+                onClick={handleDelete}
+                disabled={isSelf}
+                title={isSelf ? "You can't delete yourself" : undefined}
+              >
+                Delete
+              </Button>
             </div>
           </div>
 
@@ -263,6 +288,25 @@ export default function AdminUserDetailPage() {
             <Button variant="secondary" className="flex-1" onClick={() => setAdjustModal(false)}>Cancel</Button>
             <Button className="flex-1" loading={adjustMutation.isPending} onClick={() => adjustMutation.mutate()} disabled={!adjustForm.amount || !adjustForm.note}>
               Apply
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={deleteModal} onClose={() => !deleteMutation.isPending && setDeleteModal(false)} title="Delete user">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Delete <span className="font-semibold text-gray-900 dark:text-white">{user?.name}</span> ({user?.email})? This cannot be undone.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button variant="secondary" className="flex-1" onClick={() => setDeleteModal(false)} disabled={deleteMutation.isPending}>Cancel</Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              loading={deleteMutation.isPending}
+              onClick={() => { setDeleteModal(false); deleteMutation.mutate(); }}
+            >
+              Delete user
             </Button>
           </div>
         </div>

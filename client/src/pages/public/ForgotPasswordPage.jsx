@@ -25,18 +25,18 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/"><Logo textClassName="text-2xl" /></Link>
-          <h1 className="text-xl font-semibold text-gray-900 mt-2">Reset your password</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white mt-2">Reset your password</h1>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
           {sent ? (
             <div className="text-center py-4">
               <div className="text-5xl mb-4">📧</div>
-              <h2 className="font-semibold text-gray-900 mb-2">Check your inbox</h2>
-              <p className="text-sm text-gray-500">If an account with that email exists, we've sent a reset link.</p>
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-2">Check your inbox</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">If an account with that email exists, we've sent a reset link.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -45,8 +45,8 @@ export default function ForgotPasswordPage() {
             </form>
           )}
         </div>
-        <p className="text-center mt-6 text-sm text-gray-500">
-          <Link to="/login" className="text-brand-600 hover:underline">← Back to login</Link>
+        <p className="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">
+          <Link to="/login" className="text-brand-600 dark:text-brand-400 hover:underline">← Back to login</Link>
         </p>
       </div>
     </div>

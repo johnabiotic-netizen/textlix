@@ -117,6 +117,13 @@ exports.getUser = async (req, res, next) => {
 exports.updateUser = async (req, res, next) => {
   try {
     const { isBanned, banReason, maxActiveNumbers, role } = req.body;
+
+    // Self-action guards: an admin must not be able to ban or demote themselves
+    if (String(req.params.id) === String(req.user.userId)) {
+      if (isBanned === true) throw new AppError('FORBIDDEN', 403, "You can't ban your own admin account");
+      if (role !== undefined && role !== 'ADMIN') throw new AppError('FORBIDDEN', 403, "You can't change your own role");
+    }
+
     const updates = {};
     if (isBanned !== undefined) updates.isBanned = Boolean(isBanned);
     if (banReason !== undefined) updates.banReason = banReason;
@@ -137,6 +144,9 @@ exports.updateUser = async (req, res, next) => {
 
 exports.deleteUser = async (req, res, next) => {
   try {
+    if (String(req.params.id) === String(req.user.userId)) {
+      throw new AppError('FORBIDDEN', 403, "You can't delete your own admin account");
+    }
     const user = await User.findById(req.params.id);
     if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
     if (user.role === 'ADMIN') throw new AppError('FORBIDDEN', 403, 'Cannot delete admin accounts');
@@ -415,12 +425,17 @@ exports.getRevenueReport = async (req, res, next) => {
 
 exports.exportTransactions = async (req, res, next) => {
   try {
-    const { dateFrom, dateTo } = req.query;
+    const { dateFrom, dateTo, period } = req.query;
     const filter = {};
     if (dateFrom || dateTo) {
       filter.createdAt = {};
       if (dateFrom) filter.createdAt.$gte = new Date(dateFrom);
       if (dateTo) filter.createdAt.$lte = new Date(dateTo);
+    } else if (period) {
+      // Period shortcut used by AdminReportsPage — translate to date window
+      const now = new Date();
+      const days = period === 'monthly' ? 365 : period === 'weekly' ? 84 : 30;
+      filter.createdAt = { $gte: new Date(now.getTime() - days * 24 * 60 * 60 * 1000) };
     }
 
     const transactions = await CreditTransaction.find(filter)

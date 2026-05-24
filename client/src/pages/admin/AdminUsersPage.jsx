@@ -9,12 +9,15 @@ import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
 import Button from '../../components/common/Button';
 import toast from 'react-hot-toast';
+import useAuthStore from '../../store/authStore';
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const qc = useQueryClient();
+  const currentUser = useAuthStore((s) => s.user);
+  const currentUserId = currentUser ? String(currentUser._id || currentUser.userId) : null;
 
   const { data, isLoading } = useQuery({
     queryKey: ['adminUsers', search, status, page],
@@ -22,6 +25,10 @@ export default function AdminUsersPage() {
   });
 
   const handleBan = async (user) => {
+    if (currentUserId && String(user._id) === currentUserId) {
+      toast.error("You can't ban your own admin account");
+      return;
+    }
     try {
       await updateUser(user._id, { isBanned: !user.isBanned, banReason: user.isBanned ? null : 'Banned by admin' });
       qc.invalidateQueries(['adminUsers']);
@@ -90,7 +97,13 @@ export default function AdminUsersPage() {
                     <Link to={`/admin/users/${user._id}`}>
                       <Button variant="outline" size="sm"><FiEye size={14} /></Button>
                     </Link>
-                    <Button variant={user.isBanned ? 'outline' : 'danger'} size="sm" onClick={() => handleBan(user)}>
+                    <Button
+                      variant={user.isBanned ? 'outline' : 'danger'}
+                      size="sm"
+                      onClick={() => handleBan(user)}
+                      disabled={currentUserId && String(user._id) === currentUserId}
+                      title={currentUserId && String(user._id) === currentUserId ? "You can't ban yourself" : undefined}
+                    >
                       {user.isBanned ? <FiUserCheck size={14} /> : <FiUserX size={14} />}
                     </Button>
                   </div>

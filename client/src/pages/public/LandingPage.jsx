@@ -363,7 +363,7 @@ export default function LandingPage() {
               { icon: <FiGlobe className="text-brand-600" size={22} />, title: '150+ Countries', desc: 'Numbers from USA, UK, India, Nigeria, Russia, Brazil, and over 150 more countries.' },
               { icon: <FiSmartphone className="text-brand-600" size={22} />, title: 'OTP + Rental Modes', desc: 'One-time verifications or multi-day rentals — both supported with a clean, simple flow.' },
               { icon: <FiStar className="text-brand-600" size={22} />, title: 'Smart Recommendations', desc: 'AI-ranked country suggestions based on live success rates and stock availability per service.' },
-              { icon: <FiShield className="text-brand-600" size={22} />, title: 'Card & Crypto Payments', desc: 'Pay by card via Paystack or with crypto — USDT, BTC, or ETH. No bank required.' },
+              { icon: <FiShield className="text-brand-600" size={22} />, title: 'Card & Crypto Payments', desc: 'Pay by card or bank via KoraPay, or with crypto — USDT, BTC, ETH and more via 0xProcessing.' },
               { icon: <FiClock className="text-brand-600" size={22} />, title: '24/7 Availability', desc: 'Platform runs around the clock with automated number expiry and SMS cleanup jobs.' },
               { icon: <FiShield className="text-brand-600" size={22} />, title: 'Your Data, Your Control', desc: 'We never sell or share your data with third parties. Your order history is yours to view and export anytime.' },
             ].map((f, i) => (
@@ -398,7 +398,7 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <span className="flex items-center gap-1.5">💳 Card via Paystack</span>
+            <span className="flex items-center gap-1.5">💳 Card via KoraPay</span>
             <span className="flex items-center gap-1.5">₿ Bitcoin</span>
             <span className="flex items-center gap-1.5">💎 USDT</span>
             <span className="flex items-center gap-1.5">⟠ Ethereum</span>
@@ -423,7 +423,7 @@ export default function LandingPage() {
               { q: 'What happens if I don\'t receive an SMS?', a: 'If no SMS arrives within 20 minutes, your number expires and credits are automatically refunded — no need to contact support.' },
               { q: 'What\'s the difference between OTP and Rental?', a: 'OTP is a one-time use number for a single verification code. Rental lets you keep the same number for days or weeks and receive multiple codes on it.' },
               { q: 'What do the success score percentages mean?', a: 'The score is a live success rate pulled from our SMS provider — it shows the percentage of orders from that country/service that successfully received a code.' },
-              { q: 'Which payment methods are accepted?', a: 'You can pay by card (via Paystack) or with cryptocurrency — USDT, Bitcoin, or Ethereum via CoinGate.' },
+              { q: 'Which payment methods are accepted?', a: 'You can pay by card or bank transfer via KoraPay, or with cryptocurrency — USDT, Bitcoin, Ethereum and more via 0xProcessing.' },
               { q: 'Which services can I verify with?', a: 'Any service that sends an SMS — WhatsApp, Telegram, Google, Facebook, TikTok, Instagram, and hundreds more.' },
               { q: 'Do credits expire?', a: 'No. Your credits never expire and stay on your account indefinitely.' },
             ].map((item, i) => (

@@ -2,12 +2,38 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminGetApplications, adminGetCreators, adminApproveCreator, adminRejectCreator, adminGetWithdrawals, adminMarkWithdrawalPaid, adminRejectWithdrawal } from '../../api/creator';
 import toast from 'react-hot-toast';
+import Modal from '../../components/common/Modal';
+import Button from '../../components/common/Button';
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString()}`;
 
 export default function AdminCreatorsPage() {
   const [tab, setTab] = useState('applications');
+  // Inline note modal: { open, title, label, required, placeholder, onSubmit(note) }
+  const [actionModal, setActionModal] = useState(null);
+  const [actionNote, setActionNote] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
   const qc = useQueryClient();
+
+  const askNote = (cfg) => {
+    setActionNote('');
+    setActionModal(cfg);
+  };
+
+  const submitNote = async () => {
+    if (!actionModal) return;
+    if (actionModal.required && !actionNote.trim()) {
+      toast.error(`${actionModal.label} is required`);
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await actionModal.onSubmit(actionNote);
+      setActionModal(null);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const { data: applicationsData } = useQuery({
     queryKey: ['adminApplications', 'pending'],
@@ -27,43 +53,69 @@ export default function AdminCreatorsPage() {
     enabled: tab === 'withdrawals',
   });
 
-  const approve = async (id) => {
-    const note = prompt('Approval note (optional):') ?? '';
-    try {
-      await adminApproveCreator(id, note);
-      toast.success('Creator approved');
-      qc.invalidateQueries({ queryKey: ['adminApplications'] });
-    } catch { toast.error('Failed'); }
-  };
+  const approve = (id) => askNote({
+    open: true,
+    title: 'Approve creator',
+    label: 'Approval note (optional)',
+    placeholder: 'Welcome! Glad to have you on board.',
+    confirmLabel: 'Approve',
+    onSubmit: async (note) => {
+      try {
+        await adminApproveCreator(id, note);
+        toast.success('Creator approved');
+        qc.invalidateQueries({ queryKey: ['adminApplications'] });
+      } catch { toast.error('Failed'); }
+    },
+  });
 
-  const reject = async (id) => {
-    const note = prompt('Rejection reason:');
-    if (note === null) return;
-    try {
-      await adminRejectCreator(id, note);
-      toast.success('Application rejected');
-      qc.invalidateQueries({ queryKey: ['adminApplications'] });
-    } catch { toast.error('Failed'); }
-  };
+  const reject = (id) => askNote({
+    open: true,
+    title: 'Reject application',
+    label: 'Rejection reason',
+    placeholder: 'Tell the applicant why',
+    required: true,
+    confirmLabel: 'Reject',
+    danger: true,
+    onSubmit: async (note) => {
+      try {
+        await adminRejectCreator(id, note);
+        toast.success('Application rejected');
+        qc.invalidateQueries({ queryKey: ['adminApplications'] });
+      } catch { toast.error('Failed'); }
+    },
+  });
 
-  const markPaid = async (id) => {
-    const note = prompt('Payment reference/note:') ?? '';
-    try {
-      await adminMarkWithdrawalPaid(id, note);
-      toast.success('Marked as paid');
-      qc.invalidateQueries({ queryKey: ['adminWithdrawals'] });
-    } catch { toast.error('Failed'); }
-  };
+  const markPaid = (id) => askNote({
+    open: true,
+    title: 'Mark withdrawal as paid',
+    label: 'Payment reference / note (optional)',
+    placeholder: 'Bank transaction ID',
+    confirmLabel: 'Mark as paid',
+    onSubmit: async (note) => {
+      try {
+        await adminMarkWithdrawalPaid(id, note);
+        toast.success('Marked as paid');
+        qc.invalidateQueries({ queryKey: ['adminWithdrawals'] });
+      } catch { toast.error('Failed'); }
+    },
+  });
 
-  const rejectW = async (id) => {
-    const note = prompt('Rejection reason:');
-    if (note === null) return;
-    try {
-      await adminRejectWithdrawal(id, note);
-      toast.success('Withdrawal rejected');
-      qc.invalidateQueries({ queryKey: ['adminWithdrawals'] });
-    } catch { toast.error('Failed'); }
-  };
+  const rejectW = (id) => askNote({
+    open: true,
+    title: 'Reject withdrawal',
+    label: 'Rejection reason',
+    placeholder: 'Why is this being rejected?',
+    required: true,
+    confirmLabel: 'Reject',
+    danger: true,
+    onSubmit: async (note) => {
+      try {
+        await adminRejectWithdrawal(id, note);
+        toast.success('Withdrawal rejected');
+        qc.invalidateQueries({ queryKey: ['adminWithdrawals'] });
+      } catch { toast.error('Failed'); }
+    },
+  });
 
   const tabs = ['applications', 'creators', 'withdrawals'];
 
@@ -183,6 +235,40 @@ export default function AdminCreatorsPage() {
           ))}
         </div>
       )}
+
+      <Modal
+        isOpen={!!actionModal?.open}
+        onClose={() => !actionLoading && setActionModal(null)}
+        title={actionModal?.title || ''}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+              {actionModal?.label}{actionModal?.required ? ' *' : ''}
+            </label>
+            <textarea
+              autoFocus
+              value={actionNote}
+              onChange={(e) => setActionNote(e.target.value)}
+              placeholder={actionModal?.placeholder || ''}
+              rows={3}
+              className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none"
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setActionModal(null)} disabled={actionLoading} className="flex-1">
+              Cancel
+            </Button>
+            <Button
+              onClick={submitNote}
+              loading={actionLoading}
+              className={`flex-1 ${actionModal?.danger ? '!bg-red-600 hover:!bg-red-700' : ''}`}
+            >
+              {actionModal?.confirmLabel || 'Confirm'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

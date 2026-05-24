@@ -14,17 +14,17 @@ export default function PrivacyPage() {
 
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="font-display font-extrabold text-4xl text-gray-900 dark:text-white mb-2">Privacy Policy</h1>
-        <p className="text-gray-400 dark:text-gray-500 text-sm mb-10">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mb-10">Last updated: May 24, 2026</p>
 
         <div className="space-y-8 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
           {[
             { title: '1. Information We Collect', body: 'We collect your name, email address, and payment information when you create an account or make a purchase. We also collect usage data such as numbers ordered and SMS received.' },
             { title: '2. How We Use Your Information', body: 'Your information is used to provide and improve the Service, process payments, send account-related emails, and comply with legal obligations. We do not sell your personal data to third parties.' },
-            { title: '3. SMS Data', body: 'SMS content received through our platform is stored temporarily to display it on your dashboard and is automatically deleted after 24 hours. We do not read or analyze SMS content.' },
+            { title: '3. SMS Data', body: 'SMS content received through our platform is stored to display it on your dashboard and order history, and is automatically deleted after 90 days. We do not read or analyze SMS content.' },
             { title: '4. Cookies', body: 'We use cookies to maintain your login session and improve your experience. You can disable cookies in your browser settings, but this may affect Service functionality.' },
-            { title: '5. Third-Party Services', body: 'We use third-party services including cloud database and hosting providers, Paystack and CoinGate (payments), SMS infrastructure providers, and Resend (email delivery). Each third-party service operates under its own privacy policy.' },
+            { title: '5. Third-Party Services', body: 'We use third-party services including cloud database and hosting providers, KoraPay and 0xProcessing (payments), SMS infrastructure providers, and Resend (email delivery). Each third-party service operates under its own privacy policy.' },
             { title: '6. Data Security', body: 'We use industry-standard encryption and security practices to protect your data. Passwords are hashed using bcrypt. Access tokens expire after 15 minutes.' },
-            { title: '7. Data Retention', body: 'Account data is retained until you delete your account. SMS content is deleted after 24 hours. Payment records are retained for 7 years for legal compliance.' },
+            { title: '7. Data Retention', body: 'Account data is retained until you delete your account. SMS content is deleted after 90 days. Payment records are retained for 7 years for legal compliance.' },
             { title: '8. Your Rights', body: 'You have the right to access, correct, or delete your personal data at any time. Contact us at support@textlix.com to exercise these rights.' },
             { title: '9. Children\'s Privacy', body: 'textlix is not intended for users under 18 years of age. We do not knowingly collect data from children.' },
             { title: '10. Contact', body: 'For privacy-related questions or requests, contact us at support@textlix.com.' },

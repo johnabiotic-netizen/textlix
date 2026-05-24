@@ -15,7 +15,7 @@ const SECTIONS = [
       },
       {
         title: 'How to buy credits',
-        content: `Credits are the currency of textlix. 1 credit = $0.01 USD.\n\n1. Go to **Buy Credits** from your dashboard.\n2. Choose a package (starting from $2 / 200 credits).\n3. Pay with Paystack (card or bank transfer) or CoinGate (USDT, BTC, ETH).\n4. Credits are added to your account instantly after payment is confirmed.\n\nCredits never expire — buy as many as you need and use them at your own pace.`,
+        content: `Credits are the currency of textlix. 1 credit = $0.01 USD.\n\n1. Go to **Buy Credits** from your dashboard.\n2. Choose a package (starting from $2 / 200 credits).\n3. Pay with KoraPay (card or bank transfer in NGN) or 0xProcessing (USDT, BTC, ETH and more).\n4. Credits are added to your account instantly after payment is confirmed.\n\nCredits never expire — buy as many as you need and use them at your own pace.`,
       },
       {
         title: 'How to get a virtual number',
@@ -55,7 +55,7 @@ const SECTIONS = [
       },
       {
         title: 'Payment methods accepted',
-        content: `**Paystack** — Debit/credit card, bank transfer (Nigeria and other African countries supported).\n\n**CoinGate** — USDT (TRC20/ERC20), Bitcoin, Ethereum, and other cryptocurrencies.\n\nAll payments are processed securely. textlix does not store your card details.`,
+        content: `**KoraPay** — Debit/credit card and bank transfer in NGN (Nigeria-focused).\n\n**0xProcessing** — USDT (TRC20/ERC20/BEP-20), Bitcoin, Ethereum, Litecoin, Dogecoin, USDC, and more.\n\nAll payments are processed securely. textlix does not store your card details.`,
       },
       {
         title: 'Can I get a refund to my card?',
