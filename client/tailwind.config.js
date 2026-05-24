@@ -31,6 +31,7 @@ export default {
       animation: {
         'pulse-green': 'pulse-green 1.5s ease-in-out infinite',
         shimmer: 'shimmer 2s infinite linear',
+        marquee: 'marquee 60s linear infinite',
       },
       keyframes: {
         'pulse-green': {
@@ -40,6 +41,10 @@ export default {
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
+        },
+        marquee: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
         },
       },
     },

@@ -7,7 +7,10 @@ import { getPublicStats } from '../../api/numbers';
 import Logo from '../../components/common/Logo';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import Reveal from '../../components/common/Reveal';
+import AnimatedNumber from '../../components/common/AnimatedNumber';
 import OtpDemoWidget from '../../components/landing/OtpDemoWidget';
+import RentalDemoWidget from '../../components/landing/RentalDemoWidget';
+import CountryMarquee from '../../components/landing/CountryMarquee';
 
 const PACKAGES = [
   { label: 'Starter', usd: '$2', credits: '200 credits' },
@@ -70,19 +73,27 @@ function LiveStatsBanner() {
           <span className="text-green-400 font-semibold">Live</span>
         </span>
         <span className="text-gray-300">
-          <span className="text-white font-semibold">{stats.successRate}%</span> success rate (24h)
+          <span className="text-white font-semibold">
+            <AnimatedNumber value={stats.successRate} decimals={1} suffix="%" />
+          </span> success rate (24h)
         </span>
         {codesDisplayed > 0 && (
           <span className="text-gray-300">
-            <span className="text-white font-semibold">{codesDisplayed.toLocaleString()}</span> codes delivered
+            <span className="text-white font-semibold">
+              <AnimatedNumber value={codesDisplayed} duration={1.8} />
+            </span> codes delivered
           </span>
         )}
         <span className="text-gray-300">
-          <span className="text-white font-semibold">{stats.avgDeliverySeconds}s</span> avg delivery
+          <span className="text-white font-semibold">
+            <AnimatedNumber value={stats.avgDeliverySeconds} decimals={1} suffix="s" />
+          </span> avg delivery
         </span>
         {stats.activeNow > 0 && (
           <span className="text-gray-300">
-            <span className="text-white font-semibold">{stats.activeNow}</span> active now
+            <span className="text-white font-semibold">
+              <AnimatedNumber value={stats.activeNow} />
+            </span> active now
           </span>
         )}
       </div>
@@ -199,6 +210,43 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Rental in action */}
+      <section className="py-20 px-4 bg-white dark:bg-gray-950">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <Reveal y={30} duration={0.7}>
+            <RentalDemoWidget />
+          </Reveal>
+          <Reveal delay={0.1} className="text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+              <FiClock size={13} /> Rentals — same number for days
+            </div>
+            <h2 className="font-display font-bold text-3xl md:text-4xl text-gray-900 dark:text-white mb-4 leading-tight">
+              Keep one number. Receive every code on it.
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6 text-lg">
+              Long-term rentals are perfect for verifying accounts that keep sending codes — password resets, second factors, recovery flows. Your rented number stays yours for 7, 14, 21, or 30 days, and every SMS lands in your dashboard live.
+            </p>
+            <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-8">
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 flex-shrink-0 w-5 h-5 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 font-bold text-xs">✓</span>
+                Unlimited SMS for the rental period
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 flex-shrink-0 w-5 h-5 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 font-bold text-xs">✓</span>
+                Pay-per-day pricing, transparent up front
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 flex-shrink-0 w-5 h-5 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 font-bold text-xs">✓</span>
+                Choose from 100+ services across 30 countries
+              </li>
+            </ul>
+            <Link to="/register" className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors shadow-md hover:shadow-lg">
+              Start a Rental →
+            </Link>
+          </Reveal>
+        </div>
+      </section>
+
       {/* How it works */}
       <section className="py-20 px-4 dark:bg-gray-950">
         <div className="max-w-5xl mx-auto">
@@ -289,12 +337,14 @@ export default function LandingPage() {
 
       {/* Countries */}
       <section className="py-16 px-4 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-3">150+ Countries Available</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-8">We cover all major markets worldwide</p>
-          <div className="flex flex-wrap gap-3 justify-center text-3xl">
-            {COUNTRIES.map((flag, i) => <span key={i} className="hover:scale-110 transition-transform cursor-default">{flag}</span>)}
-          </div>
+        <div className="max-w-6xl mx-auto">
+          <Reveal>
+            <div className="text-center mb-8">
+              <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-3">150+ Countries Available</h2>
+              <p className="text-gray-500 dark:text-gray-400">We cover all major markets worldwide</p>
+            </div>
+          </Reveal>
+          <CountryMarquee />
         </div>
       </section>
 
