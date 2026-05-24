@@ -229,14 +229,6 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* ── Insights row: usage chart + streak + trending + inbox ──────────── */}
-      <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
-        <UsageSparkline />
-        <StreakTile />
-        <TrendingServices />
-        <RecentSmsInbox />
-      </div>
-
       {/* ── Quick-pick services ─────────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -301,6 +293,18 @@ export default function DashboardPage() {
             </div>
           </Card>
         )}
+      </div>
+
+      {/* ── 7-day usage + Your activity ─────────────────────────────────────── */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <UsageSparkline />
+        <StreakTile />
+      </div>
+
+      {/* ── Trending + Inbox ────────────────────────────────────────────────── */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <TrendingServices />
+        <RecentSmsInbox />
       </div>
 
       {/* ── Bottom row: Activity + Referral ────────────────────────────────── */}
