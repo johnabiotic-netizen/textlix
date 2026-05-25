@@ -16,7 +16,7 @@ function renderContent(content) {
     // H2
     if (line.startsWith('## ')) {
       elements.push(
-        <h2 key={i} className="font-display font-bold text-xl text-gray-900 mt-10 mb-4">
+        <h2 key={i} className="font-display font-bold text-xl text-gray-900 dark:text-white mt-10 mb-4">
           {line.slice(3)}
         </h2>
       );
@@ -27,7 +27,7 @@ function renderContent(content) {
     // H3
     if (line.startsWith('### ')) {
       elements.push(
-        <h3 key={i} className="font-display font-semibold text-lg text-gray-800 mt-8 mb-3">
+        <h3 key={i} className="font-display font-semibold text-lg text-gray-800 dark:text-gray-100 mt-8 mb-3">
           {line.slice(4)}
         </h3>
       );
@@ -49,7 +49,7 @@ function renderContent(content) {
               loading="lazy"
             />
             {match[1] && (
-              <figcaption className="text-center text-xs text-gray-400 mt-2">{match[1]}</figcaption>
+              <figcaption className="text-center text-xs text-gray-400 dark:text-gray-500 mt-2">{match[1]}</figcaption>
             )}
           </figure>
         );
@@ -66,7 +66,7 @@ function renderContent(content) {
         i++;
       }
       elements.push(
-        <blockquote key={`bq-${i}`} className="border-l-4 border-brand-400 bg-brand-50 rounded-r-xl px-5 py-4 my-6 italic text-gray-700">
+        <blockquote key={`bq-${i}`} className="border-l-4 border-brand-400 bg-brand-50 dark:bg-brand-900/20 rounded-r-xl px-5 py-4 my-6 italic text-gray-700 dark:text-gray-200">
           {items.map((item, idx) => (
             <p key={idx} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} className="mb-1 last:mb-0" />
           ))}
@@ -86,19 +86,19 @@ function renderContent(content) {
       }
       elements.push(
         <div key={`table-${i}`} className="overflow-x-auto my-6">
-          <table className="w-full text-sm border border-gray-200 rounded-xl overflow-hidden">
-            <thead className="bg-gray-50">
+          <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {headers.map((h, hi) => (
-                  <th key={hi} className="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-200">{h.trim()}</th>
+                  <th key={hi} className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">{h.trim()}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.map((row, ri) => (
-                <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <tr key={ri} className={ri % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'}>
                   {row.map((cell, ci) => (
-                    <td key={ci} className="px-4 py-3 text-gray-600 border-b border-gray-100" dangerouslySetInnerHTML={{ __html: inlineFormat(cell.trim()) }} />
+                    <td key={ci} className="px-4 py-3 text-gray-600 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700" dangerouslySetInnerHTML={{ __html: inlineFormat(cell.trim()) }} />
                   ))}
                 </tr>
               ))}
@@ -117,7 +117,7 @@ function renderContent(content) {
         i++;
       }
       elements.push(
-        <ol key={`ol-${i}`} className="list-decimal list-outside ml-5 space-y-2 my-4 text-gray-600">
+        <ol key={`ol-${i}`} className="list-decimal list-outside ml-5 space-y-2 my-4 text-gray-600 dark:text-gray-300">
           {items.map((item, idx) => (
             <li key={idx} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
           ))}
@@ -134,7 +134,7 @@ function renderContent(content) {
         i++;
       }
       elements.push(
-        <ul key={`ul-${i}`} className="list-disc list-outside ml-5 space-y-2 my-4 text-gray-600">
+        <ul key={`ul-${i}`} className="list-disc list-outside ml-5 space-y-2 my-4 text-gray-600 dark:text-gray-300">
           {items.map((item, idx) => (
             <li key={idx} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
           ))}
@@ -146,7 +146,7 @@ function renderContent(content) {
     // Bold label block (e.g. "**Step 1 — ...**")
     if (line.startsWith('**') && line.endsWith('**')) {
       elements.push(
-        <p key={i} className="font-semibold text-gray-900 mt-6 mb-1"
+        <p key={i} className="font-semibold text-gray-900 dark:text-white mt-6 mb-1"
           dangerouslySetInnerHTML={{ __html: inlineFormat(line) }} />
       );
       i++;
@@ -161,7 +161,7 @@ function renderContent(content) {
 
     // Regular paragraph
     elements.push(
-      <p key={i} className="text-gray-600 leading-relaxed my-3"
+      <p key={i} className="text-gray-600 dark:text-gray-300 leading-relaxed my-3"
         dangerouslySetInnerHTML={{ __html: inlineFormat(line) }} />
     );
     i++;
@@ -172,9 +172,9 @@ function renderContent(content) {
 
 function inlineFormat(text) {
   return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>')
-    .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-800">$1</code>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:text-brand-700 underline underline-offset-2 font-medium">$1</a>');
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900 dark:text-white">$1</strong>')
+    .replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm font-mono text-gray-800 dark:text-gray-200">$1</code>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 underline underline-offset-2 font-medium">$1</a>');
 }
 
 export default function BlogPostPage() {
@@ -212,27 +212,27 @@ export default function BlogPostPage() {
         })}</script>
       </Helmet>
 
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 py-12 bg-white dark:bg-gray-950">
         {/* Back */}
-        <Link to="/blog" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-brand-600 mb-8 transition-colors">
+        <Link to="/blog" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-300 mb-8 transition-colors">
           <FiArrowLeft size={14} /> Back to Blog
         </Link>
 
         {/* Meta */}
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2.5 py-1 rounded-full">{post.category}</span>
-          <span className="flex items-center gap-1 text-xs text-gray-400"><FiClock size={12} /> {post.readTime}</span>
-          <span className="flex items-center gap-1 text-xs text-gray-400">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
+          <span className="text-xs font-semibold bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-200 px-2.5 py-1 rounded-full">{post.category}</span>
+          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"><FiClock size={12} /> {post.readTime}</span>
+          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
             <FiCalendar size={12} />
             {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </span>
         </div>
 
         {/* Title */}
-        <h1 className="font-display font-extrabold text-3xl md:text-4xl text-gray-900 mb-4 leading-tight">
+        <h1 className="font-display font-extrabold text-3xl md:text-4xl text-gray-900 dark:text-white mb-4 leading-tight">
           {post.title}
         </h1>
-        <p className="text-lg text-gray-500 mb-8 leading-relaxed">
+        <p className="text-lg text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
           {post.description}
         </p>
 
@@ -241,7 +241,7 @@ export default function BlogPostPage() {
           <BlogHeroImage slug={post.slug} style={{ height: '380px' }} />
         </div>
 
-        <div className="border-b border-gray-100 mb-10" />
+        <div className="border-b border-gray-100 dark:border-gray-800 mb-10" />
 
         {/* Content */}
         <div className="text-base">
@@ -249,17 +249,17 @@ export default function BlogPostPage() {
         </div>
 
         {/* Post nav */}
-        <div className="mt-16 pt-8 border-t border-gray-200 flex flex-col sm:flex-row justify-between gap-6">
+        <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between gap-6">
           {prevPost ? (
             <Link to={`/blog/${prevPost.slug}`} className="group flex-1">
-              <p className="text-xs text-gray-400 mb-1">← Previous</p>
-              <p className="text-sm font-medium text-gray-700 group-hover:text-brand-600 transition-colors">{prevPost.title}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">← Previous</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">{prevPost.title}</p>
             </Link>
           ) : <div className="flex-1" />}
           {nextPost ? (
             <Link to={`/blog/${nextPost.slug}`} className="group flex-1 text-right">
-              <p className="text-xs text-gray-400 mb-1">Next →</p>
-              <p className="text-sm font-medium text-gray-700 group-hover:text-brand-600 transition-colors">{nextPost.title}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Next →</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">{nextPost.title}</p>
             </Link>
           ) : <div className="flex-1" />}
         </div>

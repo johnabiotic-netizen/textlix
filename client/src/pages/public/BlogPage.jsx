@@ -1255,25 +1255,25 @@ export default function BlogPage() {
         <p className="text-brand-100 text-lg">Guides, tips, and news on SMS verification and virtual numbers</p>
       </section>
 
-      <section className="py-16 px-4">
+      <section className="py-16 px-4 bg-white dark:bg-gray-950">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
           {POSTS.map((post) => (
             <Link
               key={post.slug}
               to={`/blog/${post.slug}`}
-              className="group block border border-gray-200 rounded-2xl overflow-hidden hover:border-brand-300 hover:shadow-md transition-all"
+              className="group block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden hover:border-brand-300 dark:hover:border-brand-500 hover:shadow-md dark:hover:shadow-lg transition-all"
             >
               <div className="h-48 overflow-hidden">
                 <BlogHeroImage slug={post.slug} className="w-full h-full group-hover:scale-105 transition-transform duration-300" />
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2.5 py-1 rounded-full">{post.category}</span>
-                  <span className="text-xs text-gray-400">{post.readTime}</span>
+                  <span className="text-xs font-semibold bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-200 px-2.5 py-1 rounded-full">{post.category}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{post.readTime}</span>
                 </div>
-                <h2 className="font-display font-bold text-gray-900 text-lg mb-2 group-hover:text-brand-600 transition-colors leading-snug">{post.title}</h2>
-                <p className="text-sm text-gray-500 leading-relaxed mb-4">{post.description}</p>
-                <p className="text-xs text-gray-400">{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <h2 className="font-display font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors leading-snug">{post.title}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">{post.description}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </div>
             </Link>
           ))}

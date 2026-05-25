@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema(
     provider: { type: String, enum: ['LOCAL', 'GOOGLE', 'GITHUB'], default: 'LOCAL' },
     providerId: { type: String, default: null },
     tokenVersion: { type: Number, default: 0 },
+    // The JTI of the currently-valid refresh token. Used for refresh-token
+    // reuse detection: if a refresh request arrives with a different jti
+    // (i.e. an old, already-rotated token), the whole session is revoked.
+    refreshJti: { type: String, default: null },
     lastLoginAt: { type: Date, default: null },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },

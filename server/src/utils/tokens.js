@@ -9,12 +9,26 @@ const generateAccessToken = (user) => {
   );
 };
 
-const generateRefreshToken = (user) => {
+// Refresh tokens carry a JTI so we can detect reuse (industry-standard
+// refresh-token rotation pattern). The JTI is also stored on the user row;
+// only the most-recently-issued JTI is accepted on subsequent refreshes.
+const generateRefreshToken = (user, jti) => {
   return jwt.sign(
-    { userId: user._id, tokenVersion: user.tokenVersion },
+    { userId: user._id, tokenVersion: user.tokenVersion, jti },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
   );
+};
+
+// Issue a refresh token, persist its JTI on the user, set the cookie.
+// Use this everywhere instead of calling generateRefreshToken + setRefreshCookie
+// separately, so reuse detection in /refresh always has a JTI to compare against.
+const issueRefreshToken = async (user, res, UserModel) => {
+  const jti = crypto.randomUUID();
+  await UserModel.findByIdAndUpdate(user._id, { refreshJti: jti });
+  const token = generateRefreshToken(user, jti);
+  setRefreshCookie(res, token);
+  return token;
 };
 
 const generateRandomToken = () => crypto.randomBytes(32).toString('hex');
@@ -44,6 +58,7 @@ const clearRefreshCookie = (res) => {
 module.exports = {
   generateAccessToken,
   generateRefreshToken,
+  issueRefreshToken,
   generateRandomToken,
   generateReferralCode,
   setRefreshCookie,

@@ -4,6 +4,15 @@ const CreditTransaction = require('../models/CreditTransaction');
 const AppError = require('../utils/AppError');
 
 const addCredits = async (userId, amount, description, referenceId = null, type = 'PURCHASE') => {
+  // Idempotency: if a transaction with this (userId, referenceId) already
+  // exists, skip the credit add. Belt-and-braces against duplicate webhook
+  // deliveries — the per-provider PENDING→COMPLETED gate is the first line
+  // of defence; this is the safety net at the credit-ledger layer.
+  if (referenceId) {
+    const existing = await CreditTransaction.findOne({ userId, referenceId, type });
+    if (existing) return existing.balanceAfter;
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
   try {

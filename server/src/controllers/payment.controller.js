@@ -140,6 +140,9 @@ exports.oxprocessingWebhook = async (req, res, next) => {
     const { order_id, status } = payload;
 
     if (status === 'paid' || status === 'PAID') {
+      // Atomic gate: only one concurrent webhook flips PENDING → COMPLETED.
+      // addCredits is also internally idempotent on (userId, referenceId)
+      // — defence-in-depth in case the gate is bypassed somehow.
       const payment = await Payment.findOneAndUpdate(
         { _id: order_id, status: 'PENDING' },
         { $set: { status: 'COMPLETED', completedAt: new Date() } },
@@ -153,15 +156,22 @@ exports.oxprocessingWebhook = async (req, res, next) => {
             `Credit purchase: $${payment.amountUSD} via 0xProcessing`,
             payment._id.toString()
           );
-          await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
-          await maybeAwardCreatorCommission(payment.userId, payment.amountUSD, payment._id);
           const io = getIO();
           if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: payment.creditsAdded });
         } catch (err) {
+          // Roll back the gate so a retry can re-attempt delivery.
           await Payment.findByIdAndUpdate(order_id, { $set: { status: 'PENDING', completedAt: null } });
           logger.error(`0xProcessing credit delivery failed for ${order_id}: ${err.message}`);
           return res.sendStatus(500);
         }
+        // Soft post-credit work — failures here MUST NOT roll back the credit
+        // (user already paid + got their credits). Just log and move on.
+        try {
+          await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+        } catch (e) { logger.warn(`Referral bonus failed for ${payment._id}: ${e.message}`); }
+        try {
+          await maybeAwardCreatorCommission(payment.userId, payment.amountUSD, payment._id);
+        } catch (e) { logger.warn(`Creator commission failed for ${payment._id}: ${e.message}`); }
       }
     }
     res.sendStatus(200);
@@ -267,6 +277,9 @@ exports.korapayVerify = async (req, res, next) => {
 };
 
 async function processKorapayPayment(reference) {
+  // Atomic gate: only one concurrent caller flips PENDING → COMPLETED.
+  // addCredits is also internally idempotent on (userId, referenceId)
+  // — defence-in-depth in case a retry slips past the gate.
   const payment = await Payment.findOneAndUpdate(
     { _id: reference, status: 'PENDING' },
     { $set: { status: 'COMPLETED', completedAt: new Date() } },
@@ -282,14 +295,17 @@ async function processKorapayPayment(reference) {
       payment._id.toString()
     );
   } catch (err) {
-    // Roll back so the webhook or verify endpoint can retry
+    // Roll back the gate so the next webhook delivery can retry.
     await Payment.findByIdAndUpdate(reference, { $set: { status: 'PENDING', completedAt: null } });
     logger.error(`KoraPay credit delivery failed for ${reference}: ${err.message}`);
     throw err;
   }
 
   logger.info(`KoraPay payment completed: ${payment._id}, credits: ${payment.creditsAdded}`);
-  await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+  // Soft post-credit work — failures here must not roll back the credit.
+  try {
+    await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+  } catch (e) { logger.warn(`Referral bonus failed for ${payment._id}: ${e.message}`); }
   const io = getIO();
   if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: payment.creditsAdded });
 }

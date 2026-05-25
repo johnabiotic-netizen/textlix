@@ -6,10 +6,9 @@ const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const {
   generateAccessToken,
-  generateRefreshToken,
+  issueRefreshToken,
   generateRandomToken,
   generateReferralCode,
-  setRefreshCookie,
   clearRefreshCookie,
 } = require('../utils/tokens');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
@@ -71,8 +70,7 @@ exports.register = async (req, res, next) => {
     });
 
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
-    setRefreshCookie(res, refreshToken);
+    await issueRefreshToken(user, res, User);
 
     success(res, { user: formatUser(user), accessToken }, 201);
   } catch (err) {
@@ -146,8 +144,7 @@ exports.login = async (req, res, next) => {
     }
 
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
-    setRefreshCookie(res, refreshToken);
+    await issueRefreshToken(user, res, User);
 
     success(res, { user: formatUser(user), accessToken });
   } catch (err) {
@@ -173,10 +170,39 @@ exports.refresh = async (req, res, next) => {
     }
     if (user.isBanned) throw new AppError('UNAUTHORIZED', 401, 'Account suspended');
 
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
-    setRefreshCookie(res, refreshToken);
+    // ─── Refresh-token reuse detection ─────────────────────────────────────
+    // The user row stores the JTI of the most-recently-issued refresh token.
+    // If the incoming token's JTI doesn't match, it's an old (already-rotated)
+    // token — either a slow retry that's harmless to reject, or a stolen
+    // token. Be conservative: revoke the entire session.
+    //
+    // Backwards-compat: pre-rollout tokens lack a jti AND no jti is stored
+    // on the user. Accept that single case once, then enforcement kicks in.
+    const incomingJti = payload.jti;
+    if (user.refreshJti || incomingJti) {
+      if (!incomingJti || user.refreshJti !== incomingJti) {
+        await User.findByIdAndUpdate(user._id, {
+          $inc: { tokenVersion: 1 },
+          refreshJti: null,
+        });
+        clearRefreshCookie(res);
+        audit('SUSPICIOUS_ACTIVITY', {
+          userId: user._id,
+          email: user.email,
+          ip: getIP(req),
+          userAgent: getUA(req),
+          meta: { reason: 'refresh_token_reuse' },
+          success: false,
+        });
+        logger.warn(`Refresh token reuse detected for user ${user._id} — session revoked`);
+        throw new AppError('UNAUTHORIZED', 401, 'Session revoked. Please log in again.');
+      }
+    }
 
+    const accessToken = generateAccessToken(user);
+    await issueRefreshToken(user, res, User);
+
+    audit('TOKEN_REFRESH', { userId: user._id, ip: getIP(req), userAgent: getUA(req) });
     success(res, { accessToken });
   } catch (err) {
     next(err);
@@ -185,7 +211,10 @@ exports.refresh = async (req, res, next) => {
 
 exports.logout = async (req, res, next) => {
   try {
-    await User.findByIdAndUpdate(req.user.userId, { $inc: { tokenVersion: 1 } });
+    await User.findByIdAndUpdate(req.user.userId, {
+      $inc: { tokenVersion: 1 },
+      refreshJti: null,
+    });
     clearRefreshCookie(res);
     audit('LOGOUT', { userId: req.user.userId, ip: getIP(req), userAgent: getUA(req) });
     success(res, { message: 'Logged out' });
@@ -217,8 +246,7 @@ exports.oauthCallback = async (user, res, refCode) => {
     logger.warn(`OAuth referral apply failed: ${err.message}`);
   }
   const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
-  setRefreshCookie(res, refreshToken);
+  await issueRefreshToken(user, res, User);
   audit('OAUTH_LOGIN', { userId: user._id, email: user.email });
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
   res.redirect(`${frontendUrl}/auth/callback#token=${accessToken}`);
@@ -372,8 +400,7 @@ exports.twoFAComplete = async (req, res, next) => {
     if (!valid) throw new AppError('UNAUTHORIZED', 401, 'Invalid authentication code');
 
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
-    setRefreshCookie(res, refreshToken);
+    await issueRefreshToken(user, res, User);
     audit('LOGIN_SUCCESS_2FA', { userId: user._id, email: user.email });
     success(res, { user: formatUser(user), accessToken });
   } catch (err) { next(err); }
@@ -438,8 +465,7 @@ exports.mainSsoExchange = async (req, res, next) => {
     const user = await User.findById(payload.userId);
     if (!user) throw new AppError('UNAUTHORIZED', 401, 'User not found');
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
-    setRefreshCookie(res, refreshToken);
+    await issueRefreshToken(user, res, User);
     success(res, { user: formatUser(user), accessToken });
   } catch (err) { next(err); }
 };
@@ -472,8 +498,7 @@ exports.creatorSsoExchange = async (req, res, next) => {
     const user = await User.findById(payload.userId);
     if (!user) throw new AppError('UNAUTHORIZED', 401, 'User not found');
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
-    setRefreshCookie(res, refreshToken);
+    await issueRefreshToken(user, res, User);
     success(res, { user: formatUser(user), accessToken });
   } catch (err) { next(err); }
 };
