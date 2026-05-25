@@ -771,11 +771,25 @@ exports.orderNumber = async (req, res, next) => {
       });
     } catch (err) {
       session.endSession();
-      // Concurrent requests exceeded the cap after credits were already spent — refund and cancel
-      if (err.code === 'MAX_NUMBERS_REACHED') {
-        await refundCredits(userId, chargeCredits, `Refund: slot full (concurrent order) ${country.flagEmoji} ${country.name}`);
-        await fivesim.cancelOrder(providerResponse.id.toString()).catch(() => {});
+      // ANY post-spend failure must refund + release the provider order.
+      // Previously only MAX_NUMBERS_REACHED was refunded — DB errors, etc.,
+      // would silently swallow the user's credits.
+      try {
+        await refundCredits(
+          userId,
+          chargeCredits,
+          `Refund: order creation failed (${err.code || 'INTERNAL_ERROR'}) — ${country.flagEmoji} ${country.name}`
+        );
+      } catch (refundErr) {
+        logger.error(`CRITICAL: failed to refund ${chargeCredits}cr to user ${userId} after order failure: ${refundErr.message}`);
       }
+      try {
+        if (usedProvider === 'grizzlysms') {
+          await grizzlysms.setStatus(providerResponse.id.toString(), 8);
+        } else {
+          await fivesim.cancelOrder(providerResponse.id.toString());
+        }
+      } catch (_) {}
       throw err;
     }
     session.endSession();
@@ -1060,20 +1074,32 @@ exports.orderRental = async (req, res, next) => {
 
     await spendCredits(userId, chargeCredits, `${numDays}-day rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
 
-    const order = await NumberOrder.create({
-      userId,
-      countryId,
-      serviceId: service._id,
-      phoneNumber: result.phone,
-      providerOrderId: result.id,
-      provider: 'getsms',
-      creditsCharged: chargeCredits,
-      orderType: 'RENTAL',
-      rentalDays: numDays,
-      countryCode: country.code,
-      status: 'ACTIVE',
-      expiresAt: result.expiresAt,
-    });
+    let order;
+    try {
+      order = await NumberOrder.create({
+        userId,
+        countryId,
+        serviceId: service._id,
+        phoneNumber: result.phone,
+        providerOrderId: result.id,
+        provider: 'getsms',
+        creditsCharged: chargeCredits,
+        orderType: 'RENTAL',
+        rentalDays: numDays,
+        countryCode: country.code,
+        status: 'ACTIVE',
+        expiresAt: result.expiresAt,
+      });
+    } catch (err) {
+      // Post-spend failure: refund + release provider rental.
+      try {
+        await refundCredits(userId, chargeCredits, `Refund: rental order create failed — ${country.flagEmoji} ${country.name}`);
+      } catch (refundErr) {
+        logger.error(`CRITICAL: rental refund failed for user ${userId}, ${chargeCredits}cr: ${refundErr.message}`);
+      }
+      try { await getsms.cancel(result.id); } catch (_) {}
+      throw err;
+    }
 
     smsPoller.startPolling(order);
 

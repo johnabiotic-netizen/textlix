@@ -32,6 +32,13 @@ const numberOrderSchema = new mongoose.Schema(
     },
     expiresAt: { type: Date, required: true },
 
+    // Set true when an OTP order expires without SMS but the refund hasn't
+    // been issued yet (or initially failed). The expiry cron retries any
+    // order with refundPending=true until refund succeeds — so a transient
+    // DB error can never leave credits stuck.
+    refundPending: { type: Boolean, default: false },
+    refundAttempts: { type: Number, default: 0 },
+
     // OTP: single SMS fields (kept for backwards compat)
     smsContent: { type: String, default: null },
     smsCode: { type: String, default: null },
