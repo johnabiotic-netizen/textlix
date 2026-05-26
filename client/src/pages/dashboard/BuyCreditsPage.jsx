@@ -151,15 +151,15 @@ export default function BuyCreditsPage() {
 
     try {
       if (method === 'naira') {
-        const body = selectedPkg
-          ? { packageId: selectedPkg.id, promoCode: appliedPromoCode }
-          : { amountUSD, promoCode: appliedPromoCode };
+        const body = selectedPkg ? { packageId: selectedPkg.id } : { amountUSD };
+        if (appliedPromoCode) body.promoCode = appliedPromoCode;
         const { data } = await initializeKorapay(body);
         window.location.href = data.data.checkoutUrl;
       } else {
         const body = selectedPkg
-          ? { packageId: selectedPkg.id, currency: selectedNetwork.value, promoCode: appliedPromoCode }
-          : { amountUSD, currency: selectedNetwork.value, promoCode: appliedPromoCode };
+          ? { packageId: selectedPkg.id, currency: selectedNetwork.value }
+          : { amountUSD, currency: selectedNetwork.value };
+        if (appliedPromoCode) body.promoCode = appliedPromoCode;
         const { data } = await createOxprocessing(body);
         const { formAction, formFields } = data.data;
         const form = document.createElement('form');
