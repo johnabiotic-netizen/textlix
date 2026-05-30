@@ -22,7 +22,7 @@ export default function AdminUserDetailPage() {
   const [txPage, setTxPage] = useState(1);
   const [ordPage, setOrdPage] = useState(1);
   const [adjustModal, setAdjustModal] = useState(false);
-  const [adjustForm, setAdjustForm] = useState({ amount: '', note: '' });
+  const [adjustForm, setAdjustForm] = useState({ amount: '', reason: '' });
   const [deleteModal, setDeleteModal] = useState(false);
 
   const { data: userData, isLoading } = useQuery({
@@ -67,13 +67,13 @@ export default function AdminUserDetailPage() {
   };
 
   const adjustMutation = useMutation({
-    mutationFn: () => adjustCredits(id, { amount: Number(adjustForm.amount), note: adjustForm.note }),
+    mutationFn: () => adjustCredits(id, { amount: Number(adjustForm.amount), reason: adjustForm.reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUser', id] });
       queryClient.invalidateQueries({ queryKey: ['adminUserTx', id] });
       toast.success('Credits adjusted');
       setAdjustModal(false);
-      setAdjustForm({ amount: '', note: '' });
+      setAdjustForm({ amount: '', reason: '' });
     },
     onError: (err) => toast.error(err.response?.data?.error?.message || 'Adjustment failed'),
   });
@@ -280,13 +280,13 @@ export default function AdminUserDetailPage() {
           />
           <Input
             label="Note / Reason"
-            value={adjustForm.note}
-            onChange={(e) => setAdjustForm({ ...adjustForm, note: e.target.value })}
+            value={adjustForm.reason}
+            onChange={(e) => setAdjustForm({ ...adjustForm, reason: e.target.value })}
             placeholder="Admin adjustment reason"
           />
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" className="flex-1" onClick={() => setAdjustModal(false)}>Cancel</Button>
-            <Button className="flex-1" loading={adjustMutation.isPending} onClick={() => adjustMutation.mutate()} disabled={!adjustForm.amount || !adjustForm.note}>
+            <Button className="flex-1" loading={adjustMutation.isPending} onClick={() => adjustMutation.mutate()} disabled={!adjustForm.amount || !adjustForm.reason}>
               Apply
             </Button>
           </div>
