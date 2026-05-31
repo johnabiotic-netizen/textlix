@@ -10,7 +10,7 @@ export default function CreatorLandingPage() {
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex flex-col">
             <Logo textClassName="text-lg" />
-            <span className="text-xs text-brand-600 font-medium ml-7 -mt-0.5">Creator Program</span>
+            <span className="text-xs text-brand-600 font-medium ml-9 -mt-0.5">Creator Program</span>
           </div>
           <div className="flex gap-3">
             <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-4 py-2">
@@ -24,7 +24,7 @@ export default function CreatorLandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-24 px-6">
+      <section className="bg-gradient-to-br from-[#0A1831] to-brand-600 text-white py-24 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <span className="inline-block bg-white/10 border border-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wide">
             Influencer Program
@@ -94,7 +94,7 @@ export default function CreatorLandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="bg-gradient-to-br from-[#0A1B31] to-brand-700 rounded-2xl p-8 text-white">
+            <div className="bg-gradient-to-br from-[#0A1831] to-brand-700 rounded-2xl p-8 text-white">
               <p className="text-sm font-medium text-brand-200 mb-1">Example earnings</p>
               <p className="text-4xl font-extrabold mb-2">₦15,000+</p>
               <p className="text-brand-100 text-sm mb-6">If 10 users each top up $10 USD</p>
@@ -116,7 +116,7 @@ export default function CreatorLandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6 bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white">
+      <section className="py-20 px-6 bg-gradient-to-br from-[#0A1831] to-brand-600 text-white">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to start earning?</h2>
           <p className="text-brand-100 mb-8">Join creators who are already earning with textlix</p>

@@ -25,7 +25,7 @@ export default {
           800: '#284b66',
           900: '#1e3c52',
         },
-        navy: '#0A1B31',
+        navy: '#0A1831',
         credit: '#F59E0B',
       },
       animation: {

@@ -34,7 +34,7 @@ export default function AdminLayout() {
   };
 
   const Sidebar = () => (
-    <div className="flex flex-col h-full text-white" style={{ backgroundColor: '#0A1B31' }}>
+    <div className="flex flex-col h-full text-white" style={{ backgroundColor: '#0A1831' }}>
       <div className="p-6 border-b border-white/10">
         <Logo dark textClassName="text-lg" />
         <div className="text-xs text-white/40 mt-1">Admin Panel</div>

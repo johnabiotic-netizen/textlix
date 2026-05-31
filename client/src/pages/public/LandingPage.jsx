@@ -139,7 +139,7 @@ export default function LandingPage() {
       <LiveStatsBanner />
 
       {/* Hero */}
-      <section className="relative bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-20 md:py-24 px-4 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-[#0A1831] to-brand-600 text-white py-20 md:py-24 px-4 overflow-hidden">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
           <Reveal y={20} duration={0.7}>
             <div className="text-center lg:text-left">
@@ -440,7 +440,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white">
+      <section className="py-20 px-4 bg-gradient-to-br from-[#0A1831] to-brand-600 text-white">
         <Reveal className="max-w-2xl mx-auto text-center">
           <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-4">Ready to get started?</h2>
           <p className="text-brand-100 mb-8">Join thousands of users who verify smarter with textlix — real-time delivery, live success scores, and a full refund if it doesn't work.</p>

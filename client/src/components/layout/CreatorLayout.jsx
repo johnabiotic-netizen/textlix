@@ -29,7 +29,7 @@ export default function CreatorLayout() {
       <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
         <div>
           <Logo textClassName="text-sm" />
-          <p className="text-xs text-brand-600 dark:text-brand-400 font-medium mt-0.5 ml-7">Creator Program</p>
+          <p className="text-xs text-brand-600 dark:text-brand-400 font-medium mt-0.5 ml-9">Creator Program</p>
         </div>
         {onClose && (
           <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden">

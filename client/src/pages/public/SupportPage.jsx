@@ -16,7 +16,7 @@ export default function SupportPage() {
         </div>
       </header>
 
-      <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-16 px-4">
+      <section className="bg-gradient-to-br from-[#0A1831] to-brand-600 text-white py-16 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="font-display font-extrabold text-4xl md:text-5xl mb-4">Support</h1>
           <p className="text-brand-100 text-lg">We're here to help. Choose how you'd like to reach us.</p>

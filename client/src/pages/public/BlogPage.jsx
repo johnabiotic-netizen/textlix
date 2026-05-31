@@ -1250,7 +1250,7 @@ export default function BlogPage() {
         <meta property="og:url" content="https://www.textlix.com/blog" />
       </Helmet>
 
-      <section className="bg-gradient-to-br from-[#0A1B31] to-brand-600 text-white py-16 px-4 text-center">
+      <section className="bg-gradient-to-br from-[#0A1831] to-brand-600 text-white py-16 px-4 text-center">
         <h1 className="font-display font-extrabold text-4xl mb-3">textlix Blog</h1>
         <p className="text-brand-100 text-lg">Guides, tips, and news on SMS verification and virtual numbers</p>
       </section>
