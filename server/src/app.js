@@ -1,5 +1,15 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
+// Force Node's DNS resolver to use known-good public DNS servers. Windows can
+// hand Node a loopback DNS server (e.g. 127.0.0.1 from a VPN/local resolver
+// that isn't actually running), causing ECONNREFUSED on every lookup —
+// including Atlas SRV resolution. This is a localhost-dev workaround.
+const dns = require('dns');
+const currentServers = dns.getServers();
+if (currentServers.length === 0 || currentServers.every((s) => s === '127.0.0.1' || s === '::1')) {
+  dns.setServers(['1.1.1.1', '8.8.8.8', '1.0.0.1']);
+}
+
 
 const express = require('express');
 const cors = require('cors');
@@ -16,6 +26,7 @@ const numberRoutes = require('./routes/number.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const adminRoutes = require('./routes/admin.routes');
 const creatorRoutes = require('./routes/creator.routes');
+const welcomeBonusRoutes = require('./routes/welcome-bonus.routes');
 const errorMiddleware = require('./middleware/error.middleware');
 const { getPublicStats } = require('./controllers/number.controller');
 
@@ -106,6 +117,7 @@ app.use('/api/v1/numbers', numberRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/creator', creatorRoutes);
+app.use('/api/v1/welcome-bonus', welcomeBonusRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));

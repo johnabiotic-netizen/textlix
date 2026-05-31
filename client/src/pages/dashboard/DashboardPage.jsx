@@ -15,6 +15,7 @@ import UsageSparkline from '../../components/dashboard/UsageSparkline';
 import TrendingServices from '../../components/dashboard/TrendingServices';
 import RecentSmsInbox from '../../components/dashboard/RecentSmsInbox';
 import StreakTile from '../../components/dashboard/StreakTile';
+import WelcomeBonusCard from '../../components/dashboard/WelcomeBonusCard';
 import useDismissedOrders from '../../hooks/useDismissedOrders';
 
 dayjs.extend(relativeTime);
@@ -142,7 +143,7 @@ export default function DashboardPage() {
       {showOnboarding && <OnboardingModal onDismiss={dismissOnboarding} />}
 
       {/* ── Welcome banner ─────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-[#0A1B31] to-brand-600 rounded-2xl p-6 md:p-8 text-white">
+      <div className="bg-gradient-to-r from-[#0A1831] to-brand-600 rounded-2xl p-6 md:p-8 text-white">
         <p className="text-brand-100 text-sm mb-1">Welcome back</p>
         <h1 className="font-display font-bold text-3xl mb-4">{user?.name} 👋</h1>
 
@@ -187,6 +188,9 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* ── Pre-launch welcome bonus (renders only if user is eligible) ────── */}
+      <WelcomeBonusCard />
 
       {/* ── Stat cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

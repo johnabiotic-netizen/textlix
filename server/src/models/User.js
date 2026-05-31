@@ -32,6 +32,9 @@ const userSchema = new mongoose.Schema(
     emailNotifications: { type: Boolean, default: true },
     twoFASecret:  { type: String, default: null },
     twoFAEnabled: { type: Boolean, default: false },
+    // ── Pre-launch promo: first 500 sign-ups follow socials → 50 credits ─────
+    welcomeBonusClaimed: { type: Boolean, default: false },
+    welcomeBonusClaimedAt: { type: Date, default: null },
     // ── Creator / affiliate fields ──────────────────────────────────────────
     isCreator: { type: Boolean, default: false },
     creatorStatus: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
