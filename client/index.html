@@ -83,7 +83,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <script>!function(){var e=localStorage.getItem("theme");("dark"===e||null==e&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.documentElement.classList.add("dark")}()</script>
+    <script>!function(){"dark"===localStorage.getItem("theme")&&document.documentElement.classList.add("dark")}()</script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <!-- Tawk.to Live Chat -->

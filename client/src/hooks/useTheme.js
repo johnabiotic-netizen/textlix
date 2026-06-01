@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 let _listeners = [];
 let _dark = (() => {
   try {
-    const stored = localStorage.getItem('theme');
-    if (stored) return stored === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return localStorage.getItem('theme') === 'dark';
   } catch { return false; }
 })();
 
