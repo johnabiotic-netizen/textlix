@@ -1,6 +1,7 @@
 const PlatformSettings = require('../models/PlatformSettings');
 const User = require('../models/User');
 const { addCredits } = require('./credit.service');
+const { normalizeEmail } = require('../utils/normalize-email');
 const AppError = require('../utils/AppError');
 
 const CAP = parseInt(process.env.WELCOME_BONUS_CAP || '500', 10);
@@ -23,7 +24,7 @@ async function ensureCounter() {
 async function getStatus(userId) {
   await ensureCounter();
   const [user, counter] = await Promise.all([
-    User.findById(userId).select('welcomeBonusClaimed welcomeBonusClaimedAt'),
+    User.findById(userId).select('welcomeBonusClaimed welcomeBonusClaimedAt isEmailVerified'),
     PlatformSettings.findOne({ key: COUNTER_KEY }),
   ]);
   const remaining = Math.max(0, parseInt(counter?.value || '0', 10));
@@ -31,6 +32,7 @@ async function getStatus(userId) {
   return {
     claimed,
     claimedAt: user?.welcomeBonusClaimedAt || null,
+    emailVerified: !!user?.isEmailVerified,
     remaining,
     totalCap: CAP,
     credits: CREDITS,
@@ -38,13 +40,53 @@ async function getStatus(userId) {
   };
 }
 
-async function claim(userId) {
+async function claim(userId, clientIp) {
   await ensureCounter();
 
-  const user = await User.findById(userId).select('welcomeBonusClaimed');
+  const user = await User.findById(userId).select(
+    'welcomeBonusClaimed email isEmailVerified'
+  );
   if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
   if (user.welcomeBonusClaimed) {
     throw new AppError('VALIDATION_ERROR', 400, 'Welcome bonus already claimed');
+  }
+
+  // ── Defence 1: require verified email ───────────────────────────────────────
+  if (!user.isEmailVerified) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      400,
+      'Please verify your email before claiming the welcome bonus'
+    );
+  }
+
+  // ── Defence 2: dedupe by normalised email (catches Gmail .+ alias tricks) ───
+  const emailNormalized = normalizeEmail(user.email);
+  if (emailNormalized) {
+    const emailDup = await User.findOne({
+      _id: { $ne: userId },
+      welcomeBonusClaimed: true,
+      emailNormalized,
+    }).select('_id').lean();
+    if (emailDup) {
+      throw new AppError('VALIDATION_ERROR', 400, 'Welcome bonus already claimed');
+    }
+  }
+
+  // ── Defence 3: dedupe by client IP (catches multi-account on same device) ──
+  if (clientIp) {
+    const ipDup = await User.findOne({
+      _id: { $ne: userId },
+      welcomeBonusClaimed: true,
+      welcomeBonusClaimedIp: clientIp,
+    }).select('_id').lean();
+    if (ipDup) {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        400,
+        'This network has already claimed a welcome bonus. Try from a different network or contact support.'
+      );
+    }
   }
 
   // Atomic conditional decrement: only succeeds while counter value > 0
@@ -60,7 +102,12 @@ async function claim(userId) {
   // Atomic per-user mark. If a concurrent claim slipped through, restore counter.
   const marked = await User.findOneAndUpdate(
     { _id: userId, welcomeBonusClaimed: { $ne: true } },
-    { welcomeBonusClaimed: true, welcomeBonusClaimedAt: new Date() },
+    {
+      welcomeBonusClaimed: true,
+      welcomeBonusClaimedAt: new Date(),
+      welcomeBonusClaimedIp: clientIp || null,
+      emailNormalized,
+    },
     { new: true }
   );
   if (!marked) {

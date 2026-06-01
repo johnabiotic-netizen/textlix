@@ -129,7 +129,7 @@ export default function WelcomeBonusCard() {
       </button>
 
       <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">
-        Honor system — please actually follow before claiming. One claim per account.
+        Spot checks performed. One claim per account.
       </p>
     </Card>
   );

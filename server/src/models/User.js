@@ -35,6 +35,11 @@ const userSchema = new mongoose.Schema(
     // ── Pre-launch promo: first 500 sign-ups follow socials → 50 credits ─────
     welcomeBonusClaimed: { type: Boolean, default: false },
     welcomeBonusClaimedAt: { type: Date, default: null },
+    welcomeBonusClaimedIp: { type: String, default: null },
+    // Lowercased + plus-stripped + Gmail-dot-collapsed form of `email`.
+    // Set when a user claims the welcome bonus; used to dedupe Gmail/aliasing
+    // tricks where one person registers many addresses to multi-claim.
+    emailNormalized: { type: String, default: null },
     // ── Creator / affiliate fields ──────────────────────────────────────────
     isCreator: { type: Boolean, default: false },
     creatorStatus: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
@@ -59,5 +64,8 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ provider: 1, providerId: 1 });
+// Welcome-bonus abuse checks — cheap because the claimed subset is capped at 500
+userSchema.index({ welcomeBonusClaimed: 1, emailNormalized: 1 });
+userSchema.index({ welcomeBonusClaimed: 1, welcomeBonusClaimedIp: 1 });
 
 module.exports = mongoose.model('User', userSchema);
