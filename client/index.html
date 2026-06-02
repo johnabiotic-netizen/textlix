@@ -77,10 +77,29 @@
     }
     </script>
 
-    <!-- Fonts -->
+    <!-- Fonts — load the stylesheet non-blocking so it doesn't delay first
+         paint. `media="print"` makes the browser fetch but skip parse for the
+         initial render; the onload handler then swaps media to apply it.
+         `display=swap` in the URL ensures text shows in the fallback font
+         until the web font arrives, so there's no invisible-text window.
+         The <noscript> path is the no-JS fallback (still render-blocking,
+         but acceptable for the ~1% with JS off). -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" />
+    </noscript>
   </head>
   <body>
     <script>!function(){"dark"===localStorage.getItem("theme")&&document.documentElement.classList.add("dark")}()</script>

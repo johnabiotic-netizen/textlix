@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { useEffect, useRef, useState, createElement } from 'react';
 
 /**
  * Scroll-triggered reveal wrapper.
@@ -6,8 +6,10 @@ import { motion } from 'framer-motion';
  *
  *   <Reveal delay={0.1}><Card /></Reveal>
  *
- * Honors prefers-reduced-motion (framer-motion handles it automatically when
- * the user has reduced-motion set system-wide).
+ * Implemented with IntersectionObserver + CSS transitions instead of
+ * framer-motion's `whileInView` — framer's runtime cost on mobile was
+ * showing up in TBT on the landing page. Honors prefers-reduced-motion
+ * (shows children in their final state immediately).
  */
 export default function Reveal({
   children,
@@ -17,16 +19,43 @@ export default function Reveal({
   className = '',
   as = 'div',
 }) {
-  const MotionComp = motion[as] || motion.div;
-  return (
-    <MotionComp
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={className}
-    >
-      {children}
-    </MotionComp>
-  );
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [reduced, setReduced] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setReduced(true);
+      setVisible(true);
+      return undefined;
+    }
+
+    const node = ref.current;
+    if (!node) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '-80px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const style = reduced
+    ? undefined
+    : {
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'none' : `translate3d(0, ${y}px, 0)`,
+        transition: `opacity ${duration}s cubic-bezier(0.22, 1, 0.36, 1) ${delay}s, transform ${duration}s cubic-bezier(0.22, 1, 0.36, 1) ${delay}s`,
+        willChange: visible ? 'auto' : 'opacity, transform',
+      };
+
+  return createElement(as, { ref, className, style }, children);
 }

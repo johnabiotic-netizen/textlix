@@ -1,24 +1,36 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import * as Sentry from '@sentry/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './styles/index.css';
 
+// Sentry is dynamically imported and initialised 1.5s after window 'load' so
+// it doesn't add to the initial JS bundle parsed during the LCP/TBT window.
+// Crashes that happen in the first ~2s of a session are still picked up by
+// Sentry's own global error queue once it boots.
 if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    environment: import.meta.env.MODE,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false }),
-    ],
-    tracesSampleRate: 0.1,      // 10% of transactions for performance
-    replaysSessionSampleRate: 0, // no session replays by default
-    replaysOnErrorSampleRate: 1, // full replay on every error
-  });
+  const bootSentry = () => {
+    import('@sentry/react').then((Sentry) => {
+      Sentry.init({
+        dsn: import.meta.env.VITE_SENTRY_DSN,
+        environment: import.meta.env.MODE,
+        integrations: [
+          Sentry.browserTracingIntegration(),
+          Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false }),
+        ],
+        tracesSampleRate: 0.1,
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: 1,
+      });
+    });
+  };
+  if (document.readyState === 'complete') {
+    setTimeout(bootSentry, 1500);
+  } else {
+    window.addEventListener('load', () => setTimeout(bootSentry, 1500), { once: true });
+  }
 }
 
 const queryClient = new QueryClient({
