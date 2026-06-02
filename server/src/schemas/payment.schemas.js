@@ -12,9 +12,21 @@ const initRefinementMessage = { message: 'packageId or amountUSD required' };
 
 const initSchema = initBase.refine(initRefinement, initRefinementMessage);
 
-// 0xProcessing additionally takes a currency
+// 0xProcessing additionally takes a currency. Multichain assets use the literal
+// "TICKER (CHAIN)" form per 0xProcessing's asset list — anything else makes
+// their hosted page default to ERC20 for USDT/USDC, etc.
 const oxprocessingCreateSchema = initBase
-  .extend({ currency: z.enum(['USDT', 'BTC', 'ETH', 'LTC', 'DOGE', 'USDC']).optional() })
+  .extend({
+    currency: z.enum([
+      'USDT (TRC20)', 'USDT (ERC20)', 'USDT (BEP20)',
+      'USDC (ERC20)',
+      'ETH', 'ETH (BEP20)',
+      'BTC', 'LTC', 'DOGE',
+      // Back-compat: legacy clients may still send bare codes; treat as the
+      // historical default (ERC20-ish behavior on 0xProcessing's side).
+      'USDT', 'USDC',
+    ]).optional(),
+  })
   .refine(initRefinement, initRefinementMessage);
 
 const validatePromoSchema = z.object({

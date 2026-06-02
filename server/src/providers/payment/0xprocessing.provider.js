@@ -2,10 +2,14 @@ const crypto = require('crypto');
 
 // 0xProcessing uses a browser form POST, not a server-to-server API.
 // This builds the form fields the frontend submits directly to their payment page.
+// Field names match the casing in https://docs.0xprocessing.com/0xprocessing-api/deposits/payment-form-with-fixed-amount
+// — `Currency` and `Email` are documented as PascalCase. Sending `currency`
+// (lowercase) caused their hosted page to fall back to default-chain USDT
+// regardless of what the user picked.
 const buildPaymentForm = ({ orderId, amountUSD, currency, email, clientId, successUrl, cancelUrl }) => ({
   AmountUSD: String(amountUSD),
-  currency: currency || 'USDT',
-  email,
+  Currency: currency || 'USDT',
+  Email: email,
   MerchantId: process.env.OXPROCESSING_MERCHANT_ID || process.env.OXPROCESSING_API_KEY,
   ClientId: clientId,
   BillingId: orderId,

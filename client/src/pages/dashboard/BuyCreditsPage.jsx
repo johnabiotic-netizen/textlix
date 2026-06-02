@@ -10,13 +10,17 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import dayjs from 'dayjs';
 
+// `value` is the literal Currency string 0xProcessing's payment form expects
+// per https://docs.0xprocessing.com/basic/general/available-assets — multichain
+// assets are written as "TICKER (CHAIN)" with a space and parens. Sending bare
+// "USDT" makes 0xProcessing default to ERC20 regardless of what the user picks.
 const CRYPTO_COINS = [
   {
     id: 'USDT', label: 'USDT', name: 'Tether', symbol: '₮',
     networks: [
-      { value: 'USDT', label: 'TRC-20', note: 'Recommended · Lowest fees' },
-      { value: 'USDT', label: 'ERC-20', note: '' },
-      { value: 'USDT', label: 'BEP-20', note: '' },
+      { value: 'USDT (TRC20)', label: 'TRC-20', note: 'Recommended · Lowest fees' },
+      { value: 'USDT (ERC20)', label: 'ERC-20', note: '' },
+      { value: 'USDT (BEP20)', label: 'BEP-20', note: '' },
     ],
   },
   {
@@ -27,12 +31,12 @@ const CRYPTO_COINS = [
     id: 'ETH', label: 'ETH', name: 'Ethereum', symbol: 'Ξ',
     networks: [
       { value: 'ETH', label: 'ERC-20', note: '' },
-      { value: 'ETH', label: 'BEP-20', note: '' },
+      { value: 'ETH (BEP20)', label: 'BEP-20', note: '' },
     ],
   },
   {
     id: 'USDC', label: 'USDC', name: 'USD Coin', symbol: '$',
-    networks: [{ value: 'USDC', label: 'ERC-20', note: '' }],
+    networks: [{ value: 'USDC (ERC20)', label: 'ERC-20', note: '' }],
   },
   {
     id: 'LTC', label: 'LTC', name: 'Litecoin', symbol: 'Ł',
