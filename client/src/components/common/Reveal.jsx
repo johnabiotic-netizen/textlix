@@ -35,6 +35,16 @@ export default function Reveal({
     const node = ref.current;
     if (!node) return undefined;
 
+    // If the element is already in the initial viewport at mount, skip the
+    // fade-in entirely and render visible. The scroll-reveal effect is meant
+    // for things the user scrolls *to* — for above-the-fold content (especially
+    // the LCP hero), the animation just delays paint and tanks the LCP metric.
+    const rect = node.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setVisible(true);
+      return undefined;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

@@ -5,13 +5,14 @@
  * Pauses on hover.
  */
 
+// Curated set of recognisable flags. Doubled in the render for a seamless
+// loop, so 30 entries here = 60 DOM nodes — down from 120 previously. PSI
+// flagged the marquee parent as having 120 children, which contributes to
+// the "avoid an excessive DOM" diagnostic on mobile.
 const FLAGS = [
-  '🇺🇸', '🇬🇧', '🇮🇳', '🇳🇬', '🇷🇺', '🇧🇷', '🇩🇪', '🇫🇷', '🇨🇦', '🇦🇺',
-  '🇮🇩', '🇵🇭', '🇻🇳', '🇲🇽', '🇵🇰', '🇰🇪', '🇿🇦', '🇺🇦', '🇪🇸', '🇮🇹',
-  '🇳🇱', '🇵🇱', '🇸🇪', '🇳🇴', '🇩🇰', '🇫🇮', '🇵🇹', '🇧🇪', '🇦🇹', '🇨🇭',
-  '🇬🇷', '🇷🇴', '🇨🇿', '🇭🇺', '🇸🇰', '🇮🇪', '🇱🇹', '🇱🇻', '🇪🇪', '🇧🇬',
-  '🇰🇿', '🇰🇭', '🇲🇩', '🇵🇾', '🇸🇦', '🇪🇬', '🇲🇦', '🇮🇱', '🇹🇷', '🇨🇳',
-  '🇯🇵', '🇰🇷', '🇹🇼', '🇭🇰', '🇲🇾', '🇸🇬', '🇹🇭', '🇦🇷', '🇨🇴', '🇨🇱',
+  '🇺🇸', '🇬🇧', '🇮🇳', '🇳🇬', '🇧🇷', '🇩🇪', '🇫🇷', '🇨🇦', '🇦🇺', '🇮🇩',
+  '🇵🇭', '🇲🇽', '🇪🇸', '🇮🇹', '🇳🇱', '🇸🇪', '🇨🇭', '🇮🇪', '🇺🇦', '🇸🇦',
+  '🇪🇬', '🇮🇱', '🇹🇷', '🇨🇳', '🇯🇵', '🇰🇷', '🇸🇬', '🇹🇭', '🇦🇷', '🇿🇦',
 ];
 
 export default function CountryMarquee() {

@@ -77,6 +77,10 @@
     }
     </script>
 
+    <!-- Preconnect to the API host so the public-stats / first-fetch TLS
+         handshake overlaps with HTML/JS download instead of running serially. -->
+    <link rel="preconnect" href="https://api.textlix.com" crossorigin />
+
     <!-- Fonts — load the stylesheet non-blocking so it doesn't delay first
          paint. `media="print"` makes the browser fetch but skip parse for the
          initial render; the onload handler then swaps media to apply it.
