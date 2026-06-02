@@ -86,16 +86,31 @@
     <script>!function(){"dark"===localStorage.getItem("theme")&&document.documentElement.classList.add("dark")}()</script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <!-- Tawk.to Live Chat -->
-    <script type="text/javascript">
-      var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-      (function(){
-        var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-        s1.async=true;
-        s1.src='https://embed.tawk.to/69dd0803a59d0e1c3091bce2/1jm3mejjd';
-        s1.charset='UTF-8';
-        s1.setAttribute('crossorigin','*');
-        s0.parentNode.insertBefore(s1,s0);
+    <!-- Tawk.to Live Chat — deferred until first user interaction or 4s,
+         whichever fires first. Lighthouse measures TBT during the first ~5s;
+         loading the widget eagerly cost ~800ms of main-thread time on mobile
+         and ~15 Lighthouse points. The widget still appears for everyone
+         who actually engages with the page; bots and instant-bouncers skip it. -->
+    <script>
+      var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+      (function () {
+        var loaded = false;
+        function loadTawk() {
+          if (loaded) return;
+          loaded = true;
+          var s1 = document.createElement('script');
+          var s0 = document.getElementsByTagName('script')[0];
+          s1.async = true;
+          s1.src = 'https://embed.tawk.to/69dd0803a59d0e1c3091bce2/1jm3mejjd';
+          s1.charset = 'UTF-8';
+          s1.setAttribute('crossorigin', '*');
+          s0.parentNode.insertBefore(s1, s0);
+        }
+        var triggers = ['scroll', 'mousemove', 'touchstart', 'keydown'];
+        triggers.forEach(function (ev) {
+          window.addEventListener(ev, loadTawk, { once: true, passive: true });
+        });
+        setTimeout(loadTawk, 4000);
       })();
     </script>
   </body>
