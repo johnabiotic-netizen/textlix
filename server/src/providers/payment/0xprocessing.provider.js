@@ -1,46 +1,71 @@
 const crypto = require('crypto');
 
-// 0xProcessing uses a browser form POST, not a server-to-server API.
-// This builds the form fields the frontend submits directly to their payment page.
-// Field names match the casing in https://docs.0xprocessing.com/0xprocessing-api/deposits/payment-form-with-fixed-amount
-// — `Currency` and `Email` are documented as PascalCase. Sending `currency`
-// (lowercase) caused their hosted page to fall back to default-chain USDT
-// regardless of what the user picked.
+// 0xProcessing uses a browser form POST, not a server-to-server API. This
+// builds the form fields the frontend submits directly to their payment page.
+//
+// Field names + casing per:
+// https://docs.0xprocessing.com/0xprocessing-api/deposits/payment-form-with-fixed-amount
+//
+// Notes:
+// - `Currency` and `Email` are PascalCase per docs. Lowercase variants got
+//   silently dropped, causing the hosted page to default to ERC20 USDT.
+// - `BillingID` is capital-ID per docs. This is how the webhook echoes our
+//   Payment._id back to us — wrong casing breaks correlation.
+// - `AutoReturn=true` makes 0xProcessing redirect to SuccessUrl after on-chain
+//   confirmation instead of showing a "Back to website" button the user has
+//   to click manually.
 const buildPaymentForm = ({ orderId, amountUSD, currency, email, clientId, successUrl, cancelUrl }) => ({
   AmountUSD: String(amountUSD),
   Currency: currency || 'USDT',
   Email: email,
   MerchantId: process.env.OXPROCESSING_MERCHANT_ID || process.env.OXPROCESSING_API_KEY,
   ClientId: clientId,
-  BillingId: orderId,
+  BillingID: orderId,
   SuccessUrl: successUrl,
   CancelUrl: cancelUrl,
+  AutoReturn: 'true',
 });
 
 // Timing-safe hex compare. Never use === on signatures.
 const safeEqual = (a, b) => {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
-  const A = Buffer.from(a, 'utf8');
-  const B = Buffer.from(b, 'utf8');
+  const A = Buffer.from(a.toLowerCase(), 'utf8');
+  const B = Buffer.from(b.toLowerCase(), 'utf8');
   if (A.length !== B.length) return false;
   return crypto.timingSafeEqual(A, B);
 };
 
-// Webhook signature verification.
-// Preferred:  HMAC-SHA256(secret, rawBody) if OXPROCESSING_WEBHOOK_SECRET is set.
-// Fallback:   MD5(rawBody) — unkeyed, only as last resort, intentionally weak.
-//             (0xProcessing's docs use plain MD5; request a webhook secret
-//             from them and set OXPROCESSING_WEBHOOK_SECRET to harden.)
-const verifyWebhookSignature = (rawBody, signature) => {
-  if (!signature) return false;
-  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(String(rawBody), 'utf8');
-  const secret = process.env.OXPROCESSING_WEBHOOK_SECRET;
-  if (secret) {
-    const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
-    return safeEqual(expected, signature);
+// 0xProcessing webhook signature verification.
+//
+// Per https://docs.0xprocessing.com/0xprocessing-api/webhooks the signature
+// is carried INSIDE the JSON body as field `Signature`, not in an HTTP header.
+// It is the MD5 of the colon-joined string:
+//   `${PaymentId}:${MerchantID}:${Email}:${Currency}:${Password}`
+// where Password is the per-merchant webhook password configured in the
+// 0xProcessing dashboard, mirrored here as OXPROCESSING_WEBHOOK_PASSWORD.
+//
+// Returns true iff the payload was signed by 0xProcessing with our password.
+const verifyWebhookSignature = (payload) => {
+  if (!payload || typeof payload !== 'object') return false;
+
+  const password = process.env.OXPROCESSING_WEBHOOK_PASSWORD;
+  if (!password) {
+    // No password configured — every webhook is unverified. Bail closed.
+    return false;
   }
-  const md5 = crypto.createHash('md5').update(body).digest('hex');
-  return safeEqual(md5, signature);
+
+  const { PaymentId, MerchantId, Email, Currency, Signature } = payload;
+  if (PaymentId == null || !MerchantId || !Email || !Currency || !Signature) {
+    return false;
+  }
+
+  // The docs show the field as `MerchantID` in the signature input but
+  // `MerchantId` in the JSON payload — same value, just different casing for
+  // the string concatenation. Use the value we received.
+  const input = `${PaymentId}:${MerchantId}:${Email}:${Currency}:${password}`;
+  const expected = crypto.createHash('md5').update(input).digest('hex');
+
+  return safeEqual(expected, Signature);
 };
 
 module.exports = { buildPaymentForm, verifyWebhookSignature };

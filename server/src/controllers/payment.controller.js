@@ -130,22 +130,38 @@ exports.oxprocessingCreate = async (req, res, next) => {
 
 exports.oxprocessingWebhook = async (req, res, next) => {
   try {
-    const signature = req.headers['x-signature'] || req.headers['x-api-signature'];
-    if (!signature || !oxprocessingProvider.verifyWebhookSignature(req.body, signature)) {
-      logger.warn('0xProcessing webhook rejected: invalid signature');
+    // 0xProcessing posts JSON with the signature INSIDE the body. We register
+    // express.raw on this route so we can verify the bytes deterministically.
+    let payload;
+    try {
+      payload = JSON.parse(req.body.toString('utf8'));
+    } catch (e) {
+      logger.warn('0xProcessing webhook rejected: malformed JSON');
+      return res.status(400).end();
+    }
+
+    if (!oxprocessingProvider.verifyWebhookSignature(payload)) {
+      logger.warn(`0xProcessing webhook rejected: invalid signature for BillingID=${payload?.BillingID} PaymentId=${payload?.PaymentId}`);
       return res.status(401).end();
     }
 
-    const payload = JSON.parse(req.body.toString('utf8'));
-    const { order_id, status } = payload;
+    const { BillingID, Status, PaymentId, Test } = payload;
 
-    if (status === 'paid' || status === 'PAID') {
+    // Test pings from the 0xProcessing dashboard arrive with Test=true and
+    // synthetic IDs. Acknowledge so the dashboard shows green, but don't
+    // credit.
+    if (Test) {
+      logger.info(`0xProcessing webhook test ping accepted (BillingID=${BillingID})`);
+      return res.sendStatus(200);
+    }
+
+    if (Status === 'Success') {
       // Atomic gate: only one concurrent webhook flips PENDING → COMPLETED.
       // addCredits is also internally idempotent on (userId, referenceId)
       // — defence-in-depth in case the gate is bypassed somehow.
       const payment = await Payment.findOneAndUpdate(
-        { _id: order_id, status: 'PENDING' },
-        { $set: { status: 'COMPLETED', completedAt: new Date() } },
+        { _id: BillingID, status: 'PENDING' },
+        { $set: { status: 'COMPLETED', completedAt: new Date(), externalId: String(PaymentId) } },
         { new: false }
       );
       if (payment) {
@@ -160,8 +176,8 @@ exports.oxprocessingWebhook = async (req, res, next) => {
           if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: payment.creditsAdded });
         } catch (err) {
           // Roll back the gate so a retry can re-attempt delivery.
-          await Payment.findByIdAndUpdate(order_id, { $set: { status: 'PENDING', completedAt: null } });
-          logger.error(`0xProcessing credit delivery failed for ${order_id}: ${err.message}`);
+          await Payment.findByIdAndUpdate(BillingID, { $set: { status: 'PENDING', completedAt: null } });
+          logger.error(`0xProcessing credit delivery failed for ${BillingID}: ${err.message}`);
           return res.sendStatus(500);
         }
         // Soft post-credit work — failures here MUST NOT roll back the credit
@@ -172,7 +188,11 @@ exports.oxprocessingWebhook = async (req, res, next) => {
         try {
           await maybeAwardCreatorCommission(payment.userId, payment.amountUSD, payment._id);
         } catch (e) { logger.warn(`Creator commission failed for ${payment._id}: ${e.message}`); }
+      } else {
+        logger.warn(`0xProcessing webhook: no PENDING payment matched BillingID=${BillingID} (already completed or wrong id)`);
       }
+    } else {
+      logger.info(`0xProcessing webhook: BillingID=${BillingID} status=${Status} (not a credit event)`);
     }
     res.sendStatus(200);
   } catch (err) {
