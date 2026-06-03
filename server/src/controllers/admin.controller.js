@@ -22,6 +22,12 @@ const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const safePage = (p) => Math.max(1, parseInt(p) || 1);
 const safeLimit = (l, max = 100) => Math.min(Math.max(1, parseInt(l) || 20), max);
 
+// Pre-launch cutoff. Everything before this date is test data created by the
+// founder while building. Admin stats, transaction/payment/order lists, and
+// reports all clamp to this floor so the dashboard reflects real users only.
+// Bump this date if launch slips or if a later re-baseline is needed.
+const LAUNCH_DATE = new Date('2026-06-01T00:00:00.000Z');
+
 exports.getDashboard = async (req, res, next) => {
   try {
     const now = new Date();
@@ -29,6 +35,9 @@ exports.getDashboard = async (req, res, next) => {
     const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    // All "total" / "ordered" aggregates floor at LAUNCH_DATE so pre-launch
+    // test data doesn't leak into the headline numbers. The today/week/month
+    // windows already start after launch, so they don't need an explicit floor.
     const [
       revenueToday, revenueWeek, revenueMonth, revenueTotal,
       usersTotal, usersToday, activeToday,
@@ -38,18 +47,21 @@ exports.getDashboard = async (req, res, next) => {
       Payment.aggregate([{ $match: { status: 'COMPLETED', completedAt: { $gte: startOfDay } } }, { $group: { _id: null, total: { $sum: '$amountUSD' } } }]),
       Payment.aggregate([{ $match: { status: 'COMPLETED', completedAt: { $gte: startOfWeek } } }, { $group: { _id: null, total: { $sum: '$amountUSD' } } }]),
       Payment.aggregate([{ $match: { status: 'COMPLETED', completedAt: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$amountUSD' } } }]),
-      Payment.aggregate([{ $match: { status: 'COMPLETED' } }, { $group: { _id: null, total: { $sum: '$amountUSD' } } }]),
+      Payment.aggregate([{ $match: { status: 'COMPLETED', completedAt: { $gte: LAUNCH_DATE } } }, { $group: { _id: null, total: { $sum: '$amountUSD' } } }]),
       User.countDocuments({ role: 'USER' }),
       User.countDocuments({ createdAt: { $gte: startOfDay } }),
       User.countDocuments({ lastLoginAt: { $gte: startOfDay } }),
       NumberOrder.countDocuments({ status: 'ACTIVE' }),
-      NumberOrder.countDocuments(),
-      CreditTransaction.aggregate([{ $match: { type: 'PURCHASE' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-      CreditTransaction.aggregate([{ $match: { type: 'SPEND' } }, { $group: { _id: null, total: { $sum: { $abs: '$amount' } } } }]),
-      CreditTransaction.aggregate([{ $match: { type: 'REFUND' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      NumberOrder.countDocuments({ createdAt: { $gte: LAUNCH_DATE } }),
+      CreditTransaction.aggregate([{ $match: { type: 'PURCHASE', createdAt: { $gte: LAUNCH_DATE } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      CreditTransaction.aggregate([{ $match: { type: 'SPEND', createdAt: { $gte: LAUNCH_DATE } } }, { $group: { _id: null, total: { $sum: { $abs: '$amount' } } } }]),
+      CreditTransaction.aggregate([{ $match: { type: 'REFUND', createdAt: { $gte: LAUNCH_DATE } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     ]);
 
-    const successOrders = await NumberOrder.countDocuments({ smsContent: { $ne: null } });
+    const successOrders = await NumberOrder.countDocuments({
+      smsContent: { $ne: null },
+      createdAt: { $gte: LAUNCH_DATE },
+    });
     const successRate = totalOrders > 0 ? Math.round((successOrders / totalOrders) * 100) : 0;
 
     success(res, {
@@ -194,11 +206,12 @@ exports.getTransactions = async (req, res, next) => {
     const filter = {};
     if (type) filter.type = type;
     if (userId) filter.userId = new mongoose.Types.ObjectId(userId);
-    if (dateFrom || dateTo) {
-      filter.createdAt = {};
-      if (dateFrom) filter.createdAt.$gte = new Date(dateFrom);
-      if (dateTo) filter.createdAt.$lte = new Date(dateTo);
-    }
+    // Floor at LAUNCH_DATE. If the admin passes a narrower dateFrom, honor it;
+    // if they pass an earlier one, the launch floor still wins.
+    const requestedFrom = dateFrom ? new Date(dateFrom) : null;
+    const effectiveFrom = requestedFrom && requestedFrom > LAUNCH_DATE ? requestedFrom : LAUNCH_DATE;
+    filter.createdAt = { $gte: effectiveFrom };
+    if (dateTo) filter.createdAt.$lte = new Date(dateTo);
 
     const [transactions, total] = await Promise.all([
       CreditTransaction.find(filter).populate('userId', 'name email').sort({ createdAt: -1 }).skip(skip).limit(l),
@@ -220,11 +233,10 @@ exports.getPayments = async (req, res, next) => {
     const filter = {};
     if (method) filter.method = method;
     if (status) filter.status = status;
-    if (dateFrom || dateTo) {
-      filter.createdAt = {};
-      if (dateFrom) filter.createdAt.$gte = new Date(dateFrom);
-      if (dateTo) filter.createdAt.$lte = new Date(dateTo);
-    }
+    const requestedFrom = dateFrom ? new Date(dateFrom) : null;
+    const effectiveFrom = requestedFrom && requestedFrom > LAUNCH_DATE ? requestedFrom : LAUNCH_DATE;
+    filter.createdAt = { $gte: effectiveFrom };
+    if (dateTo) filter.createdAt.$lte = new Date(dateTo);
 
     const [payments, total] = await Promise.all([
       Payment.find(filter).populate('userId', 'name email').sort({ createdAt: -1 }).skip(skip).limit(l),
@@ -243,7 +255,7 @@ exports.getOrders = async (req, res, next) => {
     const p = safePage(page);
     const l = safeLimit(limit);
     const skip = (p - 1) * l;
-    const filter = {};
+    const filter = { createdAt: { $gte: LAUNCH_DATE } };
     if (status) filter.status = status;
     if (countryId) filter.countryId = new mongoose.Types.ObjectId(countryId);
     if (serviceId) filter.serviceId = new mongoose.Types.ObjectId(serviceId);
@@ -396,7 +408,10 @@ exports.updateSettings = async (req, res, next) => {
 exports.getRevenueReport = async (req, res, next) => {
   try {
     const { period = 'daily', dateFrom, dateTo } = req.query;
-    const start = dateFrom ? new Date(dateFrom) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const requestedStart = dateFrom ? new Date(dateFrom) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    // Never let the report reach back before pre-launch — the test data there
+    // would otherwise show up as a fake spike on the leftmost chart bucket.
+    const start = requestedStart > LAUNCH_DATE ? requestedStart : LAUNCH_DATE;
     const end = dateTo ? new Date(dateTo) : new Date();
 
     const groupBy =
@@ -427,16 +442,20 @@ exports.exportTransactions = async (req, res, next) => {
   try {
     const { dateFrom, dateTo, period } = req.query;
     const filter = {};
-    if (dateFrom || dateTo) {
-      filter.createdAt = {};
-      if (dateFrom) filter.createdAt.$gte = new Date(dateFrom);
-      if (dateTo) filter.createdAt.$lte = new Date(dateTo);
+    let computedFrom = null;
+    if (dateFrom) {
+      computedFrom = new Date(dateFrom);
     } else if (period) {
       // Period shortcut used by AdminReportsPage — translate to date window
       const now = new Date();
       const days = period === 'monthly' ? 365 : period === 'weekly' ? 84 : 30;
-      filter.createdAt = { $gte: new Date(now.getTime() - days * 24 * 60 * 60 * 1000) };
+      computedFrom = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
     }
+    // Always clamp to launch — refuses to export pre-launch test transactions
+    // even if a stale dateFrom query param is passed.
+    const effectiveFrom = computedFrom && computedFrom > LAUNCH_DATE ? computedFrom : LAUNCH_DATE;
+    filter.createdAt = { $gte: effectiveFrom };
+    if (dateTo) filter.createdAt.$lte = new Date(dateTo);
 
     const transactions = await CreditTransaction.find(filter)
       .populate('userId', 'name email')
