@@ -24,6 +24,12 @@
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+
+// Override DNS resolver to public servers — Atlas mongodb+srv:// URIs require
+// SRV record lookups, and some ISP DNS resolvers don't return them, which
+// surfaces as ECONNREFUSED on querySrv. Google + Cloudflare always do.
+require('dns').setServers(['8.8.8.8', '1.1.1.1']);
+
 const mongoose = require('mongoose');
 const Country = require('../src/models/Country');
 const Service = require('../src/models/Service');
