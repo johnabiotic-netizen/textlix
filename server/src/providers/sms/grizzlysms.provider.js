@@ -6,7 +6,11 @@ const BASE_URL = 'https://api.grizzlysms.com/stubs/handler_api.php';
 // Supported rental durations in days → hours (GrizzlySMS rent_time is in hours)
 const RENT_DAYS = { 1: 24, 7: 168, 28: 672 };
 
-// Map our 5sim-style slugs to GrizzlySMS/SMS-Activate service codes
+// Map our 5sim-style slugs to GrizzlySMS/SMS-Activate service codes.
+// Adding a new entry here lets the order controller fulfill that slug via
+// LIX 2 (GrizzlySMS direct) or the LIX 1 → GrizzlySMS fallback path. If a
+// slug is missing here, `toCode` passes it through untouched and GrizzlySMS
+// rejects the order — so this map is the gating list for what we can sell.
 const SLUG_TO_CODE = {
   // Confirmed working
   whatsapp: 'wa',
@@ -48,6 +52,18 @@ const SLUG_TO_CODE = {
   doordash: 'dp',
   kwai: 'kw',
   bilibili: 'bi',
+  // Multi-provider expansion (services 5sim doesn't carry — added so the
+  // catalog can surface them when GrizzlySMS has them). Codes are the
+  // SMS-Activate standard; GrizzlySMS uses the same code system.
+  payoneer: 'pa',
+  vk: 'vk',
+  okru: 'ok',
+  yandex: 'ya',
+  steam: 'mt',
+  reddit: 're',
+  pinterest: 'pn',
+  avito: 'av',
+  yahoo: 'yh',
 };
 
 const toCode = (slug) => SLUG_TO_CODE[slug] || slug;
