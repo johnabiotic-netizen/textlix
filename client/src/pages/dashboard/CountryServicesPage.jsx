@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiArrowLeft, FiCheckCircle, FiSearch, FiCalendar, FiStar } from 'react-icons/fi';
+import { FiArrowLeft, FiCheckCircle, FiSearch, FiCalendar, FiStar, FiAlertTriangle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { getServices, getServiceList, getCountries, getRentalPrice, orderNumber, orderRental, getRecommendations } from '../../api/numbers';
 import useAuthStore from '../../store/authStore';
@@ -537,9 +537,16 @@ export default function CountryServicesPage({ mode: modeProp }) {
               </div>
             </div>
 
-            <p className="text-xs text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border dark:border-amber-800 rounded-lg px-3 py-2">
-              Number is dedicated to {rentalService.name} for {rentalOptions.find(o => o.days === rentalDays)?.label || `${rentalDays} days`}. No refund after order is placed.
-            </p>
+            <div className="flex gap-2 text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2.5">
+              <FiAlertTriangle size={16} className="flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-300" />
+              <div>
+                <p className="font-semibold mb-0.5">Rentals are non-refundable</p>
+                <p className="leading-relaxed">
+                  Number is dedicated to {rentalService.name} for {rentalOptions.find(o => o.days === rentalDays)?.label || `${rentalDays} days`}.
+                  No refund is issued if SMS doesn't arrive, if the service rejects the number, or for any other reason after order is placed.
+                </p>
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setShowRentalModal(false)} disabled={ordering} className="flex-1">
