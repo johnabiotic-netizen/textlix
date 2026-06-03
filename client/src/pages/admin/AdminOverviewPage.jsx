@@ -84,7 +84,7 @@ export default function AdminOverviewPage() {
         <StatCard label="Revenue Today" value={`$${data?.revenue?.today?.toFixed(2) || '0.00'}`} sub={`$${data?.revenue?.month?.toFixed(2)} this month`} />
         <StatCard label="Active Users Today" value={data?.users?.active_today || 0} sub={`${data?.users?.total} total`} />
         <StatCard label="Active Numbers" value={data?.numbers?.active_now || 0} sub={`${data?.numbers?.total_ordered} total ordered`} />
-        <StatCard label="Success Rate" value={`${data?.numbers?.success_rate || 0}%`} sub="Last 7 days" />
+        <StatCard label="Success Rate" value={`${data?.numbers?.success_rate || 0}%`} sub="Since launch" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
