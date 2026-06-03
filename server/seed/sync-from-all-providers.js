@@ -38,16 +38,42 @@ const MARGIN = 0.60;
 // for these slugs — we avoid pulling in any code we haven't verified, so
 // nothing in the catalog ever fails on order because of a missing map entry.
 const MULTI_PROVIDER_SLUGS = {
-  payoneer:  { name: 'Payoneer',  icon: 'payoneer' },
-  vk:        { name: 'VK',        icon: 'vk' },
-  okru:      { name: 'OK.ru',     icon: 'okru' },
-  yandex:    { name: 'Yandex',    icon: 'yandex' },
-  steam:     { name: 'Steam',     icon: 'steam' },
-  reddit:    { name: 'Reddit',    icon: 'reddit' },
-  pinterest: { name: 'Pinterest', icon: 'pinterest' },
-  avito:     { name: 'Avito',     icon: 'avito' },
-  yahoo:     { name: 'Yahoo',     icon: 'yahoo' },
+  // Verified via discovery script (server/scripts/discover-grizzlysms-catalog.js).
+  // Every entry here has live GrizzlySMS inventory in at least 1 country.
+  payoneer:         { name: 'Payoneer',          icon: 'payoneer' },
+  steam:            { name: 'Steam',             icon: 'steam' },
+  reddit:           { name: 'Reddit',            icon: 'reddit' },
+  yahoo:            { name: 'Yahoo',             icon: 'yahoo' },
+  apple:            { name: 'Apple',             icon: 'apple' },
+  nike:             { name: 'Nike',              icon: 'nike' },
+  vinted:           { name: 'Vinted',            icon: 'vinted' },
+  bumble:           { name: 'Bumble',            icon: 'bumble' },
+  truecaller:       { name: 'Truecaller',        icon: 'truecaller' },
+  foodpanda:        { name: 'Foodpanda',         icon: 'foodpanda' },
+  deliveroo:        { name: 'Deliveroo',         icon: 'deliveroo' },
+  olacabs:          { name: 'Ola Cabs',          icon: 'olacabs' },
+  microsoftoutlook: { name: 'Microsoft Outlook', icon: 'microsoftoutlook' },
+  paytm:            { name: 'Paytm',             icon: 'paytm' },
+  ticketmaster:     { name: 'Ticketmaster',      icon: 'ticketmaster' },
+  alipay:           { name: 'Alipay',            icon: 'alipay' },
+  lazada:           { name: 'Lazada',            icon: 'lazada' },
+  swiggy:           { name: 'Swiggy',            icon: 'swiggy' },
+  bolt:             { name: 'Bolt',              icon: 'bolt' },
+  didi:             { name: 'DiDi',              icon: 'didi' },
+  taobao:           { name: 'Taobao',            icon: 'taobao' },
+  noon:             { name: 'Noon',              icon: 'noon' },
+  getir:            { name: 'Getir',             icon: 'getir' },
+  okcupid:          { name: 'OkCupid',           icon: 'okcupid' },
+  tantan:           { name: 'Tantan',            icon: 'tantan' },
+  twilio:           { name: 'Twilio',            icon: 'twilio' },
+  jiomart:          { name: 'JioMart',           icon: 'jiomart' },
+  michat:           { name: 'MiChat',            icon: 'michat' },
+  claude:           { name: 'Claude',            icon: 'claude' },
 };
+// NB: vk / okru / yandex / pinterest / avito are NOT in this list because
+// the codes I picked for them turned out to be dead on GrizzlySMS (see
+// discovery output). They remain in grizzlysms.provider.js's SLUG_TO_CODE
+// as inert entries so we don't break anything that might reference them.
 
 async function run() {
   console.log('Connecting to MongoDB...');

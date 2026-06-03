@@ -53,17 +53,49 @@ const SLUG_TO_CODE = {
   kwai: 'kw',
   bilibili: 'bi',
   // Multi-provider expansion (services 5sim doesn't carry — added so the
-  // catalog can surface them when GrizzlySMS has them). Codes are the
-  // SMS-Activate standard; GrizzlySMS uses the same code system.
-  payoneer: 'pa',
+  // catalog can surface them when GrizzlySMS has them). Codes verified
+  // against GrizzlySMS's live getServicesList + getPrices output.
+  payoneer: 'pa',         // Payoneer — confirmed inventory
+  steam: 'mt',            // Steam — 199 countries
+  reddit: 're',           // Reddit — 198 countries
+  yahoo: 'mb',            // Yahoo — 200 countries (was 'yh' which is dead)
+  // The next five had no inventory under the codes I picked. Left in the
+  // map intentionally — they cost nothing to keep and removing them risks
+  // breaking some future order path I haven't considered. The sync script's
+  // MULTI_PROVIDER_SLUGS no longer references them so they stop creating
+  // orphan Service docs.
   vk: 'vk',
   okru: 'ok',
   yandex: 'ya',
-  steam: 'mt',
-  reddit: 're',
-  pinterest: 'pn',
+  pinterest: 'pn',        // 'pn' is actually "CoffeeLike" on Grizzly — Pinterest isn't carried
   avito: 'av',
-  yahoo: 'yh',
+  // Bulk additions from GrizzlySMS catalog discovery — 25 services with
+  // 199-201 country coverage. Names matched against the live getServicesList.
+  apple: 'wx',
+  nike: 'ew',
+  vinted: 'kc',
+  bumble: 'mo',
+  truecaller: 'tl',
+  foodpanda: 'nz',
+  deliveroo: 'zk',
+  olacabs: 'ly',
+  microsoftoutlook: 'mm',
+  paytm: 'ge',
+  ticketmaster: 'gp',
+  alipay: 'hw',
+  lazada: 'dl',
+  swiggy: 'jx',
+  bolt: 'tx',
+  didi: 'xk',
+  taobao: 'qd',
+  noon: 'tf',
+  getir: 'ul',
+  okcupid: 'vm',
+  tantan: 'wh',
+  twilio: 'ee',
+  jiomart: 'aay',
+  michat: 'mc',
+  claude: 'acz',
 };
 
 const toCode = (slug) => SLUG_TO_CODE[slug] || slug;
