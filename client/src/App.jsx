@@ -137,6 +137,14 @@ const isCreatorSubdomain = window.location.hostname.startsWith('creator.');
 // local testing stays on localhost; production behaviour is unchanged.
 const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
+// The SSO bridge does a full-page bounce to recover a session (Safari ITP
+// workaround). It's only worth doing when the visitor is actually heading to an
+// authenticated app route. Firing it on public marketing pages (landing,
+// pricing, blog…) bounced every anonymous visitor through a redirect round-trip
+// — wrecking load performance on exactly the pages that need to be fast.
+const APP_ROUTE_PREFIXES = ['/dashboard', '/numbers', '/credits', '/orders', '/transactions', '/settings', '/api-keys', '/recommend', '/payments'];
+const isAppRoute = () => APP_ROUTE_PREFIXES.some((p) => window.location.pathname.startsWith(p)) || window.location.pathname.startsWith('/admin');
+
 export default function App() {
   const { setAuth, setLoading, accessToken } = useAuthStore();
 
@@ -201,7 +209,7 @@ export default function App() {
       } catch {
         // XHR refresh failed — try SSO bridge (browser navigation sends cookies automatically)
         const tried = sessionStorage.getItem('mainSsoTried');
-        if (!tried && !isCreatorSubdomain && !ssoFailed && !isLocalDev) {
+        if (!tried && !isCreatorSubdomain && !ssoFailed && !isLocalDev && isAppRoute()) {
           sessionStorage.setItem('mainSsoTried', '1');
           const apiBase = import.meta.env.VITE_API_URL || '';
           const currentPath = window.location.pathname + window.location.search

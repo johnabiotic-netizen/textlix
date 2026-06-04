@@ -133,7 +133,16 @@
         triggers.forEach(function (ev) {
           window.addEventListener(ev, loadTawk, { once: true, passive: true });
         });
-        setTimeout(loadTawk, 4000);
+        // Fallback for visitors who never interact: load only after the page is
+        // fully loaded and the main thread is idle, so the widget never competes
+        // with first paint / TBT (engaged users already got it via the triggers).
+        window.addEventListener('load', function () {
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadTawk, { timeout: 12000 });
+          } else {
+            setTimeout(loadTawk, 8000);
+          }
+        });
       })();
     </script>
   </body>
