@@ -41,15 +41,18 @@ const safeEqual = (a, b) => {
   return crypto.timingSafeEqual(A, B);
 };
 
-const verifyWebhookSignature = (rawBody, signature) => {
+// KoraPay computes `x-korapay-signature` as an HMAC-SHA256 of ONLY the `data`
+// object of the payload (JSON-stringified), signed with the SECRET key — NOT
+// the whole request body, and NOT the encryption key. Signing the whole body
+// (our previous behaviour) never matches, so every webhook was rejected and
+// payments only ever completed via the redirect-verify path.
+// Ref: https://developers.korapay.com/docs/webhooks
+const verifyWebhookSignature = (data, signature) => {
   if (!signature) return false;
-  const encKey = process.env.KORAPAY_ENCRYPTION_KEY || '';
   const secKey = process.env.KORAPAY_SECRET_KEY || '';
-  if (!encKey && !secKey) return false;
-  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(String(rawBody), 'utf8');
-  if (encKey && safeEqual(hmac(encKey, body), signature)) return true;
-  if (secKey && safeEqual(hmac(secKey, body), signature)) return true;
-  return false;
+  if (!secKey) return false;
+  const serialized = Buffer.from(JSON.stringify(data ?? {}), 'utf8');
+  return safeEqual(hmac(secKey, serialized), signature);
 };
 
 module.exports = { initializeCharge, verifyCharge, verifyWebhookSignature };

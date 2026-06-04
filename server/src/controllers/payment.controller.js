@@ -251,16 +251,24 @@ exports.korapayInitialize = async (req, res, next) => {
 exports.korapayWebhook = async (req, res, next) => {
   try {
     // Webhook arrives with raw body buffer (see app.js express.raw middleware).
-    // 1. Verify HMAC signature first — reject before touching the DB / network.
+    // Parse first — KoraPay signs only the `data` object, so we need it parsed
+    // to verify. Parsing is side-effect-free; we still verify before acting.
     const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body), 'utf8');
+    let payload;
+    try {
+      payload = JSON.parse(rawBody.toString('utf8'));
+    } catch (e) {
+      logger.warn('KoraPay webhook rejected: malformed JSON');
+      return res.status(400).end();
+    }
+    const { event, data } = payload;
+
+    // Verify HMAC signature over the `data` object before touching DB / network.
     const signature = req.headers['x-korapay-signature'];
-    if (!korapayProvider.verifyWebhookSignature(rawBody, signature)) {
+    if (!korapayProvider.verifyWebhookSignature(data, signature)) {
       logger.warn('KoraPay webhook rejected: invalid or missing signature');
       return res.status(401).end();
     }
-
-    const payload = JSON.parse(rawBody.toString('utf8'));
-    const { event, data } = payload;
 
     if (event === 'charge.success' && data?.reference) {
       // Belt-and-braces: still verify with KoraPay API before crediting.
