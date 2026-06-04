@@ -8,6 +8,14 @@ import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 
+// Service `icon` from the API is a slug (e.g. "netflix"), not an image URL —
+// render an emoji by slug like the other browse pages, falling back to 📱.
+const SERVICE_EMOJIS = {
+  whatsapp: '💬', telegram: '✈️', google: '🔵', facebook: '📘', instagram: '📸',
+  twitter: '🐦', tiktok: '🎵', snapchat: '👻', linkedin: '💼', discord: '🎮',
+  uber: '🚗', amazon: '📦', netflix: '🎬', spotify: '🎵', paypal: '💳',
+};
+
 function rateBadge(sr) {
   if (sr == null) return null;
   const tone = sr >= 90
@@ -103,12 +111,8 @@ export default function AiRecommendPage() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {services.map((s) => (
-                <Card key={s.id} hover onClick={() => setSelected({ slug: s.slug, name: s.name, icon: s.icon })} className="p-4 text-center">
-                  {s.icon ? (
-                    <img src={s.icon} alt="" className="w-8 h-8 mx-auto mb-2 object-contain" />
-                  ) : (
-                    <div className="text-2xl mb-2">📱</div>
-                  )}
+                <Card key={s.id} hover onClick={() => setSelected({ slug: s.slug, name: s.name })} className="p-4 text-center">
+                  <div className="text-2xl mb-2">{SERVICE_EMOJIS[s.slug] || '📱'}</div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{s.name}</p>
                 </Card>
               ))}
