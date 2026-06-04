@@ -35,9 +35,13 @@ const baseTemplate = (title, bodyHtml) => `
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
 
         <!-- Header -->
-        <tr><td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px 16px 0 0;padding:32px 40px;text-align:center;">
-          <span style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px;">TextLix</span>
-          <p style="color:rgba(255,255,255,0.8);margin:6px 0 0;font-size:13px;">Virtual Phone Numbers &amp; SMS Verification</p>
+        <tr><td style="background:linear-gradient(135deg,#0A1831,#1e3c52);border-radius:16px 16px 0 0;padding:34px 40px;text-align:center;">
+          <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+            <tr><td style="background:#ffffff;border-radius:16px;padding:8px;line-height:0;box-shadow:0 2px 10px rgba(0,0,0,0.25);">
+              <img src="https://www.textlix.com/icons/icon-192.png" width="60" height="60" alt="TextLix" style="display:block;width:60px;height:60px;border:0;outline:none;border-radius:12px;" />
+            </td></tr>
+          </table>
+          <p style="color:#b9d3ea;margin:16px 0 0;font-size:13px;font-weight:600;letter-spacing:0.4px;">Virtual Phone Numbers &amp; SMS Verification</p>
         </td></tr>
 
         <!-- Body -->
@@ -47,7 +51,7 @@ const baseTemplate = (title, bodyHtml) => `
 
         <!-- Footer -->
         <tr><td style="background:#f9fafb;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} TextLix · <a href="https://textlix.com" style="color:#6366f1;text-decoration:none;">textlix.com</a></p>
+          <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} TextLix · <a href="https://textlix.com" style="color:#4a7fa7;text-decoration:none;">textlix.com</a></p>
           <p style="margin:8px 0 0;font-size:11px;color:#d1d5db;">You received this email because an account action was performed on TextLix.</p>
         </td></tr>
 
@@ -67,13 +71,13 @@ const sendVerificationEmail = async (email, token) => {
       Thanks for signing up for TextLix! Click the button below to verify your email address and activate your account.
     </p>
     <div style="text-align:center;margin:32px 0;">
-      <a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
+      <a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#1e3c52,#4a7fa7);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
         Verify Email Address
       </a>
     </div>
     <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
       Or copy this link into your browser:<br>
-      <a href="${url}" style="color:#6366f1;word-break:break-all;font-size:12px;">${url}</a>
+      <a href="${url}" style="color:#4a7fa7;word-break:break-all;font-size:12px;">${url}</a>
     </p>
     <p style="margin:16px 0 0;font-size:12px;color:#d1d5db;text-align:center;">This link expires in 24 hours. If you didn't create a TextLix account, you can safely ignore this email.</p>
   `;
@@ -93,13 +97,13 @@ const sendPasswordResetEmail = async (email, token) => {
       We received a request to reset the password for your TextLix account. Click the button below to choose a new password.
     </p>
     <div style="text-align:center;margin:32px 0;">
-      <a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
+      <a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#1e3c52,#4a7fa7);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
         Reset Password
       </a>
     </div>
     <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
       Or copy this link into your browser:<br>
-      <a href="${url}" style="color:#6366f1;word-break:break-all;font-size:12px;">${url}</a>
+      <a href="${url}" style="color:#4a7fa7;word-break:break-all;font-size:12px;">${url}</a>
     </p>
     <p style="margin:16px 0 0;font-size:12px;color:#d1d5db;text-align:center;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
   `;
@@ -127,7 +131,7 @@ const sendSmsNotificationEmail = async (email, { phoneNumber, smsCode, smsConten
     </p>
 
     ${smsCode ? `
-    <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
+    <div style="background:linear-gradient(135deg,#0A1831,#1e3c52);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
       <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:1px;text-transform:uppercase;">Verification Code</p>
       <p style="margin:0;font-size:42px;font-weight:800;color:#fff;letter-spacing:8px;">${safeCode}</p>
     </div>
@@ -138,7 +142,7 @@ const sendSmsNotificationEmail = async (email, { phoneNumber, smsCode, smsConten
     </div>
 
     <div style="text-align:center;">
-      <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
+      <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#1e3c52,#4a7fa7);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
         View in Dashboard
       </a>
     </div>
@@ -161,14 +165,14 @@ const sendPaymentConfirmedEmail = async (email, { credits, amountUSD, newBalance
       Sorry for the delay in crediting your account — it's all sorted now.
     </p>
 
-    <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
+    <div style="background:linear-gradient(135deg,#0A1831,#1e3c52);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
       <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:1px;text-transform:uppercase;">Credits added</p>
       <p style="margin:0;font-size:42px;font-weight:800;color:#fff;">+${escHtml(credits)}</p>
       ${newBalance != null ? `<p style="margin:10px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">New balance: ${escHtml(newBalance)} credits</p>` : ''}
     </div>
 
     <div style="text-align:center;">
-      <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
+      <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#1e3c52,#4a7fa7);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
         Go to Dashboard
       </a>
     </div>
@@ -193,14 +197,14 @@ const sendGoodwillCreditEmail = async (email, { credits, newBalance, name }) => 
       That's on us — thanks for your patience. We've added some bonus credits as a small thank-you.
     </p>
 
-    <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
+    <div style="background:linear-gradient(135deg,#0A1831,#1e3c52);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
       <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:1px;text-transform:uppercase;">Bonus credits</p>
       <p style="margin:0;font-size:42px;font-weight:800;color:#fff;">+${escHtml(credits)}</p>
       ${newBalance != null ? `<p style="margin:10px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">New balance: ${escHtml(newBalance)} credits</p>` : ''}
     </div>
 
     <div style="text-align:center;">
-      <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
+      <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#1e3c52,#4a7fa7);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
         Go to Dashboard
       </a>
     </div>
