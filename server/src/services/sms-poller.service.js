@@ -8,7 +8,11 @@ const smspool = require('../providers/sms/smspool.provider');
 const getsms = require('../providers/sms/getsms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
-const pushService = require('./push.service');
+// Mobile push lives only in the local/mobile build; the web deploy ships without
+// push.service.js. Load it if present, otherwise degrade to a no-op so the
+// web-only deploy never crashes on a missing module.
+let pushService;
+try { pushService = require('./push.service'); } catch (_) { pushService = { sendToUser: () => {} }; }
 const logger = require('../config/logger');
 
 // Build a lock-screen-friendly preview of an SMS code: keeps the first 2
