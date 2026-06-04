@@ -95,7 +95,7 @@ export default function OrderDetailPage() {
           <div className="space-y-2">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{o.smsMessages.length} SMS received (rental)</p>
             {[...o.smsMessages].reverse().map((msg, i) => (
-              <div key={msg.fivesimId || i} className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3">
+              <div key={msg.messageId || i} className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-xs text-gray-400 dark:text-gray-500">{dayjs(msg.receivedAt).format('MMM D HH:mm:ss')}</span>
                   {msg.code && <div className="flex items-center gap-1"><span className="font-mono font-bold text-brand-600 text-sm">{msg.code}</span><CopyBtn text={msg.code} /></div>}

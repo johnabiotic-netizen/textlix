@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const smsMessageSchema = new mongoose.Schema(
   {
     messageId: { type: String, default: null }, // generic dedup key (hash or provider ID)
-    fivesimId: { type: String, default: null }, // legacy: kept for existing 5sim rental orders
     text: { type: String, required: true },
     code: { type: String, default: null },
     receivedAt: { type: Date, default: Date.now },

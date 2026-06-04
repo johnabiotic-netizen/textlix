@@ -8,7 +8,25 @@ const smspool = require('../providers/sms/smspool.provider');
 const getsms = require('../providers/sms/getsms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
+const pushService = require('./push.service');
 const logger = require('../config/logger');
+
+// Build a lock-screen-friendly preview of an SMS code: keeps the first 2
+// digits, masks the rest with bullets. Lets users react to a Telegram code
+// arriving without unlocking, while not leaking the full code.
+function redactCode(code) {
+  if (!code) return '';
+  const s = String(code);
+  if (s.length <= 2) return s;
+  return s.slice(0, 2) + '•'.repeat(Math.min(s.length - 2, 4));
+}
+
+async function _findService(order) {
+  if (!order.serviceId) return null;
+  // Load lazily to avoid circular imports at module init.
+  const Service = require('../models/Service');
+  return Service.findById(order.serviceId, 'name slug');
+}
 
 class SMSPollerService {
   constructor() {
@@ -181,6 +199,17 @@ class SMSPollerService {
       });
     }
 
+    // Push notification fan-out for mobile clients. Best-effort; never throws.
+    _findService(order).then((service) => {
+      const code = sms.code || extractCode(sms.text);
+      const svcLabel = service?.name || 'verification';
+      pushService.sendToUser(order.userId, {
+        title: `Code: ${redactCode(code)}`,
+        body: `${order.phoneNumber} • ${svcLabel}${code ? ` • tap to view` : ''}`,
+        data: { type: 'sms_received', orderId: String(order._id), orderType: 'OTP' },
+      });
+    }).catch(() => {});
+
     this.stopPolling(order._id.toString());
 
     try { await fivesim.finishOrder(order.providerOrderId); } catch (_) {}
@@ -201,17 +230,15 @@ class SMSPollerService {
 
   async _handleRentalSms(order, smsList) {
     // Load existing message IDs to avoid saving duplicates.
-    // Check both messageId (new generic field) and fivesimId (legacy 5sim field).
     const existing = await NumberOrder.findById(order._id, 'smsMessages');
     const seenIds = new Set(
-      (existing?.smsMessages || []).flatMap((m) => [m.messageId, m.fivesimId].filter(Boolean))
+      (existing?.smsMessages || []).map((m) => m.messageId).filter(Boolean)
     );
 
     const newMessages = smsList
       .filter((sms) => sms.id && !seenIds.has(String(sms.id)))
       .map((sms) => ({
         messageId: String(sms.id),
-        fivesimId: String(sms.id), // kept for backwards-compat with existing 5sim rental orders
         text: sms.text,
         code: sms.code || extractCode(sms.text),
         receivedAt: new Date(),
@@ -231,6 +258,18 @@ class SMSPollerService {
         orderType: 'RENTAL',
       });
     }
+
+    // Push notification for the rental — single batched notification per poll
+    // tick. If multiple SMS arrived in the same tick, we surface the count.
+    const latest = newMessages[newMessages.length - 1];
+    const code = latest.code;
+    pushService.sendToUser(order.userId, {
+      title: newMessages.length > 1
+        ? `${newMessages.length} new messages`
+        : (code ? `Code: ${redactCode(code)}` : 'New SMS'),
+      body: `${order.phoneNumber} • rental • tap to view`,
+      data: { type: 'sms_received', orderId: String(order._id), orderType: 'RENTAL' },
+    });
 
     logger.info(`${newMessages.length} rental SMS(es) received for order ${order._id}`);
   }
