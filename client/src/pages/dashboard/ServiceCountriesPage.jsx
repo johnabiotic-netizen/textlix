@@ -14,6 +14,39 @@ const SERVICE_EMOJIS = {
   uber: '🚗', amazon: '📦', netflix: '🎬', spotify: '🎵', paypal: '💳',
 };
 
+function rateBadge(sr) {
+  if (sr == null) return null;
+  const tone = sr >= 90
+    ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+    : sr >= 75
+    ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+    : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${tone}`}>{sr}%</span>;
+}
+
+function CountryCard({ country, mode, onClick, highlight }) {
+  return (
+    <Card hover onClick={onClick} className={`p-5 relative ${highlight ? 'ring-2 ring-brand-500 dark:ring-brand-400' : ''}`}>
+      {highlight && (
+        <span className="absolute -top-2 left-3 bg-brand-600 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full shadow-sm">
+          ★ Top pick
+        </span>
+      )}
+      <div className="flex items-start justify-between mb-3">
+        <span className="text-3xl">{country.flagEmoji}</span>
+        {rateBadge(country.successRate)}
+      </div>
+      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{country.name}</h3>
+      <p className="text-xs font-medium mt-1 text-brand-600">
+        {mode === 'rental' ? `${country.pricePerDay} cr / day` : `From ${country.minPrice} credits`}
+      </p>
+      {highlight && country.availableCount != null && (
+        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">{country.availableCount} numbers in stock</p>
+      )}
+    </Card>
+  );
+}
+
 export default function ServiceCountriesPage({ mode: modeProp }) {
   const { serviceSlug } = useParams();
   const navigate = useNavigate();
@@ -26,10 +59,18 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const countries = (data?.countries || []).filter((c) =>
+  const allCountries = data?.countries || [];
+  const isSearching = search.trim().length > 0;
+
+  const filtered = allCountries.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.code.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Top picks (provider-recommended) only when not actively searching.
+  const recommended = isSearching ? [] : allCountries.filter((c) => c.recommended);
+  // The rest of the grid: when showing top picks, don't repeat them below.
+  const rest = isSearching ? filtered : filtered.filter((c) => !c.recommended);
 
   const serviceName = data?.service?.name || serviceSlug;
   const emoji = SERVICE_EMOJIS[serviceSlug] || '📱';
@@ -75,32 +116,44 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
-      ) : countries.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon="🌍"
           title="No countries available"
           description={search ? `No results for "${search}"` : `${serviceName} is not available for ${mode === 'rental' ? 'rental' : 'OTP'} in any country right now.`}
         />
       ) : (
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {countries.map((country) => (
-            <Card key={country.id} hover onClick={() => handleCountryClick(country.id)} className="p-5">
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-3xl">{country.flagEmoji}</span>
-                {country.successRate != null && (
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${country.successRate >= 90 ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' : country.successRate >= 75 ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'}`}>
-                    {country.successRate}%
-                  </span>
-                )}
+        <div className="space-y-6">
+          {/* Top recommended — highest current success rate */}
+          {recommended.length > 0 && (
+            <div className="space-y-3">
+              <div>
+                <h2 className="font-display font-semibold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                  <span>✨</span> AI Recommended
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Best chance of getting your {serviceName} code — ranked by live success rate</p>
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{country.name}</h3>
-              <p className={`text-xs font-medium mt-1 ${mode === 'otp' ? 'text-brand-600' : 'text-brand-600'}`}>
-                {mode === 'rental'
-                  ? `${country.pricePerDay} cr / day`
-                  : `From ${country.minPrice} credits`}
-              </p>
-            </Card>
-          ))}
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {recommended.map((country) => (
+                  <CountryCard key={country.id} country={country} mode={mode} highlight onClick={() => handleCountryClick(country.id)} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All countries (sorted by success rate) */}
+          {rest.length > 0 && (
+            <div className="space-y-3">
+              {recommended.length > 0 && (
+                <h2 className="font-display font-semibold text-lg text-gray-900 dark:text-white">All countries</h2>
+              )}
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {rest.map((country) => (
+                  <CountryCard key={country.id} country={country} mode={mode} onClick={() => handleCountryClick(country.id)} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -538,12 +538,21 @@ exports.getCountriesForService = async (req, res, next) => {
       const lix2Price = grizzlyPrices?.[c.code] ?? null;
       const lix3Price = lix3Prices?.[c.code] ?? null;
       if (!lix1Price && !lix2Price && !lix3Price) continue;
+
+      // Live success signal from the provider (5sim). Only LIX 1 countries with
+      // numbers in stock carry a rate; LIX 2/3-only or out-of-stock have none.
+      const hasRate = !!(liveData && lix1Price && liveData.totalCount > 0);
+      const successRate = hasRate ? Math.min(100, Math.round(liveData.bestRate * 1000) / 10) : null;
+      const availableCount = hasRate ? liveData.totalCount : null;
+
       result.push({
         id: c._id,
         name: c.name,
         code: c.code,
         flagEmoji: c.flagEmoji,
         minPrice: Math.min(...[lix1Price, lix2Price, lix3Price].filter(Boolean)),
+        successRate,
+        availableCount,
         servers: {
           lix1: { available: !!lix1Price, price: lix1Price },
           lix2: { available: !!lix2Price, price: lix2Price },
@@ -551,7 +560,27 @@ exports.getCountriesForService = async (req, res, next) => {
         },
       });
     }
-    result.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Sort strictly by current success rate (highest first). Countries with a
+    // live rate rank by rate — stock only breaks ties — so the order matches
+    // "highest success rate". Countries without a rate fall below, alphabetically.
+    result.sort((a, b) => {
+      if (a.successRate != null && b.successRate != null) {
+        if (b.successRate !== a.successRate) return b.successRate - a.successRate;
+        return (b.availableCount || 0) - (a.availableCount || 0);
+      }
+      if (a.successRate != null) return -1;
+      if (b.successRate != null) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Flag up to 5 top picks — the highest success rates with numbers in stock.
+    let picks = 0;
+    for (const c of result) {
+      if (picks >= 5) break;
+      if (c.successRate != null && c.availableCount > 0) { c.recommended = true; picks++; }
+    }
+
     success(res, { countries: result, service: { id: svc._id, name: svc.name, slug: svc.slug, icon: svc.icon } });
   } catch (err) {
     next(err);

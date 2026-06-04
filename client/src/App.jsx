@@ -32,6 +32,7 @@ const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const BrowseNumbersPage = lazy(() => import('./pages/dashboard/BrowseNumbersPage'));
 const BrowseByModePage = lazy(() => import('./pages/dashboard/BrowseByModePage'));
 const ServiceCountriesPage = lazy(() => import('./pages/dashboard/ServiceCountriesPage'));
+const AiRecommendPage = lazy(() => import('./pages/dashboard/AiRecommendPage'));
 const CountryServicesPage = lazy(() => import('./pages/dashboard/CountryServicesPage'));
 const ActiveNumbersPage = lazy(() => import('./pages/dashboard/ActiveNumbersPage'));
 const BuyCreditsPage = lazy(() => import('./pages/dashboard/BuyCreditsPage'));
@@ -131,6 +132,10 @@ function scheduleProactiveRefresh(token, refreshFn) {
 }
 
 const isCreatorSubdomain = window.location.hostname.startsWith('creator.');
+// Local dev runs on a different origin than prod, so the cross-domain SSO bridge
+// can't work here — it would just bounce localhost to textlix.com. Skip it so
+// local testing stays on localhost; production behaviour is unchanged.
+const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
 export default function App() {
   const { setAuth, setLoading, accessToken } = useAuthStore();
@@ -196,7 +201,7 @@ export default function App() {
       } catch {
         // XHR refresh failed — try SSO bridge (browser navigation sends cookies automatically)
         const tried = sessionStorage.getItem('mainSsoTried');
-        if (!tried && !isCreatorSubdomain && !ssoFailed) {
+        if (!tried && !isCreatorSubdomain && !ssoFailed && !isLocalDev) {
           sessionStorage.setItem('mainSsoTried', '1');
           const apiBase = import.meta.env.VITE_API_URL || '';
           const currentPath = window.location.pathname + window.location.search
@@ -246,6 +251,7 @@ export default function App() {
           {/* User dashboard */}
           <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/recommend" element={<AiRecommendPage />} />
             <Route path="/numbers" element={<BrowseNumbersPage />} />
             <Route path="/numbers/active" element={<ActiveNumbersPage />} />
             {/* OTP routes */}

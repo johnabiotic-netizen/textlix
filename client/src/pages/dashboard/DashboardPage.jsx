@@ -189,6 +189,22 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* ── AI Recommendation CTA ──────────────────────────────────────────── */}
+      <Link to="/recommend" className="block group">
+        <Card className="p-5 md:p-6 bg-gradient-to-r from-brand-50 to-white dark:from-brand-900/20 dark:to-gray-900 border border-brand-100 dark:border-brand-900/40">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="text-3xl">✨</div>
+              <div>
+                <h3 className="font-display font-semibold text-gray-900 dark:text-white">AI Recommendation</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Pick a service — we’ll find the country with the best chance of getting your code.</p>
+              </div>
+            </div>
+            <span className="shrink-0 text-sm font-semibold text-brand-600 group-hover:underline whitespace-nowrap">Try it →</span>
+          </div>
+        </Card>
+      </Link>
+
       {/* ── Pre-launch welcome bonus (renders only if user is eligible) ────── */}
       <WelcomeBonusCard />
 

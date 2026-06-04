@@ -35,6 +35,9 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-6">
+            <Link to="/recommend" className="flex items-center gap-1 bg-gradient-to-r from-brand-600 to-[#0A1831] text-white px-3 py-1.5 rounded-full text-sm font-semibold hover:opacity-90 transition-opacity">
+              ✨ AI Recommend
+            </Link>
             <Link to="/dashboard" className={navLink('/dashboard')}>Dashboard</Link>
             <Link to="/numbers" className={navLink('/numbers')}>Get Number</Link>
             <Link to="/numbers/active" className={navLink('/numbers/active')}>Active</Link>
@@ -96,6 +99,7 @@ export default function Navbar() {
 
       {menuOpen && (
         <div className="md:hidden border-t border-gray-200 dark:border-gray-800 px-4 py-3 space-y-2 bg-white dark:bg-gray-900">
+          <Link to="/recommend" className="flex items-center gap-1 text-sm font-semibold text-brand-700 dark:text-brand-300 py-2" onClick={() => setMenuOpen(false)}>✨ AI Recommend</Link>
           <Link to="/dashboard" className="block text-sm font-medium text-gray-700 dark:text-gray-300 py-2" onClick={() => setMenuOpen(false)}>Dashboard</Link>
           <Link to="/numbers" className="block text-sm font-medium text-gray-700 dark:text-gray-300 py-2" onClick={() => setMenuOpen(false)}>Get Number</Link>
           <Link to="/numbers/active" className="block text-sm font-medium text-gray-700 dark:text-gray-300 py-2" onClick={() => setMenuOpen(false)}>Active Numbers</Link>
