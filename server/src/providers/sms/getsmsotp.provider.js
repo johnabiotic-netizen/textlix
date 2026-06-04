@@ -76,6 +76,12 @@ const SERVICE_CODE = {
 
 const toServiceCode = (slug) => SERVICE_CODE[slug] || null;
 
+// Reverse map (provider service code → our canonical slug, first slug wins).
+const CODE_TO_SLUG = {};
+for (const [slug, code] of Object.entries(SERVICE_CODE)) {
+  if (!(code in CODE_TO_SLUG)) CODE_TO_SLUG[code] = slug;
+}
+
 const call = async (params) => {
   const { data } = await axios.get(BASE_URL, {
     params: { api_key: process.env.GETSMS_API_KEY, ...params },
@@ -156,6 +162,27 @@ const getOtpPrices = async (serviceSlug) => {
   }
 };
 
+// All services for ONE country, read from the cached full map (no extra API calls).
+// Returns: { [ourSlug]: { cost (USD), count } } or null.
+const getOtpPricesByCountry = async (countryIso) => {
+  const iso = String(countryIso || '').toUpperCase();
+  if (!ISO_TO_COUNTRY_ID[iso]) return null;
+  try {
+    const fullData = await getFullPrices();
+    const countryServices = fullData[iso];
+    if (!countryServices) return null;
+    const result = {};
+    for (const [code, info] of Object.entries(countryServices)) {
+      const slug = CODE_TO_SLUG[code];
+      if (slug && info) result[slug] = info;
+    }
+    return Object.keys(result).length ? result : null;
+  } catch (err) {
+    logger.warn(`GetSMS OTP getOtpPricesByCountry(${countryIso}) failed: ${err.message}`);
+    return null;
+  }
+};
+
 // Buy an OTP number. Returns: { id, phone }
 const getNumber = async (serviceSlug, countryIso) => {
   const code = toServiceCode(serviceSlug);
@@ -190,4 +217,4 @@ const setStatus = async (orderId, status) => {
   }
 };
 
-module.exports = { getOtpPrices, getNumber, getStatus, setStatus, ISO_TO_COUNTRY_ID, COUNTRY_ID_TO_ISO, SERVICE_CODE, toServiceCode };
+module.exports = { getOtpPrices, getOtpPricesByCountry, getNumber, getStatus, setStatus, ISO_TO_COUNTRY_ID, COUNTRY_ID_TO_ISO, SERVICE_CODE, toServiceCode };

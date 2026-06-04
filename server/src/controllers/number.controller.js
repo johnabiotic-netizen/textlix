@@ -59,6 +59,12 @@ const serviceMaxPriceCache = new Map();
  * Returns price + rate data for a service across all countries/operators.
  * Shape: { countrySlug → { maxPrice (USD), bestRate (0-1), totalCount } }
  */
+// Negative-cache TTL: upstream failures (5sim doesn't have the service) get
+// cached as null for 5 min so dead-end services don't get retried on every
+// browse. Without this, ~150+ services with no 5sim coverage block the
+// per-country fan-out by 15s each on cold cache.
+const NEGATIVE_CACHE_TTL = 5 * 60 * 1000;
+
 async function getMaxPrices(serviceSlug) {
   const cached = serviceMaxPriceCache.get(serviceSlug);
   if (cached && cached.expiresAt > Date.now()) return cached.data;
@@ -74,7 +80,6 @@ async function getMaxPrices(serviceSlug) {
       let totalCount = 0;
       for (const opData of Object.values(operators)) {
         if (opData.cost > maxPrice) maxPrice = opData.cost;
-        // 5sim rate can come back as 0-1 decimal or 0-100 percentage; normalise to 0-1
         const rawRate = opData.rate || 0;
         const normRate = rawRate > 1 ? rawRate / 100 : rawRate;
         if (normRate > bestRate) bestRate = normRate;
@@ -89,18 +94,29 @@ async function getMaxPrices(serviceSlug) {
     return result;
   } catch (err) {
     logger.warn(`getMaxPrices failed for ${serviceSlug}:`, err.message);
+    serviceMaxPriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
     return null;
   }
 }
 
-/** Warm price cache for the most popular services on server startup */
+/** Warm price caches on server startup so early users skip the cold fan-out */
 const TOP_SERVICES = ['whatsapp', 'telegram', 'google'];
+// 5sim slug + ISO for the busiest country pages, warmed by country.
+const TOP_COUNTRIES = [['usa', 'US'], ['england', 'GB'], ['germany', 'DE'], ['india', 'IN'], ['russia', 'RU']];
 exports.warmPriceCache = async function warmPriceCache() {
   for (const slug of TOP_SERVICES) {
     try {
       await getMaxPrices(slug);
       await new Promise((r) => setTimeout(r, 300)); // small delay to avoid hammering 5sim
     } catch (_) {}
+  }
+  // Build the GetSMS full map once (otherwise the first country page eats its
+  // cold build) and warm the per-country caches for the busiest countries.
+  try { await getsmsotp.getOtpPricesByCountry('US'); } catch (_) {}
+  for (const [slug, iso] of TOP_COUNTRIES) {
+    try { await get5simCountryPrices(slug); } catch (_) {}
+    try { await getGrizzlyCountryPrices(iso); } catch (_) {}
+    await new Promise((r) => setTimeout(r, 300));
   }
 };
 
@@ -280,6 +296,7 @@ async function get5simHostingPrices(serviceSlug) {
     return result;
   } catch (err) {
     logger.warn(`get5simHostingPrices(${serviceSlug}) failed:`, err.message);
+    hostingPriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
     return null;
   }
 }
@@ -306,6 +323,7 @@ async function getGrizzlyOtpPrices(serviceSlug) {
     return result;
   } catch (err) {
     logger.warn(`getGrizzlyOtpPrices(${serviceSlug}) failed:`, err.message);
+    grizzlyOtpPriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
     return null;
   }
 }
@@ -634,9 +652,91 @@ exports.getCountries = async (req, res, next) => {
   }
 };
 
+// ─── Per-COUNTRY price caches ────────────────────────────────────────────────
+// Building a country's service list used to make ONE provider call PER SERVICE
+// (hundreds of upstream calls on a cold cache). Each provider can return every
+// service for a country in a single call, so we fetch + cache per country.
+const fivesimCountryCache = new Map(); // 5sim slug -> { expiresAt, data: { svcSlug: { maxPrice, bestRate, totalCount } } }
+const grizzlyCountryCache = new Map(); // ISO -> { expiresAt, data: { svcSlug: { cost, count } } }
+const getsmsCountryCache = new Map();  // ISO -> { expiresAt, data: { svcSlug: { cost, count } } }
+
+async function get5simCountryPrices(countrySlug) {
+  const c = fivesimCountryCache.get(countrySlug);
+  if (c && c.expiresAt > Date.now()) return c.data;
+  try {
+    const raw = await fivesim.getPricesByCountry(countrySlug);
+    const byProduct = raw?.[countrySlug] || {};
+    const result = {};
+    for (const [product, operators] of Object.entries(byProduct)) {
+      let maxPrice = 0, bestRate = 0, totalCount = 0;
+      for (const op of Object.values(operators)) {
+        if (op.cost > maxPrice) maxPrice = op.cost;
+        const rawRate = op.rate || 0;
+        const normRate = rawRate > 1 ? rawRate / 100 : rawRate;
+        if (normRate > bestRate) bestRate = normRate;
+        totalCount += op.count || 0;
+      }
+      if (maxPrice > 0) result[product] = { maxPrice, bestRate, totalCount };
+    }
+    fivesimCountryCache.set(countrySlug, { data: result, expiresAt: Date.now() + CACHE_TTL });
+    return result;
+  } catch (err) {
+    logger.warn(`get5simCountryPrices(${countrySlug}) failed: ${err.message}`);
+    fivesimCountryCache.set(countrySlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
+    return null;
+  }
+}
+
+async function getGrizzlyCountryPrices(iso) {
+  const c = grizzlyCountryCache.get(iso);
+  if (c && c.expiresAt > Date.now()) return c.data;
+  try {
+    const data = await grizzlysms.getOtpPricesByCountry(iso);
+    grizzlyCountryCache.set(iso, { data, expiresAt: Date.now() + CACHE_TTL });
+    return data;
+  } catch (err) {
+    logger.warn(`getGrizzlyCountryPrices(${iso}) failed: ${err.message}`);
+    grizzlyCountryCache.set(iso, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
+    return null;
+  }
+}
+
+async function getGetSmsCountryPrices(iso) {
+  const c = getsmsCountryCache.get(iso);
+  if (c && c.expiresAt > Date.now()) return c.data;
+  try {
+    // GetSMS (LIX3) builds a full cross-country map on a cold cache (slow, and
+    // it's the least-covered tier). Cap the wait so it never stalls the page —
+    // if it's not ready, return null now; the in-flight build still populates
+    // the provider cache, so the next load includes LIX3.
+    const data = await Promise.race([
+      getsmsotp.getOtpPricesByCountry(iso),
+      new Promise((r) => setTimeout(() => r(undefined), 1500)),
+    ]);
+    if (data === undefined) return null; // build still in flight — don't cache
+    getsmsCountryCache.set(iso, { data, expiresAt: Date.now() + CACHE_TTL });
+    return data;
+  } catch (err) {
+    logger.warn(`getGetSmsCountryPrices(${iso}) failed: ${err.message}`);
+    getsmsCountryCache.set(iso, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
+    return null;
+  }
+}
+
+// Response-level cache for /numbers/countries/:countryId/services.
+// Keeps repeat hits on the same country instant even between provider-cache windows.
+const countryServicesResponseCache = new Map();
+const COUNTRY_SERVICES_RESPONSE_TTL = 60 * 1000;
+
 exports.getServices = async (req, res, next) => {
   try {
     const { countryId } = req.params;
+
+    const cached = countryServicesResponseCache.get(countryId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return success(res, cached.data);
+    }
+
     const country = await Country.findById(countryId);
     if (!country || !country.isEnabled) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
@@ -649,26 +749,27 @@ exports.getServices = async (req, res, next) => {
       .filter((p) => p.serviceId && p.serviceId.isEnabled)
       .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder);
 
-    // Fetch live prices, raw max-price maps, GrizzlySMS prices, GetSMS OTP prices, and success rates in parallel
-    const [priceResults, liveMaxMaps, grizzlyPriceMaps, lix3PriceMaps, serviceRates, providerRates] = await Promise.all([
-      Promise.all(enabledPricing.map((p) => getChargeCredits(fivesimSlug, p.serviceId.slug, p.finalPrice))),
-      Promise.all(enabledPricing.map((p) => getMaxPrices(p.serviceId.slug))),
-      Promise.all(enabledPricing.map((p) => getGrizzlyOtpPrices(p.serviceId.slug))),
-      Promise.all(enabledPricing.map((p) => getGetSmsOtpPrices(p.serviceId.slug))),
+    // ONE call per provider for the whole country (each cached per country),
+    // instead of one call per service — plus the cached success-rate aggregates.
+    const [fivesimMap, grizzlyMap, getsmsMap, serviceRates, providerRates] = await Promise.all([
+      get5simCountryPrices(fivesimSlug),
+      getGrizzlyCountryPrices(country.code),
+      getGetSmsCountryPrices(country.code),
       getServiceSuccessRates(),
       getServiceRatesByProvider(),
     ]);
 
-    const services = enabledPricing.map((p, i) => {
-      const liveData = liveMaxMaps[i]?.[fivesimSlug];
-      const available = liveMaxMaps[i] != null ? (liveData?.maxPrice > 0) : p.isAvailable;
+    const services = enabledPricing.map((p) => {
+      const slug = p.serviceId.slug;
+      const liveData = fivesimMap ? fivesimMap[slug] : undefined;
+      const available = fivesimMap != null ? (liveData?.maxPrice > 0) : p.isAvailable;
       const fivesimRate = liveData?.bestRate != null ? Math.min(100, Math.round(liveData.bestRate * 1000) / 10) : null;
       const svcId = p.serviceId._id.toString();
       const lix1Rate = fivesimRate ?? providerRates[svcId]?.fivesim ?? serviceRates[svcId] ?? null;
       const lix2Rate = providerRates[svcId]?.grizzlysms ?? serviceRates[svcId] ?? null;
-      const lix1Price = priceResults[i];
-      const lix2Price = grizzlyPriceMaps[i]?.[country.code] ?? null;
-      const lix3Price = lix3PriceMaps[i]?.[country.code] ?? null;
+      const lix1Price = liveData ? Math.ceil(Math.ceil(liveData.maxPrice * 100) * (1 + MARGIN)) : p.finalPrice;
+      const lix2Price = grizzlyMap?.[slug] ? Math.ceil(Math.ceil(grizzlyMap[slug].cost * 100) * (1 + MARGIN)) : null;
+      const lix3Price = getsmsMap?.[slug] ? Math.ceil(Math.ceil(getsmsMap[slug].cost * 100) * (1 + MARGIN)) : null;
       return {
         id: p.serviceId._id,
         name: p.serviceId.name,
@@ -687,7 +788,9 @@ exports.getServices = async (req, res, next) => {
       };
     });
 
-    success(res, { country: { id: country._id, name: country.name, flagEmoji: country.flagEmoji }, services });
+    const payload = { country: { id: country._id, name: country.name, flagEmoji: country.flagEmoji }, services };
+    countryServicesResponseCache.set(countryId, { data: payload, expiresAt: Date.now() + COUNTRY_SERVICES_RESPONSE_TTL });
+    success(res, payload);
   } catch (err) {
     next(err);
   }

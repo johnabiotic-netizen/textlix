@@ -29,6 +29,14 @@ const getPrices = async (product) => {
   return res.data;
 };
 
+// Returns every product for ONE country in a single call (replaces N per-product
+// calls when building a country's service list).
+// Shape: { [country]: { [product]: { [operator]: { cost, count, rate } } } }
+const getPricesByCountry = async (country) => {
+  const res = await api.get(`/guest/prices?country=${country}`);
+  return res.data;
+};
+
 const buyNumber = async (country, operator, product) => {
   const res = await api.get(`/user/buy/activation/${country}/${operator}/${product}`);
   return res.data;
@@ -86,4 +94,4 @@ const getHostingInbox = async (orderId) => {
   }
 };
 
-module.exports = { getCountries, getProducts, getPrices, buyNumber, buyHostingNumber, getHostingPrices, getHostingInbox, checkOrder, cancelOrder, finishOrder, getProfile };
+module.exports = { getCountries, getProducts, getPrices, getPricesByCountry, buyNumber, buyHostingNumber, getHostingPrices, getHostingInbox, checkOrder, cancelOrder, finishOrder, getProfile };

@@ -328,6 +328,13 @@ const SLUG_TO_CODE = {
 
 const toCode = (slug) => SLUG_TO_CODE[slug] || slug;
 
+// Reverse map (provider service code → our canonical slug, first slug wins).
+// Used to turn a by-country price response back into slug-keyed pricing.
+const CODE_TO_SLUG = {};
+for (const [slug, code] of Object.entries(SLUG_TO_CODE)) {
+  if (!(code in CODE_TO_SLUG)) CODE_TO_SLUG[code] = slug;
+}
+
 // ISO-2 → GrizzlySMS numeric country ID (from live getCountries API response)
 const ISO_TO_COUNTRY_ID = {
   UA: 1,   KZ: 2,   CN: 3,   PH: 4,   MM: 5,   ID: 6,   MY: 7,   KE: 8,
@@ -458,6 +465,28 @@ const getOtpPrices = async (service) => {
   return Object.keys(result).length > 0 ? result : null;
 };
 
+/**
+ * Fetch OTP pricing for EVERY service in ONE country in a single call.
+ * Returns { [ourSlug]: { cost (USD), count } } or null.
+ */
+const getOtpPricesByCountry = async (countryIso) => {
+  const countryId = ISO_TO_COUNTRY_ID[String(countryIso || '').toUpperCase()];
+  if (countryId == null) return null;
+  const data = await call({ action: 'getPrices', country: countryId });
+  if (!data || typeof data !== 'object') return null;
+  const countryData = data[String(countryId)] || data[countryId];
+  if (!countryData || typeof countryData !== 'object') return null;
+  const result = {};
+  for (const [code, info] of Object.entries(countryData)) {
+    const slug = CODE_TO_SLUG[code];
+    if (!slug || !info) continue;
+    const cost = Number(info.cost);
+    const count = Number(info.count);
+    if (cost > 0 && count > 0) result[slug] = { cost, count };
+  }
+  return Object.keys(result).length ? result : null;
+};
+
 // ─── OTP activation methods ───────────────────────────────────────────────────
 
 /**
@@ -498,4 +527,4 @@ const setStatus = async (id, status) => {
   }
 };
 
-module.exports = { getRentPrices, getRentNumber, getRentStatus, setRentStatus, getNumber, getStatus, setStatus, getOtpPrices, COUNTRY_ID_TO_ISO, RENT_DAYS, toCode };
+module.exports = { getRentPrices, getRentNumber, getRentStatus, setRentStatus, getNumber, getStatus, setStatus, getOtpPrices, getOtpPricesByCountry, COUNTRY_ID_TO_ISO, RENT_DAYS, toCode };
