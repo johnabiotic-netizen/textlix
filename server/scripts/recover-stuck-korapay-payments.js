@@ -127,7 +127,7 @@ const RESOLVE_MIN_AGE_MS = 30 * 60 * 1000; // 30 minutes
       }
       const settled = await Payment.findOneAndUpdate(
         { _id: p._id, status: 'PENDING' },
-        { $set: { status: 'COMPLETED', completedAt: new Date(), 'metadata.reconciledManually': true } },
+        { $set: { status: 'COMPLETED', completedAt: new Date(), metadata: { ...(p.metadata || {}), reconciledManually: true } } },
         { new: false }
       );
       if (!settled) {
