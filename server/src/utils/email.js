@@ -151,4 +151,36 @@ const sendSmsNotificationEmail = async (email, { phoneNumber, smsCode, smsConten
   });
 };
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail };
+const sendPaymentConfirmedEmail = async (email, { credits, amountUSD, newBalance, name }) => {
+  const dashboardUrl = `${(process.env.FRONTEND_URL || '').trim()}/dashboard`;
+  const greeting = name ? `Hi ${escHtml(name)},` : 'Hi there,';
+  const body = `
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">Payment confirmed — credits added</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;line-height:1.6;">
+      ${greeting} we've confirmed your payment${amountUSD ? ` of <strong style="color:#111827;">$${escHtml(amountUSD)}</strong>` : ''} and added your credits.
+      Sorry for the delay in crediting your account — it's all sorted now.
+    </p>
+
+    <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;padding:28px;text-align:center;margin:0 0 24px;">
+      <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:1px;text-transform:uppercase;">Credits added</p>
+      <p style="margin:0;font-size:42px;font-weight:800;color:#fff;">+${escHtml(credits)}</p>
+      ${newBalance != null ? `<p style="margin:10px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">New balance: ${escHtml(newBalance)} credits</p>` : ''}
+    </div>
+
+    <div style="text-align:center;">
+      <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
+        Go to Dashboard
+      </a>
+    </div>
+    <p style="margin:20px 0 0;font-size:12px;color:#9ca3af;text-align:center;line-height:1.6;">
+      Thank you for using TextLix. If you have any questions about this payment, just reply to this email.
+    </p>
+  `;
+  await sendEmail({
+    to: email,
+    subject: `Payment confirmed — ${credits} credits added to your TextLix account`,
+    html: baseTemplate('Payment confirmed — TextLix', body),
+  });
+};
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail, sendPaymentConfirmedEmail };
