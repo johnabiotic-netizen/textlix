@@ -73,8 +73,8 @@ export default function OrderDetailPage() {
             </div>
           )}
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">Provider</span>
-            <span className="capitalize">{o.provider}</span>
+            <span className="text-gray-500 dark:text-gray-400">Server</span>
+            <span>{o.server || '—'}</span>
           </div>
         </div>
 

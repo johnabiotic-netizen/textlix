@@ -365,6 +365,15 @@ const SERVER_LABEL = {
   getsmsotp: 'LIX 3',
 };
 
+// Convert an order doc to a client-safe shape: never expose the raw upstream
+// provider name — replace it with our own LIX server label.
+function formatOrder(order) {
+  const o = typeof order?.toObject === 'function' ? order.toObject() : { ...order };
+  o.server = SERVER_LABEL[o.provider] || 'LIX 1';
+  delete o.provider;
+  return o;
+}
+
 const RENTAL_DURATION_OPTIONS = [7, 14, 21, 30];
 const RENTAL_DURATION_LABELS = { 7: '1 Week', 14: '2 Weeks', 21: '3 Weeks', 30: '1 Month' };
 
@@ -841,15 +850,21 @@ exports.orderNumber = async (req, res, next) => {
     let providerResponse;
     let usedProvider;
 
+    // User-facing failure message — never leak provider/API names; the real
+    // detail is logged server-side for debugging.
+    const NO_NUMBER_MSG = 'No numbers are available for this service right now. Please try another service or country.';
+
     if (server === 'lix3') {
       const l3Result = await getsmsotp.getNumber(service.slug, country.code).catch((err) => {
-        throw new AppError('PROVIDER_ERROR', 502, `LIX 3 could not get a number: ${err.message}`);
+        logger.warn(`LIX 3 getNumber failed (${country.code}/${service.slug}): ${err.message}`);
+        throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
       });
       providerResponse = { id: l3Result.id, phone: l3Result.phone, price: 0 };
       usedProvider = 'getsmsotp';
     } else if (server === 'lix2') {
       const gzResult = await grizzlysms.getNumber(service.slug, country.code).catch((err) => {
-        throw new AppError('PROVIDER_ERROR', 502, `LIX 2 could not get a number: ${err.message}`);
+        logger.warn(`LIX 2 getNumber failed (${country.code}/${service.slug}): ${err.message}`);
+        throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
       });
       providerResponse = { id: gzResult.id, phone: gzResult.phone, price: 0 };
       usedProvider = 'grizzlysms';
@@ -866,7 +881,7 @@ exports.orderNumber = async (req, res, next) => {
           usedProvider = 'grizzlysms';
         } catch (gzErr) {
           logger.error(`LIX 2 (GrizzlySMS) also failed — ${gzErr.message}`);
-          throw new AppError('PROVIDER_ERROR', 502, `Could not get a number: ${JSON.stringify(fivesimDetail)}`);
+          throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
         }
       }
     }
@@ -952,7 +967,7 @@ exports.getOrder = async (req, res, next) => {
       .populate('countryId', 'name code flagEmoji')
       .populate('serviceId', 'name slug icon');
     if (!order) throw new AppError('NOT_FOUND', 404, 'Order not found');
-    success(res, { order });
+    success(res, { order: formatOrder(order) });
   } catch (err) {
     next(err);
   }
@@ -977,7 +992,7 @@ exports.getActiveOrders = async (req, res, next) => {
       .populate('serviceId', 'name slug icon')
       .sort({ createdAt: -1 });
 
-    success(res, { orders });
+    success(res, { orders: orders.map(formatOrder) });
   } catch (err) {
     next(err);
   }
@@ -1001,7 +1016,7 @@ exports.getOrderHistory = async (req, res, next) => {
       NumberOrder.countDocuments(filter),
     ]);
 
-    success(res, { orders, total, page: p, pages: Math.ceil(total / l) });
+    success(res, { orders: orders.map(formatOrder), total, page: p, pages: Math.ceil(total / l) });
   } catch (err) {
     next(err);
   }
