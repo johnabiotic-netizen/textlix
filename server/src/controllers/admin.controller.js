@@ -10,6 +10,8 @@ const PlatformSettings = require('../models/PlatformSettings');
 const PromoCode = require('../models/PromoCode');
 const { adminAdjustCredits } = require('../services/credit.service');
 const fivesim = require('../providers/sms/fivesim.provider');
+const grizzlysms = require('../providers/sms/grizzlysms.provider');
+const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const smsPoller = require('../services/sms-poller.service');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
@@ -497,8 +499,10 @@ exports.getProviderHealth = async (req, res, next) => {
   try {
     const since1h = new Date(Date.now() - 60 * 60 * 1000);
 
-    const [fivesimBalance, hourlyAgg] = await Promise.all([
+    const [fivesimBalance, grizzlyBalance, getsmsBalance, hourlyAgg] = await Promise.all([
       fivesim.getProfile().then((p) => p?.balance ?? null).catch(() => null),
+      grizzlysms.getBalance().catch(() => null),
+      getsmsotp.getBalance().catch(() => null),
       NumberOrder.aggregate([
         { $match: { provider: '5sim', createdAt: { $gte: since1h }, status: { $in: ['COMPLETED', 'EXPIRED', 'REFUNDED', 'CANCELLED'] } } },
         { $group: { _id: null, total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] } } } },
@@ -516,6 +520,10 @@ exports.getProviderHealth = async (req, res, next) => {
         successRate1h,
         ordersLast1h: hourly.total,
       },
+      // LIX 2 / LIX 3 — balances only (these providers don't expose a live
+      // per-hour success feed the way 5sim does).
+      grizzlysms: { balance: grizzlyBalance },
+      getsmsotp: { balance: getsmsBalance },
     });
   } catch (err) {
     next(err);

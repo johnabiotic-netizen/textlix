@@ -527,4 +527,16 @@ const setStatus = async (id, status) => {
   }
 };
 
-module.exports = { getRentPrices, getRentNumber, getRentStatus, setRentStatus, getNumber, getStatus, setStatus, getOtpPrices, getOtpPricesByCountry, COUNTRY_ID_TO_ISO, RENT_DAYS, toCode };
+// Account balance. SMS-Activate format: "ACCESS_BALANCE:123.45"
+const getBalance = async () => {
+  try {
+    const data = await call({ action: 'getBalance' });
+    const m = String(data ?? '').match(/ACCESS_BALANCE[:=]([0-9.]+)/i);
+    return m ? Number(m[1]) : null;
+  } catch (err) {
+    logger.warn(`GrizzlySMS getBalance failed: ${err.message}`);
+    return null;
+  }
+};
+
+module.exports = { getRentPrices, getRentNumber, getRentStatus, setRentStatus, getNumber, getStatus, setStatus, getOtpPrices, getOtpPricesByCountry, getBalance, COUNTRY_ID_TO_ISO, RENT_DAYS, toCode };

@@ -16,31 +16,28 @@ function ProviderHealth() {
   });
 
   if (isLoading) return <p className="text-sm text-gray-400">Loading...</p>;
-  const p = data?.fivesim;
+  const f = data?.fivesim;
+  const bal = (b) => (b != null ? `$${parseFloat(b).toFixed(2)}` : '—');
+
+  const rows = [
+    { label: '5sim balance', tier: 'LIX 1', value: bal(f?.balance) },
+    { label: 'GrizzlySMS balance', tier: 'LIX 2', value: bal(data?.grizzlysms?.balance) },
+    { label: 'GetSMS balance', tier: 'LIX 3', value: bal(data?.getsmsotp?.balance) },
+  ];
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-500">5sim balance</span>
-        <span className={`font-semibold ${p?.error ? 'text-red-500' : 'text-gray-900'}`}>
-          {p?.error ? 'API Error' : p?.balance != null ? `$${parseFloat(p.balance).toFixed(2)}` : '—'}
-        </span>
-      </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-500">Success rate (1h)</span>
-        <span className="font-semibold">
-          {p?.successRateLastHour != null ? `${p.successRateLastHour}%` : '—'}
-        </span>
-      </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-500">Last order</span>
-        <span className="text-gray-700">{p?.lastOrderAt ? dayjs(p.lastOrderAt).fromNow() : '—'}</span>
-      </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-500">Errors (1h)</span>
-        <span className={`font-semibold ${p?.errorsLastHour > 5 ? 'text-red-500' : 'text-gray-900'}`}>
-          {p?.errorsLastHour ?? '—'}
-        </span>
+      {rows.map((r) => (
+        <div key={r.label} className="flex items-center justify-between text-sm">
+          <span className="text-gray-500">
+            {r.label} <span className="text-xs text-gray-400">({r.tier})</span>
+          </span>
+          <span className="font-semibold text-gray-900">{r.value}</span>
+        </div>
+      ))}
+      <div className="flex items-center justify-between text-sm pt-1 border-t border-gray-100">
+        <span className="text-gray-500">5sim success rate (1h)</span>
+        <span className="font-semibold">{f?.successRate1h != null ? `${f.successRate1h}%` : '—'}</span>
       </div>
     </div>
   );

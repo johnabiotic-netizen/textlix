@@ -217,4 +217,16 @@ const setStatus = async (orderId, status) => {
   }
 };
 
-module.exports = { getOtpPrices, getOtpPricesByCountry, getNumber, getStatus, setStatus, ISO_TO_COUNTRY_ID, COUNTRY_ID_TO_ISO, SERVICE_CODE, toServiceCode };
+// Account balance. SMS-Activate format: "ACCESS_BALANCE:123.45"
+const getBalance = async () => {
+  try {
+    const data = await call({ action: 'getBalance' });
+    const m = String(data ?? '').match(/ACCESS_BALANCE[:=]([0-9.]+)/i);
+    return m ? Number(m[1]) : null;
+  } catch (err) {
+    logger.warn(`GetSMS getBalance failed: ${err.message}`);
+    return null;
+  }
+};
+
+module.exports = { getOtpPrices, getOtpPricesByCountry, getNumber, getStatus, setStatus, getBalance, ISO_TO_COUNTRY_ID, COUNTRY_ID_TO_ISO, SERVICE_CODE, toServiceCode };
