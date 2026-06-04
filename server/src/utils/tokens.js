@@ -1,6 +1,17 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
+// Long-lived rolling refresh window. The session is rotated (fresh token +
+// fresh cookie) on every /auth/refresh, so as long as a user returns within
+// this window the session rolls forward indefinitely — they only get logged
+// out by clearing cookies/cache, an explicit logout, or being continuously
+// absent for the full window. Single source of truth so the JWT expiry and the
+// cookie maxAge can never drift apart (a mismatch would silently log users out).
+// Intentionally NOT read from JWT_REFRESH_EXPIRES_IN — that env var was 7d and
+// would override this, defeating the "stay logged in" guarantee.
+const REFRESH_TOKEN_DAYS = 365;
+const REFRESH_TOKEN_MS = REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000;
+
 const generateAccessToken = (user) => {
   return jwt.sign(
     { userId: user._id, email: user.email, role: user.role },
@@ -16,7 +27,7 @@ const generateRefreshToken = (user, jti) => {
   return jwt.sign(
     { userId: user._id, tokenVersion: user.tokenVersion, jti },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+    { expiresIn: `${REFRESH_TOKEN_DAYS}d` }
   );
 };
 
@@ -41,7 +52,7 @@ const setRefreshCookie = (res, refreshToken) => {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? 'none' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: REFRESH_TOKEN_MS,
     path: '/',
     ...(isProd && { domain: '.textlix.com' }),
   });
