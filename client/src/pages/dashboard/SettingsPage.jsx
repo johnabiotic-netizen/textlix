@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { FiCopy, FiCheck, FiUsers, FiGift } from 'react-icons/fi';
+import { copyToClipboard } from '../../utils/clipboard';
 import { updateMe, changePassword, getReferral } from '../../api/user';
 import useAuthStore from '../../store/authStore';
 import api from '../../api/axios';
@@ -170,9 +171,10 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!referralData?.referralLink) return;
-    navigator.clipboard.writeText(referralData.referralLink);
+    const ok = await copyToClipboard(referralData.referralLink);
+    if (!ok) { toast.error('Copy failed — long-press the link to copy manually'); return; }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

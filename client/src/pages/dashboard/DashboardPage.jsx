@@ -5,6 +5,7 @@ import { RiCoinLine, RiFileCopyLine, RiCheckLine } from 'react-icons/ri';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import toast from 'react-hot-toast';
+import { copyToClipboard } from '../../utils/clipboard';
 import useAuthStore from '../../store/authStore';
 import { getActiveOrders, getOrderHistory, getPublicStats } from '../../api/numbers';
 import { getCreditHistory } from '../../api/payments';
@@ -129,13 +130,13 @@ export default function DashboardPage() {
     ? `${window.location.origin}/register?ref=${user.referralCode}`
     : null;
 
-  const copyReferral = () => {
+  const copyReferral = async () => {
     if (!referralLink) return;
-    navigator.clipboard.writeText(referralLink).then(() => {
-      setCopied(true);
-      toast.success('Referral link copied!');
-      setTimeout(() => setCopied(false), 2500);
-    });
+    const ok = await copyToClipboard(referralLink);
+    if (!ok) { toast.error('Copy failed — long-press the link to copy manually'); return; }
+    setCopied(true);
+    toast.success('Referral link copied!');
+    setTimeout(() => setCopied(false), 2500);
   };
 
   return (

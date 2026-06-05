@@ -6,11 +6,17 @@ import dayjs from 'dayjs';
 import { getOrder } from '../../api/numbers';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import { copyToClipboard } from '../../utils/clipboard';
 
 function CopyBtn({ text }) {
   const [copied, setCopied] = useState(false);
+  const onCopy = async () => {
+    if (!(await copyToClipboard(text))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   return (
-    <button onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+    <button onClick={onCopy}
       className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-800 font-medium">
       {copied ? <FiCheck size={12} /> : <FiCopy size={12} />} {copied ? 'Copied' : 'Copy'}
     </button>

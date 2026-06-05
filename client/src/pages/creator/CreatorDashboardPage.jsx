@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCreatorMe, updateReferralCode } from '../../api/creator';
 import { FiCopy, FiDollarSign, FiUsers, FiTrendingUp, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { copyToClipboard } from '../../utils/clipboard';
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString()}`;
 
@@ -21,9 +22,10 @@ export default function CreatorDashboardPage() {
 
   const c = data;
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(c.referralLink || '');
-    toast.success('Referral link copied!');
+  const copyLink = async () => {
+    const ok = await copyToClipboard(c.referralLink || '');
+    if (ok) toast.success('Referral link copied!');
+    else toast.error('Copy failed — long-press the link to copy manually');
   };
 
   const startEditCode = () => {

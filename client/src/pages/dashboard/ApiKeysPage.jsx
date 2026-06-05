@@ -7,6 +7,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import toast from 'react-hot-toast';
+import { copyToClipboard } from '../../utils/clipboard';
 
 const MAX_KEYS = 5;
 const API_BASE_URL = 'https://textlix.com/api/v1';
@@ -15,13 +16,12 @@ function CopyButton({ text, className = '' }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
+    if (!(await copyToClipboard(text))) {
       toast.error('Copy failed — please select and copy manually');
+      return;
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -181,13 +181,9 @@ export default function ApiKeysPage() {
   };
 
   const handleCopyBaseUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(API_BASE_URL);
-      setCopiedBaseUrl(true);
-      setTimeout(() => setCopiedBaseUrl(false), 2000);
-    } catch {
-      toast.error('Copy failed');
-    }
+    if (!(await copyToClipboard(API_BASE_URL))) { toast.error('Copy failed'); return; }
+    setCopiedBaseUrl(true);
+    setTimeout(() => setCopiedBaseUrl(false), 2000);
   };
 
   return (

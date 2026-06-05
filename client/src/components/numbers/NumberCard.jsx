@@ -5,6 +5,7 @@ import { playNotificationSound } from '../../hooks/useNotificationSound';
 import { cancelOrder } from '../../api/numbers';
 import Button from '../common/Button';
 import toast from 'react-hot-toast';
+import { copyToClipboard } from '../../utils/clipboard';
 import dayjs from 'dayjs';
 
 function useCountdown(expiresAt) {
@@ -26,8 +27,8 @@ function useCountdown(expiresAt) {
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = async () => {
+    if (!(await copyToClipboard(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -196,8 +197,8 @@ export default function NumberCard({ order: initialOrder, onCancel, onSmsReceive
 
 function BigCopyButton({ text }) {
   const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = async () => {
+    if (!(await copyToClipboard(text))) { toast.error('Copy failed — long-press to copy manually'); return; }
     setCopied(true);
     toast.success('Code copied!');
     setTimeout(() => setCopied(false), 2500);
