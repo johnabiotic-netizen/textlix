@@ -70,6 +70,12 @@ export default defineConfig({
         target: process.env.VITE_API_URL || 'http://localhost:5000',
         changeOrigin: true,
       },
+      // Proxy Socket.io (incl. the WebSocket upgrade) to the backend in dev.
+      '/socket.io': {
+        target: process.env.VITE_API_URL || 'http://localhost:5000',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 });

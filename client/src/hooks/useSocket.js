@@ -28,9 +28,14 @@ function getOrCreateSocket(token) {
     socketInstance = null;
   }
 
-  const socket = io(window.location.origin, {
+  // The Socket.io server lives on the API host (e.g. api.textlix.com), NOT the
+  // page origin (www.textlix.com). Connect to VITE_API_URL in prod; locally
+  // VITE_API_URL is unset so we hit the page origin and Vite proxies /socket.io.
+  const socketUrl = import.meta.env.VITE_API_URL || window.location.origin;
+  const socket = io(socketUrl, {
     auth: { token },
     transports: ['websocket', 'polling'],
+    withCredentials: true,
   });
 
   socket.on('sms:received', (data) => {

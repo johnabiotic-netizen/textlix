@@ -108,6 +108,22 @@ export default function SupportWidget() {
 
   useEffect(() => { if (open) scrollToBottom(); }, [open, scrollToBottom]);
 
+  // Polling safety net: while the panel is open, re-sync the thread from the
+  // server every few seconds. Sockets give instant delivery; this guarantees
+  // new agent/AI messages still appear even if a socket connection drops.
+  useEffect(() => {
+    if (!open || !convId) return undefined;
+    const iv = setInterval(async () => {
+      if (loading) return;
+      try {
+        const res = await getMessages(convId);
+        const server = res.data.data.messages || [];
+        setMessages((prev) => (server.length >= prev.length ? server : prev));
+      } catch { /* ignore transient errors */ }
+    }, 7000);
+    return () => clearInterval(iv);
+  }, [open, convId, loading]);
+
   return (
     <>
       {/* Floating launcher */}
