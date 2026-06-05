@@ -23,7 +23,10 @@ export default function CreatorDashboardPage() {
   const c = data;
 
   const copyLink = async () => {
-    const ok = await copyToClipboard(c.referralLink || '');
+    // Copy the SAME value the input shows — c.referralLink is often absent on the
+    // API response, so fall back to the constructed link (was silently copying '').
+    const link = c.referralLink || `${referralBase}${c.referralCode}`;
+    const ok = await copyToClipboard(link);
     if (ok) toast.success('Referral link copied!');
     else toast.error('Copy failed — long-press the link to copy manually');
   };
