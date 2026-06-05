@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -8,6 +8,10 @@ import { useSocket } from '../../hooks/useSocket';
 import { playNotificationSound } from '../../hooks/useNotificationSound';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
+
+// Lazy — the chat widget loads as its own chunk only on the authenticated
+// surface, so it never enters the public/landing bundle or the initial JS.
+const SupportWidget = lazy(() => import('../support/SupportWidget'));
 
 function AnnouncementBanner() {
   const [dismissed, setDismissed] = useState(false);
@@ -86,6 +90,9 @@ export default function UserLayout() {
           </div>
         </div>
       </footer>
+      <Suspense fallback={null}>
+        <SupportWidget />
+      </Suspense>
     </div>
   );
 }

@@ -35,6 +35,7 @@ const auditLogSchema = new mongoose.Schema(
         'ORDER_CREATED',
         'ORDER_CANCELLED',
         'PAYMENT_COMPLETED',
+        'SUPPORT_AI_RESOLVE_PAYMENT',
         'WITHDRAWAL_REQUESTED',
         'WITHDRAWAL_APPROVED',
         'WITHDRAWAL_REJECTED',

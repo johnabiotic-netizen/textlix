@@ -58,6 +58,7 @@ const AdminPricingPage = lazy(() => import('./pages/admin/AdminPricingPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
 const AdminCreatorsPage = lazy(() => import('./pages/admin/AdminCreatorsPage'));
+const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'));
 
 const PageSpinner = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -295,6 +296,7 @@ export default function App() {
             <Route path="promo-codes" element={<AdminPromoCodesPage />} />
             <Route path="reports" element={<AdminReportsPage />} />
             <Route path="creators" element={<AdminCreatorsPage />} />
+            <Route path="support" element={<AdminSupportPage />} />
           </Route>
 
           <Route path="*" element={<div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4"><h1 className="text-3xl font-bold text-gray-900">404 — Page not found</h1><a href="/dashboard" className="text-brand-600 hover:underline">Go to Dashboard</a></div>} />

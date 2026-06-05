@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { FiMenu, FiX, FiLogOut, FiExternalLink } from 'react-icons/fi';
-import { MdDashboard, MdPeople, MdReceipt, MdPayment, MdPhoneAndroid, MdPublic, MdAttachMoney, MdSettings, MdBarChart, MdLocalOffer, MdCampaign } from 'react-icons/md';
+import { MdDashboard, MdPeople, MdReceipt, MdPayment, MdPhoneAndroid, MdPublic, MdAttachMoney, MdSettings, MdBarChart, MdLocalOffer, MdCampaign, MdSupportAgent } from 'react-icons/md';
 import useAuthStore from '../../store/authStore';
 import { logout as logoutApi } from '../../api/auth';
 import toast from 'react-hot-toast';
@@ -19,6 +19,7 @@ const NAV = [
   { to: '/admin/promo-codes', icon: MdLocalOffer, label: 'Promo Codes' },
   { to: '/admin/reports', icon: MdBarChart, label: 'Reports' },
   { to: '/admin/creators', icon: MdCampaign, label: 'Creators' },
+  { to: '/admin/support', icon: MdSupportAgent, label: 'Support' },
 ];
 
 export default function AdminLayout() {

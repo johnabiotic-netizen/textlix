@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { FiMail, FiMessageCircle, FiBook } from 'react-icons/fi';
+import useAuthStore from '../../store/authStore';
 
 export default function SupportPage() {
+  const { user } = useAuthStore();
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 font-body">
       <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -32,13 +34,13 @@ export default function SupportPage() {
                 <FiMessageCircle size={26} className="text-brand-600 dark:text-brand-400" />
               </div>
               <h3 className="font-display font-bold text-lg text-gray-900 dark:text-white mb-2">Live Chat</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Chat with us in real-time. Available 24/7.</p>
-              <button
-                onClick={() => window.Tawk_API?.toggle?.()}
-                className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Chat with our assistant in real-time. Available 24/7 from your dashboard.</p>
+              <Link
+                to={user ? '/dashboard' : '/login'}
+                className="w-full block bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
               >
-                Start Chat
-              </button>
+                {user ? 'Open Chat' : 'Sign in to Chat'}
+              </Link>
             </div>
 
             {/* Email */}

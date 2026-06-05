@@ -386,6 +386,13 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   'rental_price_7day',
   'rental_price_14day',
   'rental_price_30day',
+  // Support chat (AI) config
+  'support_ai_enabled',
+  'support_budget_monthly_usd',
+  'support_escalation_email',
+  'support_kb',
+  'support_faq',
+  'support_business_hours',
 ]);
 
 exports.updateSettings = async (req, res, next) => {
@@ -401,6 +408,8 @@ exports.updateSettings = async (req, res, next) => {
         { upsert: true, new: true }
       );
     }
+    // Support config is cached in-process — refresh so changes take effect now.
+    try { require('../services/support-settings').clearCache(); } catch (_) {}
     success(res, { message: 'Settings updated' });
   } catch (err) {
     next(err);

@@ -11,6 +11,10 @@ const listeners = {
   'sms:received': new Set(),
   'number:expired': new Set(),
   'payment:completed': new Set(),
+  'support:message': new Set(),
+  'support:resolved': new Set(),
+  'support:new': new Set(),
+  'support:escalated': new Set(),
 };
 
 function getOrCreateSocket(token) {
@@ -39,12 +43,70 @@ function getOrCreateSocket(token) {
     listeners['payment:completed'].forEach((cb) => cb(data));
   });
 
+  socket.on('support:message', (data) => {
+    listeners['support:message'].forEach((cb) => cb(data));
+  });
+
+  socket.on('support:resolved', (data) => {
+    listeners['support:resolved'].forEach((cb) => cb(data));
+  });
+
+  socket.on('support:new', (data) => {
+    listeners['support:new'].forEach((cb) => cb(data));
+  });
+
+  socket.on('support:escalated', (data) => {
+    listeners['support:escalated'].forEach((cb) => cb(data));
+  });
+
   socketInstance = socket;
   socketToken = token;
   return socket;
 }
 
 export const getSocket = () => socketInstance;
+
+// Subscribe to live support-chat events (AI/agent replies, resolution). Reuses
+// the same singleton socket — no extra connection. Safe to mount/unmount with
+// the chat panel.
+export const useSupportSocket = (onMessage, onResolved) => {
+  const { accessToken, user } = useAuthStore();
+  const cbRef = useRef({ onMessage, onResolved });
+  useEffect(() => {
+    cbRef.current = { onMessage, onResolved };
+  });
+  useEffect(() => {
+    if (!accessToken || !user) return;
+    const msgCb = (data) => cbRef.current.onMessage?.(data);
+    const resCb = (data) => cbRef.current.onResolved?.(data);
+    getOrCreateSocket(accessToken);
+    listeners['support:message'].add(msgCb);
+    listeners['support:resolved'].add(resCb);
+    return () => {
+      listeners['support:message'].delete(msgCb);
+      listeners['support:resolved'].delete(resCb);
+    };
+  }, [accessToken, user]);
+};
+
+// Admin-side: fires whenever any user sends a new message or a chat escalates.
+// Admins are auto-joined to the admin:support room server-side on connect.
+export const useAdminSupportSocket = (onActivity) => {
+  const { accessToken, user } = useAuthStore();
+  const cbRef = useRef(onActivity);
+  useEffect(() => { cbRef.current = onActivity; });
+  useEffect(() => {
+    if (!accessToken || !user) return;
+    const cb = (data) => cbRef.current?.(data);
+    getOrCreateSocket(accessToken);
+    listeners['support:new'].add(cb);
+    listeners['support:escalated'].add(cb);
+    return () => {
+      listeners['support:new'].delete(cb);
+      listeners['support:escalated'].delete(cb);
+    };
+  }, [accessToken, user]);
+};
 
 export const useSocket = (onSmsReceived, onNumberExpired, onPaymentCompleted) => {
   const { accessToken, user } = useAuthStore();

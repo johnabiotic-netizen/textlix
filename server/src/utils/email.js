@@ -215,4 +215,27 @@ const sendGoodwillCreditEmail = async (email, { credits, newBalance, name }) => 
   });
 };
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail, sendPaymentConfirmedEmail, sendGoodwillCreditEmail };
+// Internal alert to the support inbox when a chat is escalated to a human.
+const sendSupportEscalationEmail = async (to, { conversationId, preview, reason }) => {
+  const adminUrl = `${(process.env.FRONTEND_URL || 'https://www.textlix.com').trim()}/admin/support`;
+  const body = `
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;">A support chat needs a human</h1>
+    <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.6;">
+      The AI assistant handed off a conversation. ${reason ? `Reason: <strong>${escHtml(reason)}</strong>.` : ''}
+    </p>
+    ${preview ? `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:0 0 20px;font-size:13px;color:#374151;">“${escHtml(preview)}”</div>` : ''}
+    <div style="text-align:center;">
+      <a href="${adminUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">
+        Open Support Console
+      </a>
+    </div>
+    <p style="margin:18px 0 0;font-size:12px;color:#9ca3af;text-align:center;">Conversation ID: ${escHtml(conversationId || '')}</p>
+  `;
+  await sendEmail({
+    to,
+    subject: 'Support chat escalated — a customer is waiting',
+    html: baseTemplate('Support escalation — TextLix', body),
+  });
+};
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail, sendPaymentConfirmedEmail, sendGoodwillCreditEmail, sendSupportEscalationEmail };

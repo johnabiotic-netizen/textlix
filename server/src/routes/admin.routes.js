@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const adminController = require('../controllers/admin.controller');
 const adminCreatorController = require('../controllers/admin.creator.controller');
+const adminSupport = require('../controllers/admin.support.controller');
 const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
 const AuditLog = require('../models/AuditLog');
 const { success } = require('../utils/response');
@@ -110,5 +111,15 @@ router.get('/audit-logs', async (req, res, next) => {
     next(err);
   }
 });
+
+// ── Support chat console ──────────────────────────────────────────────────────
+router.get('/support/usage', adminSupport.getUsage);
+router.get('/support/conversations', adminSupport.listConversations);
+router.get('/support/conversations/:id/messages', adminSupport.getMessages);
+router.post('/support/conversations/:id/messages', adminSupport.reply);
+router.post('/support/conversations/:id/assign', adminSupport.assign);
+router.post('/support/conversations/:id/resolve', adminSupport.resolve);
+router.post('/support/conversations/:id/reopen', adminSupport.reopen);
+router.post('/support/conversations/:id/ai-toggle', adminSupport.aiToggle);
 
 module.exports = router;
