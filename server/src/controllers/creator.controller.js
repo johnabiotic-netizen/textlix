@@ -151,7 +151,7 @@ exports.updateBank = async (req, res, next) => {
 // ─── Update referral code ─────────────────────────────────────────────────────
 exports.updateReferralCode = async (req, res, next) => {
   try {
-    const { code } = req.body;
+    const code = req.body.referralCode;
     if (!code) throw new AppError('VALIDATION_ERROR', 400, 'Code is required');
     const clean = code.toUpperCase().replace(/[^A-Z0-9_]/g, '');
     if (clean.length < 3 || clean.length > 20) {
