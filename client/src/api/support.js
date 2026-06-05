@@ -15,6 +15,7 @@ export const adminListConversations = (status = '', page = 1) =>
 export const adminGetMessages = (id) => api.get(`/admin/support/conversations/${id}/messages`);
 export const adminReply = (id, text) => api.post(`/admin/support/conversations/${id}/messages`, { text });
 export const adminAssign = (id) => api.post(`/admin/support/conversations/${id}/assign`);
+export const adminRelease = (id) => api.post(`/admin/support/conversations/${id}/release`);
 export const adminResolve = (id) => api.post(`/admin/support/conversations/${id}/resolve`);
 export const adminReopen = (id) => api.post(`/admin/support/conversations/${id}/reopen`);
 export const adminAiToggle = (id) => api.post(`/admin/support/conversations/${id}/ai-toggle`);

@@ -118,6 +118,7 @@ router.get('/support/conversations', adminSupport.listConversations);
 router.get('/support/conversations/:id/messages', adminSupport.getMessages);
 router.post('/support/conversations/:id/messages', adminSupport.reply);
 router.post('/support/conversations/:id/assign', adminSupport.assign);
+router.post('/support/conversations/:id/release', adminSupport.release);
 router.post('/support/conversations/:id/resolve', adminSupport.resolve);
 router.post('/support/conversations/:id/reopen', adminSupport.reopen);
 router.post('/support/conversations/:id/ai-toggle', adminSupport.aiToggle);

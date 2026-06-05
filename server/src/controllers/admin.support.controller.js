@@ -6,14 +6,15 @@ const { success } = require('../utils/response');
 const support = require('../services/support.service');
 const supportUsage = require('../services/support-usage');
 
-function serializeConversation(c, user) {
+function serializeConversation(c, user, assignedAdminName) {
   return {
     id: c._id,
     userId: c.userId,
     user: user ? { id: user._id, name: user.name, email: user.email } : null,
     status: c.status,
     aiEnabled: c.aiEnabled,
-    assignedAdminId: c.assignedAdminId,
+    assignedAdminId: c.assignedAdminId ? String(c.assignedAdminId) : null,
+    assignedAdminName: assignedAdminName || null,
     lastMessagePreview: c.lastMessagePreview,
     lastMessageAt: c.lastMessageAt,
     unread: c.unreadForAdmin,
@@ -29,6 +30,12 @@ async function loadConversation(id) {
   return convo;
 }
 
+async function adminName(id) {
+  if (!id) return null;
+  const a = await User.findById(id, 'name');
+  return a?.name || 'another agent';
+}
+
 // GET /admin/support/conversations?status=&page=
 exports.listConversations = async (req, res, next) => {
   try {
@@ -41,7 +48,6 @@ exports.listConversations = async (req, res, next) => {
     else if (status === 'human') filter.status = 'HUMAN';
     else if (status === 'ai') filter.status = 'AI';
     else if (status === 'resolved') filter.status = { $in: ['RESOLVED', 'CLOSED'] };
-    // default (no/unknown status) → all
 
     const [convos, total, waitingCount] = await Promise.all([
       SupportConversation.find(filter)
@@ -52,14 +58,19 @@ exports.listConversations = async (req, res, next) => {
       SupportConversation.countDocuments({ status: 'WAITING_HUMAN' }),
     ]);
 
-    const users = await User.find(
-      { _id: { $in: convos.map((c) => c.userId) } },
-      'name email'
-    );
+    const userIds = convos.map((c) => c.userId);
+    const adminIds = convos.map((c) => c.assignedAdminId).filter(Boolean);
+    const [users, admins] = await Promise.all([
+      User.find({ _id: { $in: userIds } }, 'name email'),
+      adminIds.length ? User.find({ _id: { $in: adminIds } }, 'name') : [],
+    ]);
     const userMap = new Map(users.map((u) => [String(u._id), u]));
+    const adminMap = new Map(admins.map((a) => [String(a._id), a.name]));
 
     success(res, {
-      conversations: convos.map((c) => serializeConversation(c, userMap.get(String(c.userId)))),
+      conversations: convos.map((c) =>
+        serializeConversation(c, userMap.get(String(c.userId)), adminMap.get(String(c.assignedAdminId)))
+      ),
       page,
       pages: Math.ceil(total / limit) || 1,
       total,
@@ -70,15 +81,12 @@ exports.listConversations = async (req, res, next) => {
   }
 };
 
-// GET /admin/support/usage — this month's AI spend + deflection rate for the dashboard.
+// GET /admin/support/usage — this month's AI spend + deflection rate.
 exports.getUsage = async (req, res, next) => {
   try {
     const u = await supportUsage.summary();
     const handled = u.conversations + u.deflected;
-    success(res, {
-      ...u,
-      deflectionRate: handled > 0 ? Math.round((u.deflected / handled) * 100) : 0,
-    });
+    success(res, { ...u, deflectionRate: handled > 0 ? Math.round((u.deflected / handled) * 100) : 0 });
   } catch (err) {
     next(err);
   }
@@ -88,14 +96,14 @@ exports.getUsage = async (req, res, next) => {
 exports.getMessages = async (req, res, next) => {
   try {
     const convo = await loadConversation(req.params.id);
-    const [messages, user] = await Promise.all([
+    const [messages, user, assigned] = await Promise.all([
       SupportMessage.find({ conversationId: convo._id }).sort({ createdAt: 1 }),
       User.findById(convo.userId, 'name email creditBalance'),
+      convo.assignedAdminId ? User.findById(convo.assignedAdminId, 'name') : null,
     ]);
-    // Viewing the thread clears the admin unread badge.
     await SupportConversation.findByIdAndUpdate(convo._id, { $set: { unreadForAdmin: 0 } });
     success(res, {
-      conversation: serializeConversation(convo, user),
+      conversation: serializeConversation(convo, user, assigned?.name),
       messages: messages.map((m) => ({
         id: m._id,
         sender: m.sender,
@@ -110,42 +118,81 @@ exports.getMessages = async (req, res, next) => {
   }
 };
 
-// POST /admin/support/conversations/:id/messages — human agent reply.
-exports.reply = async (req, res, next) => {
+// Atomically claim a conversation for the current admin. Succeeds only if it's
+// unclaimed or already mine. Returns the claimed doc, or throws 409 if another
+// agent owns it. This is the lock that guarantees one agent per conversation.
+async function claimFor(convoId, adminId) {
+  const claimed = await SupportConversation.findOneAndUpdate(
+    { _id: convoId, $or: [{ assignedAdminId: null }, { assignedAdminId: adminId }] },
+    { $set: { assignedAdminId: adminId, status: 'HUMAN', aiEnabled: false } },
+    { new: true }
+  );
+  if (!claimed) {
+    const current = await SupportConversation.findById(convoId, 'assignedAdminId');
+    throw new AppError('CONFLICT', 409, `This chat is already being handled by ${await adminName(current?.assignedAdminId)}.`);
+  }
+  return claimed;
+}
+
+// POST /admin/support/conversations/:id/assign — take ownership (claim).
+exports.assign = async (req, res, next) => {
   try {
     const convo = await loadConversation(req.params.id);
-    const text = req.body.text && req.body.text.trim();
-    if (!text) throw new AppError('VALIDATION_ERROR', 400, 'Message cannot be empty');
-
-    await support.appendMessage(convo, { sender: 'AGENT', text, adminId: req.user.userId });
-    await SupportConversation.findByIdAndUpdate(convo._id, {
-      $set: {
-        status: 'HUMAN',
-        aiEnabled: false,
-        assignedAdminId: convo.assignedAdminId || req.user.userId,
-        unreadForAdmin: 0,
-      },
-    });
-
-    support.emitToUser(convo.userId, 'support:message', {
-      conversationId: convo._id,
-      sender: 'AGENT',
-      text,
-    });
-
+    const wasUnassigned = !convo.assignedAdminId;
+    await claimFor(convo._id, req.user.userId);
+    if (wasUnassigned) {
+      support.emitToAdmins('support:claimed', {
+        conversationId: convo._id,
+        adminId: req.user.userId,
+        adminName: await adminName(req.user.userId),
+      });
+    }
     success(res, { ok: true });
   } catch (err) {
     next(err);
   }
 };
 
-// POST /admin/support/conversations/:id/assign — claim the conversation.
-exports.assign = async (req, res, next) => {
+// POST /admin/support/conversations/:id/messages — human agent reply.
+// Replying claims the chat; if someone else already owns it, this is blocked.
+exports.reply = async (req, res, next) => {
   try {
     const convo = await loadConversation(req.params.id);
+    const text = req.body.text && req.body.text.trim();
+    if (!text) throw new AppError('VALIDATION_ERROR', 400, 'Message cannot be empty');
+
+    const wasUnassigned = !convo.assignedAdminId;
+    await claimFor(convo._id, req.user.userId); // 409 if owned by another agent
+
+    if (wasUnassigned) {
+      support.emitToAdmins('support:claimed', {
+        conversationId: convo._id,
+        adminId: req.user.userId,
+        adminName: await adminName(req.user.userId),
+      });
+    }
+
+    await support.appendMessage(convo, { sender: 'AGENT', text, adminId: req.user.userId });
+    await SupportConversation.findByIdAndUpdate(convo._id, { $set: { unreadForAdmin: 0 } });
+
+    support.emitToUser(convo.userId, 'support:message', { conversationId: convo._id, sender: 'AGENT', text });
+    success(res, { ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /admin/support/conversations/:id/release — hand back to the pool.
+exports.release = async (req, res, next) => {
+  try {
+    const convo = await loadConversation(req.params.id);
+    if (convo.assignedAdminId && String(convo.assignedAdminId) !== String(req.user.userId)) {
+      throw new AppError('FORBIDDEN', 403, 'Only the agent handling this chat can release it.');
+    }
     await SupportConversation.findByIdAndUpdate(convo._id, {
-      $set: { assignedAdminId: req.user.userId, status: 'HUMAN', aiEnabled: false },
+      $set: { assignedAdminId: null, status: 'WAITING_HUMAN' },
     });
+    support.emitToAdmins('support:released', { conversationId: convo._id });
     success(res, { ok: true });
   } catch (err) {
     next(err);
@@ -156,19 +203,21 @@ exports.assign = async (req, res, next) => {
 exports.resolve = async (req, res, next) => {
   try {
     const convo = await loadConversation(req.params.id);
-    await SupportConversation.findByIdAndUpdate(convo._id, { $set: { status: 'RESOLVED' } });
+    await SupportConversation.findByIdAndUpdate(convo._id, { $set: { status: 'RESOLVED', assignedAdminId: null } });
     support.emitToUser(convo.userId, 'support:resolved', { conversationId: convo._id });
+    support.emitToAdmins('support:released', { conversationId: convo._id });
     success(res, { ok: true });
   } catch (err) {
     next(err);
   }
 };
 
-// POST /admin/support/conversations/:id/reopen
+// POST /admin/support/conversations/:id/reopen — back to the pool for anyone.
 exports.reopen = async (req, res, next) => {
   try {
     const convo = await loadConversation(req.params.id);
-    await SupportConversation.findByIdAndUpdate(convo._id, { $set: { status: 'HUMAN' } });
+    await SupportConversation.findByIdAndUpdate(convo._id, { $set: { status: 'WAITING_HUMAN', assignedAdminId: null } });
+    support.emitToAdmins('support:released', { conversationId: convo._id });
     success(res, { ok: true });
   } catch (err) {
     next(err);

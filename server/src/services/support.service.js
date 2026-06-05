@@ -67,22 +67,35 @@ async function escalate(conversation, reason) {
     reason: set.escalationReason || conversation.escalationReason,
   });
 
-  // Best-effort email alert (added in the email util; no-op/log if absent).
-  try {
-    const { sendSupportEscalationEmail } = require('../utils/email');
-    if (sendSupportEscalationEmail) {
-      const to = process.env.SUPPORT_ESCALATION_EMAIL || process.env.ADMIN_EMAIL;
-      if (to) {
-        sendSupportEscalationEmail(to, {
-          conversationId: String(conversation._id),
-          preview: conversation.lastMessagePreview,
-          reason: set.escalationReason,
-        }).catch((err) => logger.warn('Support escalation email failed:', err.message));
-      }
-    }
-  } catch (_) {
-    /* email util not extended yet — ignore */
+  // Email every human agent — but only on the FIRST escalation, so follow-up
+  // messages on an already-waiting chat don't re-spam the whole team.
+  if (set.escalatedAt) {
+    notifyAllAdmins(conversation, set.escalationReason).catch((err) =>
+      logger.warn('Support escalation email failed:', err.message)
+    );
   }
+}
+
+// Notify all support humans (every admin) that a chat needs a person. Recipients
+// are all admin accounts plus the optional SUPPORT_ESCALATION_EMAIL inbox.
+async function notifyAllAdmins(conversation, reason) {
+  let recipients = [];
+  try {
+    const User = require('../models/User');
+    const admins = await User.find({ role: 'ADMIN', isBanned: { $ne: true } }, 'email');
+    recipients = admins.map((a) => a.email).filter(Boolean);
+  } catch (_) {}
+  const extra = process.env.SUPPORT_ESCALATION_EMAIL || process.env.ADMIN_EMAIL;
+  if (extra) recipients.push(extra);
+  recipients = [...new Set(recipients.map((e) => String(e).toLowerCase()))];
+  if (!recipients.length) return;
+
+  const { sendSupportEscalationEmail } = require('../utils/email');
+  await sendSupportEscalationEmail(recipients, {
+    conversationId: String(conversation._id),
+    preview: conversation.lastMessagePreview,
+    reason,
+  });
 }
 
 // Entry point for an inbound USER message. Persists it, notifies admins, then

@@ -8,11 +8,13 @@ import {
   adminGetMessages,
   adminReply,
   adminAssign,
+  adminRelease,
   adminResolve,
   adminReopen,
   adminAiToggle,
 } from '../../api/support';
 import { useAdminSupportSocket } from '../../hooks/useSocket';
+import useAuthStore from '../../store/authStore';
 
 const FILTERS = [
   { key: 'waiting', label: 'Needs human' },
@@ -64,6 +66,7 @@ function CostStrip() {
 
 function Thread({ conversationId, onChanged }) {
   const qc = useQueryClient();
+  const { user } = useAuthStore();
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -82,14 +85,22 @@ function Thread({ conversationId, onChanged }) {
   const convo = data?.conversation;
   const messages = data?.messages || [];
 
+  // Claim-lock state: one agent owns a conversation at a time.
+  const meId = String(user?.id || '');
+  const owner = convo?.assignedAdminId ? String(convo.assignedAdminId) : null;
+  const mine = owner && owner === meId;
+  const lockedByOther = owner && !mine;
+
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['adminSupportThread', conversationId] });
     onChanged?.();
   };
 
+  const errMsg = (e) => e?.response?.data?.error?.message;
+
   const act = async (fn, ok) => {
     try { await fn(conversationId); toast.success(ok); refresh(); }
-    catch { toast.error('Action failed'); }
+    catch (e) { toast.error(errMsg(e) || 'Action failed'); refresh(); }
   };
 
   const send = async (e) => {
@@ -99,7 +110,7 @@ function Thread({ conversationId, onChanged }) {
     setReply('');
     setSending(true);
     try { await adminReply(conversationId, text); refresh(); }
-    catch { toast.error('Reply failed'); }
+    catch (e2) { toast.error(errMsg(e2) || 'Reply failed'); refresh(); }
     finally { setSending(false); }
   };
 
@@ -113,15 +124,24 @@ function Thread({ conversationId, onChanged }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <StatusBadge status={convo?.status} />
-          {convo?.status !== 'RESOLVED' && (
-            <button onClick={() => act(adminAssign, 'Assigned to you')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">Take over</button>
+          {lockedByOther ? (
+            <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap">🔒 {convo?.assignedAdminName || 'Another agent'}</span>
+          ) : (
+            <>
+              {convo?.status !== 'RESOLVED' && !owner && (
+                <button onClick={() => act(adminAssign, 'You took this chat')} className="text-xs px-2.5 py-1 rounded-lg bg-brand-600 text-white hover:bg-brand-700">Take over</button>
+              )}
+              {mine && (
+                <button onClick={() => act(adminRelease, 'Released back to the queue')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">Release</button>
+              )}
+              <button onClick={() => act(adminAiToggle, convo?.aiEnabled ? 'AI off' : 'AI on')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">
+                {convo?.aiEnabled ? 'Disable AI' : 'Enable AI'}
+              </button>
+              {convo?.status === 'RESOLVED'
+                ? <button onClick={() => act(adminReopen, 'Reopened')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">Reopen</button>
+                : <button onClick={() => act(adminResolve, 'Resolved')} className="text-xs px-2.5 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700">Resolve</button>}
+            </>
           )}
-          <button onClick={() => act(adminAiToggle, convo?.aiEnabled ? 'AI off' : 'AI on')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">
-            {convo?.aiEnabled ? 'Disable AI' : 'Enable AI'}
-          </button>
-          {convo?.status === 'RESOLVED'
-            ? <button onClick={() => act(adminReopen, 'Reopened')} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">Reopen</button>
-            : <button onClick={() => act(adminResolve, 'Resolved')} className="text-xs px-2.5 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700">Resolve</button>}
         </div>
       </div>
 
@@ -148,16 +168,22 @@ function Thread({ conversationId, onChanged }) {
         })}
       </div>
 
-      {/* Reply */}
-      <form onSubmit={send} className="flex items-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-        <input
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          placeholder="Reply as support… (sending takes over from AI)"
-          className="flex-1 text-sm bg-gray-100 dark:bg-gray-800 dark:text-white rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-brand-500"
-        />
-        <button type="submit" disabled={!reply.trim() || sending} className="text-sm font-medium px-4 py-2 rounded-full bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">Send</button>
-      </form>
+      {/* Reply — locked to one agent at a time */}
+      {lockedByOther ? (
+        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-amber-600 dark:text-amber-400">
+          🔒 {convo?.assignedAdminName || 'Another agent'} is handling this chat — only they can reply.
+        </div>
+      ) : (
+        <form onSubmit={send} className="flex items-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+          <input
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            placeholder={owner ? 'Reply as support…' : 'Reply to take this chat…'}
+            className="flex-1 text-sm bg-gray-100 dark:bg-gray-800 dark:text-white rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <button type="submit" disabled={!reply.trim() || sending} className="text-sm font-medium px-4 py-2 rounded-full bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">Send</button>
+        </form>
+      )}
     </div>
   );
 }
@@ -222,7 +248,10 @@ export default function AdminSupportPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{c.lastMessagePreview || '—'}</p>
               <div className="flex items-center justify-between mt-1">
                 <span className="text-[10px] text-gray-300">{dayjs(c.lastMessageAt).format('MMM D, HH:mm')}</span>
-                {c.unread > 0 && <span className="text-[10px] bg-red-500 text-white rounded-full px-1.5">{c.unread}</span>}
+                <div className="flex items-center gap-1.5">
+                  {c.assignedAdminName && <span className="text-[10px] text-amber-600 dark:text-amber-400 truncate max-w-[7rem]">🔒 {c.assignedAdminName}</span>}
+                  {c.unread > 0 && <span className="text-[10px] bg-red-500 text-white rounded-full px-1.5">{c.unread}</span>}
+                </div>
               </div>
             </button>
           ))}

@@ -15,6 +15,8 @@ const listeners = {
   'support:resolved': new Set(),
   'support:new': new Set(),
   'support:escalated': new Set(),
+  'support:claimed': new Set(),
+  'support:released': new Set(),
 };
 
 function getOrCreateSocket(token) {
@@ -59,6 +61,14 @@ function getOrCreateSocket(token) {
     listeners['support:escalated'].forEach((cb) => cb(data));
   });
 
+  socket.on('support:claimed', (data) => {
+    listeners['support:claimed'].forEach((cb) => cb(data));
+  });
+
+  socket.on('support:released', (data) => {
+    listeners['support:released'].forEach((cb) => cb(data));
+  });
+
   socketInstance = socket;
   socketToken = token;
   return socket;
@@ -101,9 +111,13 @@ export const useAdminSupportSocket = (onActivity) => {
     getOrCreateSocket(accessToken);
     listeners['support:new'].add(cb);
     listeners['support:escalated'].add(cb);
+    listeners['support:claimed'].add(cb);
+    listeners['support:released'].add(cb);
     return () => {
       listeners['support:new'].delete(cb);
       listeners['support:escalated'].delete(cb);
+      listeners['support:claimed'].delete(cb);
+      listeners['support:released'].delete(cb);
     };
   }, [accessToken, user]);
 };
