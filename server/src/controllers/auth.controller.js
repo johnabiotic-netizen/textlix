@@ -470,14 +470,23 @@ exports.mainSsoExchange = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /auth/sso/creator — bridge session from main domain to creator subdomain
+// GET /auth/sso/creator — bridge session from main domain to creator subdomain.
+// If the visitor has no main-domain session, we can't bridge anything — so send
+// them to the main login with a redirect back to THIS bridge. After they sign in
+// (which sets the .textlix.com cookie), the main login bounces them straight back
+// here, the cookie is now present, and the bridge completes. Without this they'd
+// just land back on the creator login page — a silent dead-end.
+const CREATOR_SSO_LOGIN_REDIRECT =
+  'https://www.textlix.com/login?redirect=' +
+  encodeURIComponent('https://api.textlix.com/api/v1/auth/sso/creator');
+
 exports.creatorSsoInit = async (req, res, next) => {
   try {
     const token = req.cookies.refreshToken;
-    if (!token) return res.redirect('https://creator.textlix.com/login');
+    if (!token) return res.redirect(CREATOR_SSO_LOGIN_REDIRECT);
     const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(payload.userId);
-    if (!user) return res.redirect('https://creator.textlix.com/login');
+    if (!user) return res.redirect(CREATOR_SSO_LOGIN_REDIRECT);
     // Short-lived (90s) SSO token
     const ssoToken = jwt.sign(
       { userId: user._id, type: 'creator_sso' },
@@ -485,7 +494,7 @@ exports.creatorSsoInit = async (req, res, next) => {
       { expiresIn: '90s' }
     );
     return res.redirect(`https://creator.textlix.com/dashboard?sso=${ssoToken}`);
-  } catch { return res.redirect('https://creator.textlix.com/login'); }
+  } catch { return res.redirect(CREATOR_SSO_LOGIN_REDIRECT); }
 };
 
 // POST /auth/sso/exchange — exchange SSO token for a real session

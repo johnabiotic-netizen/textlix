@@ -55,7 +55,15 @@ export default function LoginPage() {
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
   const redirectParam = new URLSearchParams(window.location.search).get('redirect');
-  const safeRedirect = redirectParam?.endsWith('.textlix.com/dashboard') ? redirectParam : null;
+  // Strict allowlist — only our own dashboards or the SSO bridge endpoints, never
+  // an arbitrary URL (open-redirect guard). The creator SSO bridge is allowed so a
+  // logged-out creator gets sent here to sign in, then bounced back through the
+  // bridge to land authenticated on creator.textlix.com.
+  const isSafeRedirect = (url) =>
+    !!url &&
+    (url.endsWith('.textlix.com/dashboard') ||
+      /^https:\/\/api\.textlix\.com\/api\/v1\/auth\/sso\//.test(url));
+  const safeRedirect = isSafeRedirect(redirectParam) ? redirectParam : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
