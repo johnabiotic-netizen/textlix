@@ -6,7 +6,10 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, default: null },
     name: { type: String, required: true, trim: true },
     avatar: { type: String, default: null },
-    role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
+    role: { type: String, enum: ['USER', 'ADMIN', 'AGENT'], default: 'USER' },
+    // For AGENT accounts: which admin-panel sections they can access (e.g.
+    // ['support']). Admins implicitly have everything. Editable by admins.
+    permissions: { type: [String], default: [] },
     creditBalance: { type: Number, default: 0, min: 0 },
     isEmailVerified: { type: Boolean, default: false },
     isBanned: { type: Boolean, default: false },

@@ -19,3 +19,8 @@ export const adminRelease = (id) => api.post(`/admin/support/conversations/${id}
 export const adminResolve = (id) => api.post(`/admin/support/conversations/${id}/resolve`);
 export const adminReopen = (id) => api.post(`/admin/support/conversations/${id}/reopen`);
 export const adminAiToggle = (id) => api.post(`/admin/support/conversations/${id}/ai-toggle`);
+
+// ── Support agents (admin) ────────────────────────────────────────────────────
+export const adminListAgents = () => api.get('/admin/agents');
+export const adminCreateAgent = (data) => api.post('/admin/agents', data);
+export const adminUpdateAgent = (id, data) => api.patch(`/admin/agents/${id}`, data);

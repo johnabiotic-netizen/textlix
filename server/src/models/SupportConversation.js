@@ -23,6 +23,8 @@ const supportConversationSchema = new mongoose.Schema(
     unreadForAdmin: { type: Number, default: 0 },
     escalatedAt: { type: Date, default: null },
     escalationReason: { type: String, default: null },
+    // The agent/admin who resolved it (null for AI auto-resolve) — agent stats.
+    resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
   },
   { timestamps: true }
 );

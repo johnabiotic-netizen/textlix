@@ -59,6 +59,7 @@ const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
 const AdminCreatorsPage = lazy(() => import('./pages/admin/AdminCreatorsPage'));
 const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'));
+const AdminAgentsPage = lazy(() => import('./pages/admin/AdminAgentsPage'));
 
 const PageSpinner = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -77,7 +78,7 @@ function AdminRoute({ children }) {
   const { user, isLoading } = useAuthStore();
   if (isLoading) return <PageSpinner />;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'ADMIN') return <Navigate to="/dashboard" replace />;
+  if (user.role !== 'ADMIN' && user.role !== 'AGENT') return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -297,6 +298,7 @@ export default function App() {
             <Route path="reports" element={<AdminReportsPage />} />
             <Route path="creators" element={<AdminCreatorsPage />} />
             <Route path="support" element={<AdminSupportPage />} />
+            <Route path="agents" element={<AdminAgentsPage />} />
           </Route>
 
           <Route path="*" element={<div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4"><h1 className="text-3xl font-bold text-gray-900">404 — Page not found</h1><a href="/dashboard" className="text-brand-600 hover:underline">Go to Dashboard</a></div>} />

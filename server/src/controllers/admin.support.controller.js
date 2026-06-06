@@ -223,7 +223,7 @@ exports.resolve = async (req, res, next) => {
   try {
     const convo = await loadConversation(req.params.id);
     // Resolving re-arms the AI so the user gets Ada again next time they write in.
-    await SupportConversation.findByIdAndUpdate(convo._id, { $set: { status: 'RESOLVED', assignedAdminId: null, aiEnabled: true } });
+    await SupportConversation.findByIdAndUpdate(convo._id, { $set: { status: 'RESOLVED', assignedAdminId: null, aiEnabled: true, resolvedBy: req.user.userId } });
     support.emitToUser(convo.userId, 'support:resolved', { conversationId: convo._id });
     support.emitToAdmins('support:released', { conversationId: convo._id });
     success(res, { ok: true });

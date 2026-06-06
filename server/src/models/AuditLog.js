@@ -29,6 +29,8 @@ const auditLogSchema = new mongoose.Schema(
         'ADMIN_DELETE_USER',
         'ADMIN_ADJUST_CREDITS',
         'ADMIN_UPDATE_SETTINGS',
+        'ADMIN_CREATE_AGENT',
+        'ADMIN_UPDATE_AGENT',
         'ADMIN_CREATE_PROMO',
         'ADMIN_UPDATE_PROMO',
         'ADMIN_DELETE_PROMO',

@@ -24,6 +24,7 @@ const formatUser = (user) => ({
   name: user.name,
   avatar: user.avatar,
   role: user.role,
+  permissions: user.permissions || [],
   creditBalance: user.creditBalance,
   isEmailVerified: user.isEmailVerified,
   provider: user.provider,

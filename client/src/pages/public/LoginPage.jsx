@@ -78,7 +78,7 @@ export default function LoginPage() {
       setAuth(user, accessToken);
       toast.success(`Welcome back, ${user.name}!`);
       if (safeRedirect) { window.location.href = safeRedirect; return; }
-      navigate(user.role === 'ADMIN' ? '/admin' : '/dashboard');
+      navigate(user.role === 'ADMIN' ? '/admin' : user.role === 'AGENT' ? '/admin/support' : '/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Login failed');
     } finally {
@@ -98,7 +98,7 @@ export default function LoginPage() {
           {twoFAState ? (
             <TwoFAStep
               tempToken={twoFAState.tempToken}
-              onSuccess={(user, token) => { setAuth(user, token); if (safeRedirect) { window.location.href = safeRedirect; } else { navigate('/dashboard'); } }}
+              onSuccess={(user, token) => { setAuth(user, token); if (safeRedirect) { window.location.href = safeRedirect; } else { navigate(user.role === 'ADMIN' ? '/admin' : user.role === 'AGENT' ? '/admin/support' : '/dashboard'); } }}
             />
           ) : (
             <>

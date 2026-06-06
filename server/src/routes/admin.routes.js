@@ -3,7 +3,8 @@ const rateLimit = require('express-rate-limit');
 const adminController = require('../controllers/admin.controller');
 const adminCreatorController = require('../controllers/admin.creator.controller');
 const adminSupport = require('../controllers/admin.support.controller');
-const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
+const adminAgents = require('../controllers/admin.agents.controller');
+const { authenticate, requireSupportStaff, adminSectionGuard } = require('../middleware/auth.middleware');
 const AuditLog = require('../models/AuditLog');
 const { success } = require('../utils/response');
 
@@ -16,7 +17,7 @@ const adminLimiter = rateLimit({
   message: { success: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Slow down' } },
 });
 
-router.use(authenticate, requireAdmin, adminLimiter);
+router.use(authenticate, requireSupportStaff, adminLimiter, adminSectionGuard);
 
 router.get('/dashboard', adminController.getDashboard);
 
@@ -122,5 +123,10 @@ router.post('/support/conversations/:id/release', adminSupport.release);
 router.post('/support/conversations/:id/resolve', adminSupport.resolve);
 router.post('/support/conversations/:id/reopen', adminSupport.reopen);
 router.post('/support/conversations/:id/ai-toggle', adminSupport.aiToggle);
+
+// ── Support agents (admin-only; enforced by adminSectionGuard) ────────────────
+router.get('/agents', adminAgents.list);
+router.post('/agents', adminAgents.create);
+router.patch('/agents/:id', adminAgents.update);
 
 module.exports = router;
