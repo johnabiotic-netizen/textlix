@@ -106,7 +106,10 @@ function Thread({ conversationId, onChanged }) {
   const convo = data?.conversation;
 
   // Claim-lock state: one agent owns a conversation at a time.
-  const meId = String(user?.id || '');
+  // `/user/me` (page-load bootstrap) returns `_id`; login returns `id`. Accept
+  // either so ownership (mine) survives a refresh — otherwise the agent who just
+  // claimed a chat gets locked out of their own conversation.
+  const meId = String(user?.id || user?._id || '');
   const owner = convo?.assignedAdminId ? String(convo.assignedAdminId) : null;
   const mine = owner && owner === meId;
   const lockedByOther = owner && !mine;
