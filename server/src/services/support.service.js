@@ -103,6 +103,18 @@ async function notifyAllAdmins(conversation, reason) {
 // The AI service is loaded via a guarded require so this works before Phase 2
 // ships support-ai.service.js (same pattern as the optional push.service).
 async function handleUserMessage(conversation, text) {
+  // If the user comes back after a resolved/closed chat, reopen it fresh with
+  // the AI back in charge. A human helping once shouldn't sideline Ada forever —
+  // she steps aside only while a human is ACTIVELY handling the conversation.
+  if (conversation.status === 'RESOLVED' || conversation.status === 'CLOSED') {
+    conversation.status = 'AI';
+    conversation.aiEnabled = true;
+    conversation.assignedAdminId = null;
+    await SupportConversation.findByIdAndUpdate(conversation._id, {
+      $set: { status: 'AI', aiEnabled: true, assignedAdminId: null },
+    });
+  }
+
   const userMsg = await appendMessage(conversation, { sender: 'USER', text });
 
   emitToAdmins('support:new', {
