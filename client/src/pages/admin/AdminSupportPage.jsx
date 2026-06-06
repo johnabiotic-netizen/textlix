@@ -90,6 +90,8 @@ function Thread({ conversationId, onChanged }) {
   const owner = convo?.assignedAdminId ? String(convo.assignedAdminId) : null;
   const mine = owner && owner === meId;
   const lockedByOther = owner && !mine;
+  const canTakeOver = lockedByOther && convo?.staleClaim; // assigned agent went idle
+  const fullyLocked = lockedByOther && !convo?.staleClaim;
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['adminSupportThread', conversationId] });
@@ -124,8 +126,13 @@ function Thread({ conversationId, onChanged }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <StatusBadge status={convo?.status} />
-          {lockedByOther ? (
+          {fullyLocked ? (
             <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap">🔒 {convo?.assignedAdminName || 'Another agent'}</span>
+          ) : canTakeOver ? (
+            <>
+              <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap">⌛ {convo?.assignedAdminName || 'Agent'} idle</span>
+              <button onClick={() => act(adminAssign, 'You took over the chat')} className="text-xs px-2.5 py-1 rounded-lg bg-amber-500 text-white hover:bg-amber-600">Take over</button>
+            </>
           ) : (
             <>
               {convo?.status !== 'RESOLVED' && !owner && (
@@ -168,8 +175,8 @@ function Thread({ conversationId, onChanged }) {
         })}
       </div>
 
-      {/* Reply — locked to one agent at a time */}
-      {lockedByOther ? (
+      {/* Reply — locked to one agent, unless their claim has gone stale */}
+      {fullyLocked ? (
         <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-amber-600 dark:text-amber-400">
           🔒 {convo?.assignedAdminName || 'Another agent'} is handling this chat — only they can reply.
         </div>
@@ -178,7 +185,7 @@ function Thread({ conversationId, onChanged }) {
           <input
             value={reply}
             onChange={(e) => setReply(e.target.value)}
-            placeholder={owner ? 'Reply as support…' : 'Reply to take this chat…'}
+            placeholder={canTakeOver ? 'Reply to take over this chat…' : owner ? 'Reply as support…' : 'Reply to take this chat…'}
             className="flex-1 text-sm bg-gray-100 dark:bg-gray-800 dark:text-white rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-brand-500"
           />
           <button type="submit" disabled={!reply.trim() || sending} className="text-sm font-medium px-4 py-2 rounded-full bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">Send</button>

@@ -17,6 +17,7 @@ async function loadAll() {
         'support_budget_monthly_usd',
         'support_business_hours',
         'support_auto_resolve_minutes',
+        'support_takeover_minutes',
       ],
     },
   });

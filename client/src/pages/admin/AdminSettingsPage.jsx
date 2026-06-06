@@ -206,6 +206,16 @@ export default function AdminSettingsPage() {
           max={1440}
         />
 
+        <SettingField
+          label="Agent takeover after (minutes)"
+          description="If the assigned agent hasn't replied for this long while the user waits, another agent can take the chat over."
+          value={form.support_takeover_minutes ?? 5}
+          onChange={set('support_takeover_minutes')}
+          type="number"
+          min={1}
+          max={120}
+        />
+
         <div className="py-4 border-b border-gray-100">
           <p className="text-sm font-medium text-gray-900 mb-1">Knowledge Base</p>
           <p className="text-xs text-gray-400 mb-2">Plain text added to the AI's system prompt — pricing, policies, how-tos. Update answers with no redeploy.</p>

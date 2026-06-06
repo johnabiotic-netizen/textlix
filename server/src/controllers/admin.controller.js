@@ -394,6 +394,7 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   'support_faq',
   'support_business_hours',
   'support_auto_resolve_minutes',
+  'support_takeover_minutes',
 ]);
 
 exports.updateSettings = async (req, res, next) => {
