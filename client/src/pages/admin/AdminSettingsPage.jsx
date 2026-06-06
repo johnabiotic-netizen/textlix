@@ -196,6 +196,16 @@ export default function AdminSettingsPage() {
           onChange={set('support_escalation_email')}
         />
 
+        <SettingField
+          label="Auto-resolve after (minutes)"
+          description="Close a chat after this many minutes of user silence. They reopen it instantly by messaging again. 0 = never auto-close."
+          value={form.support_auto_resolve_minutes ?? 30}
+          onChange={set('support_auto_resolve_minutes')}
+          type="number"
+          min={0}
+          max={1440}
+        />
+
         <div className="py-4 border-b border-gray-100">
           <p className="text-sm font-medium text-gray-900 mb-1">Knowledge Base</p>
           <p className="text-xs text-gray-400 mb-2">Plain text added to the AI's system prompt — pricing, policies, how-tos. Update answers with no redeploy.</p>

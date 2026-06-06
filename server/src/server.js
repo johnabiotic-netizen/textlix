@@ -7,6 +7,7 @@ const { setIO } = require('./config/io');
 const smsPoller = require('./services/sms-poller.service');
 const expiryJob = require('./jobs/number-expiry.job');
 const cleanupJob = require('./jobs/sms-cleanup.job');
+const supportCleanupJob = require('./jobs/support-cleanup.job');
 const logger = require('./config/logger');
 
 // ── Startup env validation ────────────────────────────────────────────────────
@@ -72,6 +73,7 @@ const start = async () => {
   // Start cron jobs
   expiryJob.start();
   cleanupJob.start();
+  supportCleanupJob.start();
 
   server.listen(PORT, () => {
     logger.info(`TextLix server running on port ${PORT}`);

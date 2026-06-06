@@ -18,6 +18,7 @@ const supportConversationSchema = new mongoose.Schema(
     aiEnabled: { type: Boolean, default: true },
     lastMessagePreview: { type: String, default: '' },
     lastMessageAt: { type: Date, default: Date.now },
+    lastSender: { type: String, default: null }, // USER | AI | AGENT | SYSTEM — for idle auto-resolve
     unreadForUser: { type: Number, default: 0 },
     unreadForAdmin: { type: Number, default: 0 },
     escalatedAt: { type: Date, default: null },

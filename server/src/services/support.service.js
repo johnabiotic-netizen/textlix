@@ -41,7 +41,7 @@ async function appendMessage(conversation, { sender, text, adminId = null, meta 
 
   const unreadField = sender === 'USER' ? 'unreadForAdmin' : 'unreadForUser';
   await SupportConversation.findByIdAndUpdate(conversation._id, {
-    $set: { lastMessagePreview: String(text).slice(0, PREVIEW_LEN), lastMessageAt: new Date() },
+    $set: { lastMessagePreview: String(text).slice(0, PREVIEW_LEN), lastMessageAt: new Date(), lastSender: sender },
     $inc: { [unreadField]: 1 },
   });
 

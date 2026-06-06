@@ -16,6 +16,7 @@ async function loadAll() {
         'support_faq',
         'support_budget_monthly_usd',
         'support_business_hours',
+        'support_auto_resolve_minutes',
       ],
     },
   });
