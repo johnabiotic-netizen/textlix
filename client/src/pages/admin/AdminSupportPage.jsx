@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
+import { playNotificationSound, playMessageSound } from '../../hooks/useNotificationSound';
 import {
   adminGetUsage,
   adminListConversations,
@@ -84,6 +85,20 @@ function Thread({ conversationId, onChanged }) {
 
   const convo = data?.conversation;
   const messages = data?.messages || [];
+
+  // Ding when a new USER reply lands in the conversation you're viewing.
+  const lastUserMsgRef = useRef(null);
+  let lastUserId = null;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].sender === 'USER') { lastUserId = String(messages[i].id); break; }
+  }
+  useEffect(() => { lastUserMsgRef.current = null; }, [conversationId]); // reset on switch
+  useEffect(() => {
+    if (lastUserId && lastUserMsgRef.current && lastUserMsgRef.current !== lastUserId) {
+      playMessageSound();
+    }
+    lastUserMsgRef.current = lastUserId;
+  }, [lastUserId]);
 
   // Claim-lock state: one agent owns a conversation at a time.
   const meId = String(user?.id || '');
@@ -207,9 +222,11 @@ export default function AdminSupportPage() {
   });
 
   // Live refresh of the queue + cost strip on any new/escalated activity.
-  useAdminSupportSocket(() => {
+  useAdminSupportSocket((data, event) => {
     qc.invalidateQueries({ queryKey: ['adminSupportList'] });
     qc.invalidateQueries({ queryKey: ['adminSupportUsage'] });
+    qc.invalidateQueries({ queryKey: ['adminSupportThread'] }); // refresh the open thread instantly
+    if (event === 'support:escalated') playNotificationSound(); // a new chat needs a human
   });
 
   const conversations = data?.conversations || [];

@@ -8,6 +8,7 @@ import {
   markRead,
 } from '../../api/support';
 import { useSupportSocket } from '../../hooks/useSocket';
+import { playMessageSound } from '../../hooks/useNotificationSound';
 
 // Label shown above each message bubble.
 const SENDER_LABEL = { AI: 'Assistant', AGENT: 'Support', SYSTEM: '' };
@@ -43,8 +44,11 @@ export default function SupportWidget() {
       if (convId && String(data.conversationId) !== String(convId)) return;
       if (open) {
         pushMessage({ sender: data.sender, text: data.text });
+        // Ding even when open if the tab is in the background.
+        if (typeof document !== 'undefined' && document.hidden) playMessageSound();
       } else {
         setUnread((u) => u + 1);
+        playMessageSound(); // panel minimized — let them know a reply arrived
       }
     },
     (data) => {

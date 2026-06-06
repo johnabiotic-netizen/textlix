@@ -19,9 +19,9 @@ const setupSocket = (io) => {
   io.on('connection', (socket) => {
     const room = `user:${socket.userId}`;
     socket.join(room);
-    // Admins additionally join a shared room so the support console receives
-    // new-message / escalation events for every user's conversation.
-    if (socket.userRole === 'ADMIN') socket.join('admin:support');
+    // Admins and support agents join a shared room so the support console
+    // receives new-message / escalation events for every user's conversation.
+    if (socket.userRole === 'ADMIN' || socket.userRole === 'AGENT') socket.join('admin:support');
     logger.debug(`Socket connected: ${socket.id} -> ${room}`);
 
     socket.on('disconnect', () => {

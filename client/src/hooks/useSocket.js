@@ -112,18 +112,14 @@ export const useAdminSupportSocket = (onActivity) => {
   useEffect(() => { cbRef.current = onActivity; });
   useEffect(() => {
     if (!accessToken || !user) return;
-    const cb = (data) => cbRef.current?.(data);
     getOrCreateSocket(accessToken);
-    listeners['support:new'].add(cb);
-    listeners['support:escalated'].add(cb);
-    listeners['support:claimed'].add(cb);
-    listeners['support:released'].add(cb);
-    return () => {
-      listeners['support:new'].delete(cb);
-      listeners['support:escalated'].delete(cb);
-      listeners['support:claimed'].delete(cb);
-      listeners['support:released'].delete(cb);
-    };
+    const events = ['support:new', 'support:escalated', 'support:claimed', 'support:released'];
+    const pairs = events.map((ev) => {
+      const fn = (data) => cbRef.current?.(data, ev);
+      listeners[ev].add(fn);
+      return [ev, fn];
+    });
+    return () => pairs.forEach(([ev, fn]) => listeners[ev].delete(fn));
   }, [accessToken, user]);
 };
 
