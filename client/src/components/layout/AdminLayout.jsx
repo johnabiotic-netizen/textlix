@@ -6,6 +6,7 @@ import useAuthStore from '../../store/authStore';
 import { logout as logoutApi } from '../../api/auth';
 import toast from 'react-hot-toast';
 import Logo from '../common/Logo';
+import ErrorBoundary from '../common/ErrorBoundary';
 
 // `perm` is the section key checked against an agent's permissions. Admins see
 // everything. `adminOnly` items (agent management) are never shown to agents.
@@ -131,7 +132,9 @@ export default function AdminLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <Outlet />
+          <ErrorBoundary resetKey={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

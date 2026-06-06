@@ -71,6 +71,8 @@ function Thread({ conversationId, onChanged }) {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
 
+  const lastUserMsgRef = useRef(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ['adminSupportThread', conversationId],
     queryFn: () => adminGetMessages(conversationId).then((r) => r.data.data),
@@ -78,20 +80,16 @@ function Thread({ conversationId, onChanged }) {
     refetchInterval: 8000,
   });
 
-  if (!conversationId) {
-    return <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Select a conversation</div>;
-  }
-  if (isLoading) return <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Loading…</div>;
-
-  const convo = data?.conversation;
+  // Compute the latest USER message id (data may be undefined pre-load → null).
   const messages = data?.messages || [];
-
-  // Ding when a new USER reply lands in the conversation you're viewing.
-  const lastUserMsgRef = useRef(null);
   let lastUserId = null;
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].sender === 'USER') { lastUserId = String(messages[i].id); break; }
   }
+
+  // Hooks must run on EVERY render — keep them above the early returns below,
+  // otherwise the hook count changes between "no ticket" and "ticket open"
+  // and React crashes the page (blank screen).
   useEffect(() => { lastUserMsgRef.current = null; }, [conversationId]); // reset on switch
   useEffect(() => {
     if (lastUserId && lastUserMsgRef.current && lastUserMsgRef.current !== lastUserId) {
@@ -99,6 +97,13 @@ function Thread({ conversationId, onChanged }) {
     }
     lastUserMsgRef.current = lastUserId;
   }, [lastUserId]);
+
+  if (!conversationId) {
+    return <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Select a conversation</div>;
+  }
+  if (isLoading) return <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Loading…</div>;
+
+  const convo = data?.conversation;
 
   // Claim-lock state: one agent owns a conversation at a time.
   const meId = String(user?.id || '');

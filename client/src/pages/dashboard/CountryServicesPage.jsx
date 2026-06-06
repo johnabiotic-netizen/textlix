@@ -11,6 +11,11 @@ import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import Input from '../../components/common/Input';
 
+// LIX 3 (get-sms.com activations) is temporarily unavailable: their OTP endpoint
+// issues numbers but never delivers codes. Hidden from selection until they
+// confirm a fix. Backend is untouched — flip this back to true to re-enable.
+const LIX3_ENABLED = false;
+
 export default function CountryServicesPage({ mode: modeProp }) {
   const { countryId } = useParams();
   const navigate = useNavigate();
@@ -96,7 +101,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
     if (!match) return;
     const lix1Avail = match.servers?.lix1?.available;
     const lix2Avail = match.servers?.lix2?.available;
-    const lix3Avail = match.servers?.lix3?.available;
+    const lix3Avail = LIX3_ENABLED && match.servers?.lix3?.available;
     if (!(lix1Avail || lix2Avail || lix3Avail)) return;
 
     didAutoOpenOtp.current = true;
@@ -287,7 +292,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
               {filteredServices.map((service) => {
                 const lix1Avail = service.servers?.lix1?.available;
                 const lix2Avail = service.servers?.lix2?.available;
-                const lix3Avail = service.servers?.lix3?.available;
+                const lix3Avail = LIX3_ENABLED && service.servers?.lix3?.available;
                 const anyAvail = lix1Avail || lix2Avail || lix3Avail;
                 return (
                   <Card
@@ -397,20 +402,20 @@ export default function CountryServicesPage({ mode: modeProp }) {
                 </button>
 
                 <button
-                  onClick={() => setSelectedServer('lix3')}
-                  disabled={!selectedService.servers?.lix3?.available}
+                  onClick={() => LIX3_ENABLED && setSelectedServer('lix3')}
+                  disabled={!LIX3_ENABLED || !selectedService.servers?.lix3?.available}
                   className={`p-3 rounded-xl border-2 text-left transition-all ${
                     selectedServer === 'lix3' ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
-                  } ${!selectedService.servers?.lix3?.available ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  } ${!LIX3_ENABLED || !selectedService.servers?.lix3?.available ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded">LIX 3</span>
-                    {selectedServer === 'lix3' && <FiCheckCircle size={13} className="text-emerald-600" />}
+                    {LIX3_ENABLED && selectedServer === 'lix3' && <FiCheckCircle size={13} className="text-emerald-600" />}
                   </div>
                   <p className="font-mono-num font-bold text-emerald-700 dark:text-emerald-300">
-                    {selectedService.servers?.lix3?.price ?? '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
+                    {LIX3_ENABLED ? (selectedService.servers?.lix3?.price ?? '—') : '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Server 3</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{LIX3_ENABLED ? 'Server 3' : 'Unavailable'}</p>
                 </button>
               </div>
             </div>
