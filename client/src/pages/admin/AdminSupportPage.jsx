@@ -77,7 +77,7 @@ function Thread({ conversationId, onChanged }) {
     queryKey: ['adminSupportThread', conversationId],
     queryFn: () => adminGetMessages(conversationId).then((r) => r.data.data),
     enabled: !!conversationId,
-    refetchInterval: 8000,
+    refetchInterval: 20000, // sockets deliver instantly; this is just a safety net
   });
 
   // Compute the latest USER message id (data may be undefined pre-load → null).
@@ -226,7 +226,7 @@ export default function AdminSupportPage() {
   const { data } = useQuery({
     queryKey: ['adminSupportList', filter],
     queryFn: () => adminListConversations(filter).then((r) => r.data.data),
-    refetchInterval: 12000,
+    refetchInterval: 20000, // socket events already refresh this; safety-net poll
   });
 
   // Live refresh of the queue + cost strip on any new/escalated activity.

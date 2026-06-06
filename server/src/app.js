@@ -17,6 +17,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 const passport = require('./config/passport');
 
 const authRoutes = require('./routes/auth.routes');
@@ -79,12 +80,28 @@ app.use(cookieParser());
 // Passport
 app.use(passport.initialize());
 
-// General rate limit
+// General rate limit.
+// Key authenticated requests by USER id so users sharing one public IP (mobile
+// carrier-grade NAT, or Cloudflare's edge) each get their own budget instead of
+// fighting over a single bucket. Unauthenticated requests key on the real client
+// IP via Cloudflare's CF-Connecting-IP header (req.ip can be a proxy hop).
+const rateLimitKey = (req) => {
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith('Bearer ')) {
+    try {
+      const payload = jwt.verify(auth.slice(7), process.env.JWT_ACCESS_SECRET);
+      if (payload?.userId) return `user:${payload.userId}`;
+    } catch (_) { /* invalid/expired — fall through to IP keying */ }
+  }
+  return `ip:${req.headers['cf-connecting-ip'] || req.ip}`;
+};
+
 const generalLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000'),
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
 });
 app.use('/api', generalLimiter);
 

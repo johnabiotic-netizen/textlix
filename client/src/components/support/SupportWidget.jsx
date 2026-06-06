@@ -124,7 +124,7 @@ export default function SupportWidget() {
         const server = res.data.data.messages || [];
         setMessages((prev) => (server.length >= prev.length ? server : prev));
       } catch { /* ignore transient errors */ }
-    }, 7000);
+    }, 15000); // sockets deliver instantly; this poll only covers dropped connections
     return () => clearInterval(iv);
   }, [open, convId, loading]);
 
