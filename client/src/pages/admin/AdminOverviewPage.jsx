@@ -39,6 +39,23 @@ function ProviderHealth() {
         <span className="text-gray-500">5sim success rate (1h)</span>
         <span className="font-semibold">{f?.successRate1h != null ? `${f.successRate1h}%` : '—'}</span>
       </div>
+
+      {data?.successByProvider?.length > 0 && (
+        <div className="pt-3 mt-2 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 mb-2">Success rate by provider (since launch)</p>
+          {data.successByProvider.map((p) => (
+            <div key={p.provider} className="flex items-center justify-between text-sm py-1">
+              <span className="text-gray-600">{p.provider}</span>
+              <span className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">{p.successful}/{p.orders - p.pending} orders</span>
+                <span className={`font-semibold tabular-nums ${p.successRate == null ? 'text-gray-400' : p.successRate >= 70 ? 'text-green-600' : p.successRate >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
+                  {p.successRate != null ? `${p.successRate}%` : '—'}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

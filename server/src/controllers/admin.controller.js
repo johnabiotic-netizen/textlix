@@ -506,17 +506,47 @@ exports.exportTransactions = async (req, res, next) => {
 
 // ─── Provider health ──────────────────────────────────────────────────────────
 
+// An order "succeeded" if it ever received a code: COMPLETED, has an smsCode, or
+// (rentals) has at least one stored message.
+const ORDER_SUCCEEDED = {
+  $or: [
+    { $eq: ['$status', 'COMPLETED'] },
+    { $ne: ['$smsCode', null] },
+    { $gt: [{ $size: { $ifNull: ['$smsMessages', []] } }, 0] },
+  ],
+};
+
+const PROVIDER_LABELS = {
+  '5sim': '5sim', fivesim: '5sim', grizzlysms: 'GrizzlySMS', getsms: 'GetSMS',
+  getsmsotp: 'GetSMS', smspool: 'SMSPool', smsactivate: 'SMS-Activate',
+};
+
 exports.getProviderHealth = async (req, res, next) => {
   try {
     const since1h = new Date(Date.now() - 60 * 60 * 1000);
 
-    const [fivesimBalance, grizzlyBalance, getsmsBalance, hourlyAgg] = await Promise.all([
+    const [fivesimBalance, grizzlyBalance, getsmsBalance, hourlyAgg, providerAgg] = await Promise.all([
       fivesim.getProfile().then((p) => p?.balance ?? null).catch(() => null),
       grizzlysms.getBalance().catch(() => null),
       getsmsotp.getBalance().catch(() => null),
       NumberOrder.aggregate([
-        { $match: { provider: '5sim', createdAt: { $gte: since1h }, status: { $in: ['COMPLETED', 'EXPIRED', 'REFUNDED', 'CANCELLED'] } } },
+        { $match: { provider: 'fivesim', createdAt: { $gte: since1h }, status: { $in: ['COMPLETED', 'EXPIRED', 'REFUNDED', 'CANCELLED'] } } },
         { $group: { _id: null, total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] } } } },
+      ]),
+      // Success rate per provider since launch. Denominator excludes orders
+      // still in-flight (ACTIVE with no code yet) so the rate reflects decided
+      // outcomes, not pending ones.
+      NumberOrder.aggregate([
+        { $match: { createdAt: { $gte: LAUNCH_DATE } } },
+        {
+          $group: {
+            _id: '$provider',
+            orders: { $sum: 1 },
+            successful: { $sum: { $cond: [ORDER_SUCCEEDED, 1, 0] } },
+            pending: { $sum: { $cond: [{ $and: [{ $eq: ['$status', 'ACTIVE'] }, { $not: [ORDER_SUCCEEDED] }] }, 1, 0] } },
+          },
+        },
+        { $sort: { orders: -1 } },
       ]),
     ]);
 
@@ -525,16 +555,22 @@ exports.getProviderHealth = async (req, res, next) => {
       ? Math.round((hourly.completed / hourly.total) * 1000) / 10
       : null;
 
+    const successByProvider = providerAgg.map((p) => {
+      const decided = p.orders - p.pending;
+      return {
+        provider: PROVIDER_LABELS[p._id] || p._id || 'unknown',
+        orders: p.orders,
+        successful: p.successful,
+        pending: p.pending,
+        successRate: decided > 0 ? Math.round((p.successful / decided) * 1000) / 10 : null,
+      };
+    });
+
     success(res, {
-      fivesim: {
-        balance: fivesimBalance,
-        successRate1h,
-        ordersLast1h: hourly.total,
-      },
-      // LIX 2 / LIX 3 — balances only (these providers don't expose a live
-      // per-hour success feed the way 5sim does).
+      fivesim: { balance: fivesimBalance, successRate1h, ordersLast1h: hourly.total },
       grizzlysms: { balance: grizzlyBalance },
       getsmsotp: { balance: getsmsBalance },
+      successByProvider,
     });
   } catch (err) {
     next(err);
