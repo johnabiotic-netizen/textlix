@@ -226,14 +226,32 @@ exports.korapayInitialize = async (req, res, next) => {
       status: 'PENDING',
     });
 
-    const charge = await korapayProvider.initializeCharge({
-      reference: payment._id.toString(),
-      amountNGN,
-      email: user.email,
-      name: user.name || user.email,
-      redirectUrl: `${process.env.FRONTEND_URL}/payments/verify`,
-      notificationUrl: `${process.env.SERVER_URL}/api/v1/payments/korapay/webhook`,
-    });
+    let charge;
+    try {
+      charge = await korapayProvider.initializeCharge({
+        reference: payment._id.toString(),
+        amountNGN,
+        email: user.email,
+        name: user.name || user.email,
+        redirectUrl: `${process.env.FRONTEND_URL}/payments/verify`,
+        notificationUrl: `${process.env.SERVER_URL}/api/v1/payments/korapay/webhook`,
+      });
+    } catch (err) {
+      // KoraPay (or its Cloudflare edge) is unreachable / erroring. Don't leak a
+      // raw 500 — mark this attempt FAILED and return a clear, actionable
+      // message. Crypto runs on a separate provider, so point users there.
+      await Payment.findByIdAndUpdate(payment._id, { status: 'FAILED' }).catch(() => {});
+      const status = err.response?.status;
+      logger.error(`KoraPay initialize failed for ${payment._id}: ${status || err.code || ''} ${err.message}`);
+      const upstreamDown = !err.response || status >= 500 || status === 429;
+      throw new AppError(
+        'PROVIDER_ERROR',
+        503,
+        upstreamDown
+          ? 'Card and bank transfer payments are temporarily unavailable — our payment partner is having a brief outage. Please try again in a few minutes, or pay with crypto (USDT, BTC, ETH), which is working normally.'
+          : "We couldn't start your card payment. Please try again, or pay with crypto instead."
+      );
+    }
 
     payment.externalId = charge.reference || payment._id.toString();
     await payment.save();
@@ -397,6 +415,23 @@ async function maybeAwardCreatorCommission(userId, amountUSD, paymentId) {
 }
 
 // ─── Payment history ──────────────────────────────────────────────────────────
+
+// Provider-agnostic "look up my payment by id" — used by the mobile verify
+// screen for crypto, where there's no client-side re-verify path (webhook is
+// the only source of truth). KoraPay flows still use /korapay/verify which
+// additionally re-confirms with the provider.
+exports.getMyPayment = async (req, res, next) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
+    if (!payment) throw new AppError('NOT_FOUND', 404, 'Payment not found');
+    if (payment.userId.toString() !== req.user.userId.toString()) {
+      throw new AppError('FORBIDDEN', 403, 'Access denied');
+    }
+    success(res, { payment });
+  } catch (err) {
+    next(err);
+  }
+};
 
 exports.getHistory = async (req, res, next) => {
   try {
