@@ -264,8 +264,8 @@ export default function VirtualNumberLandingPage() {
             <div className="grid sm:grid-cols-3 gap-4 mb-8">
               {[
                 { label: 'Starter', usd: '$2', credits: '200 credits', note: 'Perfect for a quick test' },
-                { label: 'Standard', usd: '$10', credits: '1,150 credits', note: '+150 bonus credits', popular: true },
-                { label: 'Pro', usd: '$25', credits: '3,000 credits', note: '+500 bonus credits' },
+                { label: 'Standard', usd: '$10', credits: '1,000 credits', note: '+20% with code LAUNCH10', popular: true },
+                { label: 'Pro', usd: '$25', credits: '2,500 credits', note: '+20% with code LAUNCH10' },
               ].map((pkg) => (
                 <div
                   key={pkg.label}
