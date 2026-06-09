@@ -10,6 +10,7 @@ const BASE_URL = 'https://get-sms.com/api/v2/rent/rent_number.php';
 // (e.g. http://user:pass@host:port). Unset → direct (no behavior change).
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const _getsmsProxyAgent = process.env.GETSMS_PROXY_URL ? new HttpsProxyAgent(process.env.GETSMS_PROXY_URL) : null;
+logger.info(`GetSMS init: proxy ${_getsmsProxyAgent ? 'ENABLED via ' + String(process.env.GETSMS_PROXY_URL).split('@').pop() : 'DISABLED (direct)'}`);
 
 // Rental durations: minimum is 1 week (API only supports week/month)
 const DURATION_MAP = {
@@ -160,11 +161,17 @@ const COUNTRY_CODE_MAP = {
 const toProviderCountry = (iso) => COUNTRY_CODE_MAP[iso] || iso;
 
 const call = async (params) => {
-  const { data } = await axios.get(BASE_URL, {
-    params: { userkey: process.env.GETSMS_API_KEY, ...params },
-    timeout: 30000,
-    ...(_getsmsProxyAgent ? { httpsAgent: _getsmsProxyAgent, proxy: false } : {}),
-  });
+  let data;
+  try {
+    ({ data } = await axios.get(BASE_URL, {
+      params: { userkey: process.env.GETSMS_API_KEY, ...params },
+      timeout: 30000,
+      ...(_getsmsProxyAgent ? { httpsAgent: _getsmsProxyAgent, proxy: false } : {}),
+    }));
+  } catch (e) {
+    logger.warn(`GetSMS call(${params.method}) transport error: proxied=${!!_getsmsProxyAgent} httpStatus=${e.response?.status} code=${e.code} msg=${e.message}`);
+    throw e;
+  }
   if (data?.status && data.status >= 400) {
     throw new Error(`GetSMS: ${data.data?.msg || data.status}`);
   }
