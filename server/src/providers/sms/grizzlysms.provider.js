@@ -501,6 +501,9 @@ const getNumber = async (service, countryIso) => {
     throw new Error(`GrizzlySMS getNumber: ${data}`);
   }
   const [, id, phone] = data.split(':');
+  // ACCESS_NUMBER must carry both id and phone; a truncated response would
+  // otherwise yield an undefined id that crashes downstream (.toString()).
+  if (!id || !phone) throw new Error(`GrizzlySMS getNumber: malformed response "${data}"`);
   return { id, phone };
 };
 

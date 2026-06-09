@@ -1081,6 +1081,21 @@ exports.orderNumber = async (req, res, next) => {
       }
     }
 
+    // Safety net: a provider can return a malformed response (e.g. a number with
+    // no id). Catch it BEFORE charging — otherwise providerResponse.id.toString()
+    // throws mid-transaction AFTER the spend, forcing a charge-then-refund. If we
+    // got a partial allocation (id but no phone, or vice versa), release it.
+    if (!providerResponse?.id || !providerResponse?.phone) {
+      logger.error(`Order aborted — malformed ${usedProvider} response: ${JSON.stringify(providerResponse)}`);
+      try {
+        if (providerResponse?.id) {
+          if (usedProvider === 'grizzlysms') await grizzlysms.setStatus(String(providerResponse.id), 8);
+          else if (usedProvider === 'fivesim') await fivesim.cancelOrder(String(providerResponse.id));
+        }
+      } catch (_) {}
+      throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
+    }
+
     logger.info(`OTP order ${countryName}/${service.slug}: ${chargeCredits}cr via ${SERVER_LABEL[usedProvider] || usedProvider}`);
 
     const timeoutMinutes = await getSettingNum('number_timeout_minutes', 20);
