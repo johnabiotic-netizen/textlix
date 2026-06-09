@@ -54,7 +54,7 @@ const refundRental = async (rentalCode) => {
   try {
     return await call('/rental/refund.php', { rental_code: rentalCode });
   } catch (err) {
-    logger.warn(`SMSPool refundRental failed for ${rentalCode}:`, err.message);
+    logger.warn(`SMSPool refundRental failed for ${rentalCode}: ${err.message}`);
   }
 };
 

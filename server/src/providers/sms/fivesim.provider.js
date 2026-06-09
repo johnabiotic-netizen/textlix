@@ -64,7 +64,7 @@ const cancelOrder = async (orderId) => {
     const res = await api.get(`/user/cancel/${orderId}`);
     return res.data;
   } catch (err) {
-    logger.warn(`Failed to cancel 5sim order ${orderId}:`, err.message);
+    logger.warn(`Failed to cancel 5sim order ${orderId}: ${err.message}`);
   }
 };
 
@@ -73,7 +73,7 @@ const finishOrder = async (orderId) => {
     const res = await api.get(`/user/finish/${orderId}`);
     return res.data;
   } catch (err) {
-    logger.warn(`Failed to finish 5sim order ${orderId}:`, err.message);
+    logger.warn(`Failed to finish 5sim order ${orderId}: ${err.message}`);
   }
 };
 
@@ -89,7 +89,7 @@ const getHostingInbox = async (orderId) => {
     const res = await api.get(`/user/sms/inbox/${orderId}`);
     return Array.isArray(res.data) ? res.data : [];
   } catch (err) {
-    logger.warn(`getHostingInbox failed for order ${orderId}:`, err.message);
+    logger.warn(`getHostingInbox failed for order ${orderId}: ${err.message}`);
     return [];
   }
 };

@@ -88,7 +88,7 @@ const start = async () => {
         await warmPriceCache();
         logger.info('Price cache warmed');
       } catch (err) {
-        logger.warn('Price cache warm failed:', err.message);
+        logger.warn(`Price cache warm failed: ${err.message}`);
       }
     };
     setTimeout(runWarm, 5000);              // initial warm shortly after boot

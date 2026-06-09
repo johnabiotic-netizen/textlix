@@ -269,7 +269,7 @@ async function respond(conversation, userText, helpers) {
   try {
     out = await runWithTools(systemPrompt(kb, snapshot), history, conversation.userId);
   } catch (err) {
-    logger.error(`Support AI (${pricing.PROVIDER}) call failed:`, err.message);
+    logger.error(`Support AI (${pricing.PROVIDER}) call failed: ${err.message}`);
     await escalate(conversation, 'AI error — routed to a human');
     return;
   }

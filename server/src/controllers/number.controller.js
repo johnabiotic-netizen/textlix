@@ -113,7 +113,7 @@ async function getMaxPrices(serviceSlug) {
 
     return result;
   } catch (err) {
-    logger.warn(`getMaxPrices failed for ${serviceSlug}:`, err.message);
+    logger.warn(`getMaxPrices failed for ${serviceSlug}: ${err.message}`);
     serviceMaxPriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
     return null;
   }
@@ -343,7 +343,7 @@ async function get5simHostingPrices(serviceSlug) {
     hostingPriceCache.set(serviceSlug, { data: result, expiresAt: Date.now() + CACHE_TTL });
     return result;
   } catch (err) {
-    logger.warn(`get5simHostingPrices(${serviceSlug}) failed:`, err.message);
+    logger.warn(`get5simHostingPrices(${serviceSlug}) failed: ${err.message}`);
     hostingPriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
     return null;
   }
@@ -356,9 +356,20 @@ async function getGrizzlyOtpPrices(serviceSlug) {
   const cached = grizzlyOtpPriceCache.get(serviceSlug);
   if (cached && cached.expiresAt > Date.now()) return cached.data;
 
+  // Grizzly carries ~300 of our ~2k enabled services (the smscodes catalog
+  // sync added the rest). Skip unmapped slugs entirely — Grizzly can only
+  // answer BAD_ACTION, and the services page fans out one call per service,
+  // so without this guard every cold page view fired ~1,700 doomed requests.
+  if (!grizzlysms.hasService(serviceSlug)) return null;
+
   try {
     const raw = await grizzlysms.getOtpPrices(serviceSlug);
-    if (!raw) return null;
+    if (!raw) {
+      // Negative-cache "mapped but nothing sellable" — previously uncached,
+      // so these re-fired on every single services-page view.
+      grizzlyOtpPriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
+      return null;
+    }
 
     const result = {};
     for (const [countryId, data] of Object.entries(raw)) {
@@ -370,7 +381,7 @@ async function getGrizzlyOtpPrices(serviceSlug) {
     grizzlyOtpPriceCache.set(serviceSlug, { data: result, expiresAt: Date.now() + CACHE_TTL });
     return result;
   } catch (err) {
-    logger.warn(`getGrizzlyOtpPrices(${serviceSlug}) failed:`, err.message);
+    logger.warn(`getGrizzlyOtpPrices(${serviceSlug}) failed: ${err.message}`);
     grizzlyOtpPriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
     return null;
   }

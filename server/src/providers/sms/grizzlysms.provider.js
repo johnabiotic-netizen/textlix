@@ -328,6 +328,11 @@ const SLUG_TO_CODE = {
 
 const toCode = (slug) => SLUG_TO_CODE[slug] || slug;
 
+// Whether GrizzlySMS carries this service at all. The DB has ~2k enabled
+// services (smscodes catalog included) but only ~300 exist on Grizzly —
+// callers use this to skip lookups that can only return BAD_ACTION.
+const hasService = (slug) => Object.prototype.hasOwnProperty.call(SLUG_TO_CODE, slug);
+
 // Reverse map (provider service code → our canonical slug, first slug wins).
 // Used to turn a by-country price response back into slug-keyed pricing.
 const CODE_TO_SLUG = {};
@@ -441,7 +446,7 @@ const setRentStatus = async (rentId, status = 1) => {
   try {
     await call({ action: 'setRentStatus', id: rentId, status });
   } catch (err) {
-    logger.warn(`GrizzlySMS setRentStatus failed (${rentId}):`, err.message);
+    logger.warn(`GrizzlySMS setRentStatus failed (${rentId}): ${err.message}`);
   }
 };
 
@@ -526,7 +531,7 @@ const setStatus = async (id, status) => {
   try {
     await call({ action: 'setStatus', id, status });
   } catch (err) {
-    logger.warn(`GrizzlySMS setStatus failed (${id}):`, err.message);
+    logger.warn(`GrizzlySMS setStatus failed (${id}): ${err.message}`);
   }
 };
 
@@ -542,4 +547,4 @@ const getBalance = async () => {
   }
 };
 
-module.exports = { getRentPrices, getRentNumber, getRentStatus, setRentStatus, getNumber, getStatus, setStatus, getOtpPrices, getOtpPricesByCountry, getBalance, COUNTRY_ID_TO_ISO, RENT_DAYS, toCode };
+module.exports = { getRentPrices, getRentNumber, getRentStatus, setRentStatus, getNumber, getStatus, setStatus, getOtpPrices, getOtpPricesByCountry, getBalance, COUNTRY_ID_TO_ISO, RENT_DAYS, toCode, hasService };

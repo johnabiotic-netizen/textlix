@@ -63,7 +63,7 @@ class SMSPollerService {
       } catch (err) {
         const fails = (this.pollFailures.get(orderId) || 0) + 1;
         this.pollFailures.set(orderId, fails);
-        logger.error(`Poll error for order ${orderId} (${fails}/10):`, err.message);
+        logger.error(`Poll error for order ${orderId} (${fails}/10): ${err.message}`);
         if (fails >= 10) {
           logger.warn(`Stopping poll for order ${orderId} after 10 consecutive errors`);
           this.stopPolling(orderId);
