@@ -4,6 +4,7 @@ const { refundCredits } = require('../services/credit.service');
 const fivesim = require('../providers/sms/fivesim.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const smspool = require('../providers/sms/smspool.provider');
+const smspva = require('../providers/sms/smspva.provider');
 const smsPoller = require('../services/sms-poller.service');
 const logger = require('../config/logger');
 
@@ -58,10 +59,12 @@ const runExpiryCheck = async () => {
       if (order.orderType === 'RENTAL') {
         // Rentals: no refund — user paid for time, not SMS count
         await NumberOrder.findByIdAndUpdate(order._id, { status: 'RENTAL_EXPIRED' });
-        if (order.provider === 'smspool') {
-          // SMSPool rentals expire on the provider side automatically
+        if (order.provider === 'smspool' || order.provider === 'getsms') {
+          // These rentals expire on the provider side automatically
         } else if (order.provider === 'grizzlysms') {
           try { await grizzlysms.setRentStatus(order.providerOrderId, 1); } catch (_) {}
+        } else if (order.provider === 'smspva') {
+          try { await smspva.cancel(order.providerOrderId); } catch (_) {}
         } else {
           try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
         }

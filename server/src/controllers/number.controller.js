@@ -12,6 +12,7 @@ const smspool = require('../providers/sms/smspool.provider');
 const getsms = require('../providers/sms/getsms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const smscodes = require('../providers/sms/smscodes.provider');
+const smspva = require('../providers/sms/smspva.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const { getSettingNum } = require('../utils/settings');
@@ -492,6 +493,9 @@ const SERVER_LABEL = {
   fivesim: 'LIX 1',
   grizzlysms: 'LIX 2',
   smscodes: 'LIX 3',
+  // rental-only provider (RENTAL_TIER_PROVIDER) — display label only, NOT an
+  // OTP tier; OTP routing above is untouched
+  smspva: 'LIX 2',
   // legacy / retired providers from earlier tier layouts
   smspool: 'LIX 2',
   getsms: 'LIX 1',
@@ -510,16 +514,32 @@ function formatOrder(order) {
 const RENTAL_DURATION_OPTIONS = [7, 14, 21, 30];
 const RENTAL_DURATION_LABELS = { 7: '1 Week', 14: '2 Weeks', 21: '3 Weeks', 30: '1 Month' };
 
-// Cache: `${countryIso}/${serviceSlug}` → { expiresAt, data: { 1: credits, 3: credits, 7: credits } }
+// ─── Rental tier → provider mapping (separate from the OTP tiers above) ──────
+// RENT LIX 1 = get-sms (default) · RENT LIX 2 = SMSPVA (flag-gated).
+// SMSPVA is rental-only — it is NOT an OTP provider and never enters
+// TIER_PROVIDER / the OTP routing.
+const RENTAL_TIER_PROVIDER = {
+  lix1: 'getsms',
+  lix2: 'smspva',
+};
+const RENTAL_PROVIDER_MODULE = {
+  getsms,
+  smspva,
+};
+const smspvaRentalEnabled = () => process.env.SMSPVA_RENTAL_ENABLED === 'true';
+
+// Cache: `${provider}/${countryIso}/${serviceSlug}` → { expiresAt, data: { 7: credits, ... } }
 const rentalPriceCache = new Map();
 
-async function getGetSmsRentalPrices(countryIso, serviceSlug) {
-  const cacheKey = `${countryIso}/${serviceSlug}`;
+async function getRentalPrices(provider, countryIso, serviceSlug) {
+  const cacheKey = `${provider}/${countryIso}/${serviceSlug}`;
   const cached = rentalPriceCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.data;
 
   try {
-    const raw = await getsms.getPrices(countryIso, serviceSlug);
+    const mod = RENTAL_PROVIDER_MODULE[provider];
+    if (!mod) return null;
+    const raw = await mod.getPrices(countryIso, serviceSlug);
     if (!raw?.prices) {
       // Short negative-cache so transient provider failures self-recover quickly
       rentalPriceCache.set(cacheKey, { data: null, expiresAt: Date.now() + 60 * 1000 });
@@ -537,7 +557,7 @@ async function getGetSmsRentalPrices(countryIso, serviceSlug) {
     rentalPriceCache.set(cacheKey, { data, expiresAt: Date.now() + ttl });
     return data;
   } catch (err) {
-    logger.warn(`getGetSmsRentalPrices(${countryIso}/${serviceSlug}) failed: ${err.message}`);
+    logger.warn(`getRentalPrices(${provider}/${countryIso}/${serviceSlug}) failed: ${err.message}`);
     return null;
   }
 }
@@ -1360,15 +1380,21 @@ exports.getRentalPrice = async (req, res, next) => {
       (serviceId && !mongoose.Types.ObjectId.isValid(serviceId) ? serviceId : null) ||
       'whatsapp';
 
-    const prices = await getGetSmsRentalPrices(country.code, serviceSlug);
-
-    const options = RENTAL_DURATION_OPTIONS.map((days) => ({
+    const toOptions = (prices) => RENTAL_DURATION_OPTIONS.map((days) => ({
       days,
       label: RENTAL_DURATION_LABELS[days],
       price: prices?.[days] ?? null,
     }));
 
-    const available = !!prices && options.some((o) => o.price !== null);
+    // LIX 1 (get-sms) always; LIX 2 (SMSPVA) only when flag-enabled — fetched
+    // in parallel so the slower provider never delays the other.
+    const [lix1Prices, lix2Prices] = await Promise.all([
+      getRentalPrices('getsms', country.code, serviceSlug),
+      smspvaRentalEnabled() ? getRentalPrices('smspva', country.code, serviceSlug) : Promise.resolve(null),
+    ]);
+
+    const options = toOptions(lix1Prices);
+    const available = !!lix1Prices && options.some((o) => o.price !== null);
 
     let serviceInfo = service ? { name: service.name, slug: service.slug } : null;
     if (!serviceInfo) {
@@ -1378,12 +1404,27 @@ exports.getRentalPrice = async (req, res, next) => {
       if (entry) serviceInfo = { name: entry.name, slug: entry.slug };
     }
 
-    success(res, {
+    const payload = {
       available,
       country: { name: country.name, flagEmoji: country.flagEmoji },
       service: serviceInfo,
       options: available ? options : [],
-    });
+    };
+
+    // Tiered shape, present only when LIX 2 rentals are enabled. `available`
+    // and `options` above keep the legacy (single-tier) meaning so older
+    // clients are unaffected.
+    if (smspvaRentalEnabled()) {
+      const lix2Options = toOptions(lix2Prices);
+      const lix2Available = !!lix2Prices && lix2Options.some((o) => o.price !== null);
+      payload.available = available || lix2Available;
+      payload.tiers = {
+        lix1: { available, options: available ? options : [] },
+        lix2: { available: lix2Available, options: lix2Available ? lix2Options : [] },
+      };
+    }
+
+    success(res, payload);
   } catch (err) {
     next(err);
   }
@@ -1391,13 +1432,21 @@ exports.getRentalPrice = async (req, res, next) => {
 
 exports.orderRental = async (req, res, next) => {
   try {
-    const { countryId, serviceId, days } = req.body;
+    const { countryId, serviceId, days, server } = req.body;
     const userId = req.user.userId;
 
     const numDays = Number(days);
     if (!RENTAL_DURATION_OPTIONS.includes(numDays)) {
       throw new AppError('VALIDATION_ERROR', 400, `days must be one of ${RENTAL_DURATION_OPTIONS.join(', ')}`);
     }
+
+    // Rental tier: lix1 (get-sms, default) or lix2 (SMSPVA, flag-gated)
+    const rentalTier = server || 'lix1';
+    const provider = RENTAL_TIER_PROVIDER[rentalTier];
+    if (!provider || (provider === 'smspva' && !smspvaRentalEnabled())) {
+      throw new AppError('VALIDATION_ERROR', 400, 'Unknown rental server');
+    }
+    const providerModule = RENTAL_PROVIDER_MODULE[provider];
 
     const user = await User.findById(userId);
     if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
@@ -1432,7 +1481,7 @@ exports.orderRental = async (req, res, next) => {
     }
     if (!service) throw new AppError('VALIDATION_ERROR', 400, 'serviceId is required for rental');
 
-    const prices = await getGetSmsRentalPrices(country.code, service.slug);
+    const prices = await getRentalPrices(provider, country.code, service.slug);
     const chargeCredits = prices?.[numDays];
     if (!chargeCredits) {
       throw new AppError('NOT_FOUND', 404, `${numDays}-day rental not available for ${service.name} in ${country.name}`);
@@ -1447,9 +1496,9 @@ exports.orderRental = async (req, res, next) => {
     // endpoint — surface that as a clean, reassuring message instead of a raw 500.
     let result;
     try {
-      result = await getsms.getNumber(country.code, service.slug, numDays);
+      result = await providerModule.getNumber(country.code, service.slug, numDays);
     } catch (err) {
-      logger.warn(`Rental getNumber failed (${country.code}/${service.slug}, ${numDays}d): ${err.message}`);
+      logger.warn(`Rental getNumber failed (${provider} ${country.code}/${service.slug}, ${numDays}d): ${err.message}`);
       throw new AppError('PROVIDER_ERROR', 502, 'Number rentals are temporarily unavailable. Please try again in a couple of minutes.');
     }
 
@@ -1463,7 +1512,7 @@ exports.orderRental = async (req, res, next) => {
         serviceId: service._id,
         phoneNumber: result.phone,
         providerOrderId: result.id,
-        provider: 'getsms',
+        provider,
         creditsCharged: chargeCredits,
         orderType: 'RENTAL',
         rentalDays: numDays,
@@ -1478,13 +1527,13 @@ exports.orderRental = async (req, res, next) => {
       } catch (refundErr) {
         logger.error(`CRITICAL: rental refund failed for user ${userId}, ${chargeCredits}cr: ${refundErr.message}`);
       }
-      try { await getsms.cancel(result.id); } catch (_) {}
+      try { await providerModule.cancel(result.id); } catch (_) {}
       throw err;
     }
 
     smsPoller.startPolling(order);
 
-    logger.info(`Rental ${numDays}-day ${country.code}/${service.slug} via GetSMS: ${chargeCredits}cr`);
+    logger.info(`Rental ${numDays}-day ${country.code}/${service.slug} via ${SERVER_LABEL[provider]} (${provider}): ${chargeCredits}cr`);
 
     success(res, {
       order: {

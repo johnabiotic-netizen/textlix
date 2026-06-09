@@ -33,6 +33,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
   // Rental state
   const [rentalService, setRentalService] = useState({ id: null, slug: preselectedService || null, name: null });
   const [rentalDays, setRentalDays] = useState(7);
+  const [rentalTier, setRentalTier] = useState('lix1');
   const [showRentalModal, setShowRentalModal] = useState(false);
   const [rentalSearch, setRentalSearch] = useState('');
   const [ordering, setOrdering] = useState(false);
@@ -117,6 +118,12 @@ export default function CountryServicesPage({ mode: modeProp }) {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Default rental tier: LIX 1 when it has stock, else LIX 2
+  useEffect(() => {
+    if (!rentalData?.tiers) return;
+    setRentalTier(rentalData.tiers.lix1?.available ? 'lix1' : 'lix2');
+  }, [rentalData]);
+
   // ── Derived ────────────────────────────────────────────────────────────────
   const rentalCountryFallback = (rentalCountriesData?.countries || []).find((c) => String(c.id) === String(countryId));
   const country = mode === 'otp' ? servicesData?.country : (rentalData?.country || rentalCountryFallback);
@@ -129,7 +136,12 @@ export default function CountryServicesPage({ mode: modeProp }) {
   // the default tier — so recommended countries already open on the provider the
   // recommendation was based on. No tier override needed.
 
-  const rentalOptions = rentalData?.options || [];
+  // Tiered shape (rentalData.tiers) appears only when the backend has rent
+  // LIX 2 enabled; otherwise fall back to the legacy single-tier options.
+  const rentalTiers = rentalData?.tiers || null;
+  const rentalOptions = rentalTiers
+    ? (rentalTiers[rentalTier]?.options || [])
+    : (rentalData?.options || []);
   const selectedRentalOption = rentalOptions.find((o) => o.days === rentalDays);
   const rentalPrice = selectedRentalOption?.price || 0;
 
@@ -171,7 +183,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const handleRentalOrder = async () => {
     setOrdering(true);
     try {
-      const { data: res } = await orderRental({ countryId, serviceId: rentalService.id, days: rentalDays });
+      const { data: res } = await orderRental({ countryId, serviceId: rentalService.id, days: rentalDays, server: rentalTier });
       const actualCharge = res.data.order.creditsCharged;
       toast.success(`Rental number: ${res.data.order.phoneNumber} — ${actualCharge} credits charged`);
       useAuthStore.setState((s) => ({ user: { ...s.user, creditBalance: s.user.creditBalance - actualCharge } }));
@@ -495,6 +507,38 @@ export default function CountryServicesPage({ mode: modeProp }) {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Server picker — only rendered when the backend exposes rental tiers */}
+            {rentalTiers && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Select Server</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {['lix1', 'lix2'].map((tier, i) => {
+                    const t = rentalTiers[tier];
+                    const tierPrice = t?.options?.find((o) => o.days === rentalDays)?.price;
+                    return (
+                      <button
+                        key={tier}
+                        onClick={() => t?.available && setRentalTier(tier)}
+                        disabled={!t?.available}
+                        className={`p-3 rounded-xl border-2 text-left transition-all ${
+                          rentalTier === tier ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/30' : 'border-gray-200 dark:border-gray-700 hover:border-brand-300'
+                        } ${!t?.available ? 'opacity-40 cursor-not-allowed' : ''}`}
+                      >
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-xs font-bold bg-brand-600 text-white px-1.5 py-0.5 rounded">LIX {i + 1}</span>
+                          {rentalTier === tier && <FiCheckCircle size={13} className="text-brand-600" />}
+                        </div>
+                        <p className="font-mono-num font-bold text-brand-700 dark:text-brand-300">
+                          {tierPrice != null ? tierPrice.toLocaleString() : '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t?.available ? `Server ${i + 1}` : 'Unavailable'}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Duration picker */}
             <div>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Duration</p>

@@ -8,6 +8,7 @@ const smspool = require('../providers/sms/smspool.provider');
 const getsms = require('../providers/sms/getsms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const smscodes = require('../providers/sms/smscodes.provider');
+const smspva = require('../providers/sms/smspva.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
 // Mobile push lives only in the local/mobile build; the web deploy ships without
 // push.service.js. Load it if present, otherwise degrade to a no-op so the
@@ -83,6 +84,8 @@ class SMSPollerService {
       await this._pollGetSmsOtp(order);
     } else if (order.provider === 'getsms') {
       await this._pollGetSms(order);
+    } else if (order.provider === 'smspva') {
+      await this._pollSmsPva(order);
     } else if (order.provider === 'smspool') {
       await this._pollSmsPool(order);
     } else if (order.provider === 'smsactivate') {
@@ -129,6 +132,30 @@ class SMSPollerService {
         return;
       }
       throw err; // transient — let the generic handler count it toward the 10-error stop
+    }
+    if (!messages.length) return;
+    const smsList = messages.map((m) => ({
+      id: crypto.createHash('md5').update(`${m.text}|${m.date}`).digest('hex'),
+      text: m.text,
+      code: extractCode(m.text),
+    }));
+    await this._handleRentalSms(order, smsList);
+  }
+
+  async _pollSmsPva(order) {
+    let messages;
+    try {
+      messages = await smspva.getSMS(order.providerOrderId);
+    } catch (err) {
+      // SMSPVA lost this rental — stop polling and mark it, same contract as
+      // the get-sms handler (dead rentals must not clog the serialized queue).
+      if (err.code === 'SMSPVA_RENTAL_GONE') {
+        logger.warn(`SMSPVA rental ${order.providerOrderId} no longer exists — stopping poll, marking EXPIRED`);
+        await NumberOrder.findByIdAndUpdate(order._id, { status: 'EXPIRED' });
+        this.stopPolling(order._id.toString());
+        return;
+      }
+      throw err; // transient — counts toward the 10-error stop
     }
     if (!messages.length) return;
     const smsList = messages.map((m) => ({
