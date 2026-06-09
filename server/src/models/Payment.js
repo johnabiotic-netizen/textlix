@@ -10,6 +10,10 @@ const paymentSchema = new mongoose.Schema(
     amountLocal: { type: Number, default: null },
     currency: { type: String, default: 'USD' },
     creditsAdded: { type: Number, required: true },
+    // Promo code quoted at checkout initiation. The slot is consumed and the
+    // bonus added only when the payment completes (see settlePromoBonus).
+    promoCode: { type: String, default: null },
+    promoBonusApplied: { type: Number, default: null },
     status: {
       type: String,
       enum: ['PENDING', 'COMPLETED', 'FAILED', 'EXPIRED'],

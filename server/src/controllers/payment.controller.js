@@ -33,29 +33,56 @@ const calcCredits = (amountUSD, packageId) => {
   return { credits, amountUSD };
 };
 
+const promoEligibleQuery = (code, amountUSD) => ({
+  code: code.toUpperCase().trim(),
+  isActive: true,
+  $and: [
+    { $or: [{ maxUses: null }, { $expr: { $lt: ['$usedCount', '$maxUses'] } }] },
+    { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
+    { minAmountUSD: { $lte: amountUSD } },
+  ],
+});
+
+const promoBonusFor = (promo, baseCredits) =>
+  promo.type === 'FLAT_BONUS' ? promo.value : Math.floor(baseCredits * promo.value / 100);
+
 /**
- * Atomically consume a promo code (if valid) and return bonus credits.
- * Returns 0 if the code is missing, invalid, expired, or exhausted.
+ * Non-consuming eligibility check at checkout initiation. Limited-use slots
+ * are NOT burned here — an abandoned checkout must not consume one. Returns
+ * the bonus this payment would earn, or 0 if ineligible.
  */
-async function applyPromo(code, amountUSD, baseCredits) {
+async function quotePromo(code, amountUSD, baseCredits) {
+  if (!code) return 0;
+  const promo = await PromoCode.findOne(promoEligibleQuery(code, amountUSD));
+  return promo ? promoBonusFor(promo, baseCredits) : 0;
+}
+
+/**
+ * Atomically consume a slot and return the bonus, re-checking eligibility —
+ * a code that ran out between initiation and completion yields 0.
+ */
+async function consumePromo(code, amountUSD, baseCredits) {
   if (!code) return 0;
   const promo = await PromoCode.findOneAndUpdate(
-    {
-      code: code.toUpperCase().trim(),
-      isActive: true,
-      $and: [
-        { $or: [{ maxUses: null }, { $expr: { $lt: ['$usedCount', '$maxUses'] } }] },
-        { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
-        { minAmountUSD: { $lte: amountUSD } },
-      ],
-    },
+    promoEligibleQuery(code, amountUSD),
     { $inc: { usedCount: 1 } },
     { new: false }
   );
-  if (!promo) return 0;
-  return promo.type === 'FLAT_BONUS'
-    ? promo.value
-    : Math.floor(baseCredits * promo.value / 100);
+  return promo ? promoBonusFor(promo, baseCredits) : 0;
+}
+
+/**
+ * Settle the promo for a completing payment. Idempotent per payment: the
+ * first attempt consumes the slot and records the result on the payment row,
+ * so a webhook retry (after e.g. an addCredits failure) reuses the recorded
+ * bonus instead of burning a second slot.
+ */
+async function settlePromoBonus(payment) {
+  if (!payment.promoCode) return 0;
+  if (payment.promoBonusApplied != null) return payment.promoBonusApplied;
+  const bonus = await consumePromo(payment.promoCode, payment.amountUSD, payment.creditsAdded);
+  await Payment.findByIdAndUpdate(payment._id, { $set: { promoBonusApplied: bonus } });
+  return bonus;
 }
 
 exports.validatePromo = async (req, res, next) => {
@@ -118,8 +145,7 @@ exports.oxprocessingCreate = async (req, res, next) => {
   try {
     const { amountUSD, currency, packageId, promoCode } = req.body;
     const { credits: baseCredits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
-    const promoBonus = await applyPromo(promoCode, finalAmount, baseCredits);
-    const credits = baseCredits + promoBonus;
+    const promoBonus = await quotePromo(promoCode, finalAmount, baseCredits);
 
     if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
 
@@ -130,7 +156,8 @@ exports.oxprocessingCreate = async (req, res, next) => {
       provider: '0xprocessing',
       amountUSD: finalAmount,
       currency: currency || 'USDT',
-      creditsAdded: credits,
+      creditsAdded: baseCredits,
+      promoCode: promoBonus > 0 ? promoCode.toUpperCase().trim() : null,
       status: 'PENDING',
     });
 
@@ -193,15 +220,20 @@ exports.oxprocessingWebhook = async (req, res, next) => {
         { new: false }
       );
       if (payment) {
+        let totalCredits = payment.creditsAdded;
         try {
+          totalCredits += await settlePromoBonus(payment);
           await addCredits(
             payment.userId,
-            payment.creditsAdded,
+            totalCredits,
             `Credit purchase: $${payment.amountUSD} via 0xProcessing`,
             payment._id.toString()
           );
+          if (totalCredits !== payment.creditsAdded) {
+            await Payment.findByIdAndUpdate(BillingID, { $set: { creditsAdded: totalCredits } }).catch(() => {});
+          }
           const io = getIO();
-          if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: payment.creditsAdded });
+          if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: totalCredits });
         } catch (err) {
           // Roll back the gate so a retry can re-attempt delivery.
           await Payment.findByIdAndUpdate(BillingID, { $set: { status: 'PENDING', completedAt: null } });
@@ -211,7 +243,7 @@ exports.oxprocessingWebhook = async (req, res, next) => {
         // Soft post-credit work — failures here MUST NOT roll back the credit
         // (user already paid + got their credits). Just log and move on.
         try {
-          await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+          await maybeAwardReferralBonus(payment.userId, totalCredits, payment._id.toString());
         } catch (e) { logger.warn(`Referral bonus failed for ${payment._id}: ${e.message}`); }
         try {
           await maybeAwardCreatorCommission(payment.userId, payment.amountUSD, payment._id);
@@ -235,8 +267,7 @@ exports.korapayInitialize = async (req, res, next) => {
   try {
     const { amountUSD, packageId, promoCode } = req.body;
     const { credits: baseCredits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
-    const promoBonus = await applyPromo(promoCode, finalAmount, baseCredits);
-    const credits = baseCredits + promoBonus;
+    const promoBonus = await quotePromo(promoCode, finalAmount, baseCredits);
 
     if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
 
@@ -250,7 +281,8 @@ exports.korapayInitialize = async (req, res, next) => {
       amountUSD: finalAmount,
       amountLocal: amountNGN,
       currency: 'NGN',
-      creditsAdded: credits,
+      creditsAdded: baseCredits,
+      promoCode: promoBonus > 0 ? promoCode.toUpperCase().trim() : null,
       status: 'PENDING',
     });
 
@@ -361,13 +393,18 @@ async function processKorapayPayment(reference) {
   );
   if (!payment) return;
 
+  let totalCredits = payment.creditsAdded;
   try {
+    totalCredits += await settlePromoBonus(payment);
     await addCredits(
       payment.userId,
-      payment.creditsAdded,
+      totalCredits,
       `Credit purchase: $${payment.amountUSD} via KoraPay`,
       payment._id.toString()
     );
+    if (totalCredits !== payment.creditsAdded) {
+      await Payment.findByIdAndUpdate(reference, { $set: { creditsAdded: totalCredits } }).catch(() => {});
+    }
   } catch (err) {
     // Roll back the gate so the next webhook delivery can retry.
     await Payment.findByIdAndUpdate(reference, { $set: { status: 'PENDING', completedAt: null } });
@@ -375,13 +412,13 @@ async function processKorapayPayment(reference) {
     throw err;
   }
 
-  logger.info(`KoraPay payment completed: ${payment._id}, credits: ${payment.creditsAdded}`);
+  logger.info(`KoraPay payment completed: ${payment._id}, credits: ${totalCredits}`);
   // Soft post-credit work — failures here must not roll back the credit.
   try {
-    await maybeAwardReferralBonus(payment.userId, payment.creditsAdded, payment._id.toString());
+    await maybeAwardReferralBonus(payment.userId, totalCredits, payment._id.toString());
   } catch (e) { logger.warn(`Referral bonus failed for ${payment._id}: ${e.message}`); }
   const io = getIO();
-  if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: payment.creditsAdded });
+  if (io) io.to(`user:${payment.userId}`).emit('payment:completed', { creditsAdded: totalCredits });
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
