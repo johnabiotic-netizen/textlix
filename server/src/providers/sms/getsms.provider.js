@@ -179,24 +179,51 @@ const _doCall = async (params) => {
 };
 
 // Serialize ALL get-sms requests with a minimum gap. get-sms (behind Cloudflare)
-// rate-limits bursts from a single IP — and since we now egress through one proxy
-// IP, the poller's concurrent polls + retries would burst and get 403'd. Spacing
-// requests ~1.8s apart keeps us under the limit (verified: spaced calls return 200,
-// bursts return 403). Same queue pattern as the smscodes adapter.
+// rate-limits bursts from a single IP — and since we egress through one proxy IP,
+// concurrent polls + retries would burst and get 403'd. Spacing requests ~1.8s
+// apart keeps us under the limit (verified: spaced calls return 200, bursts 403).
+//
+// Two-level PRIORITY queue: user-facing calls (pricing, catalog, renting a number)
+// jump ahead of background SMS polls. Without this, a handful of active rentals
+// polling every few seconds saturates the 1.8s-spaced queue and a real visitor's
+// price request waits behind the whole backlog forever. Pile-up is bounded upstream
+// too — the poller skips a tick when an order's previous poll hasn't drained yet.
 const GETSMS_MIN_GAP_MS = 1800;
-let _getsmsChain = Promise.resolve();
-let _getsmsLastAt = 0;
+const _gsQueue = [];        // pending items: { params, bg, resolve, reject }
+let _gsDraining = false;
+let _gsLastAt = 0;
 
-const call = (params) => {
-  const run = _getsmsChain.then(async () => {
-    const gap = GETSMS_MIN_GAP_MS - (Date.now() - _getsmsLastAt);
-    if (gap > 0) await new Promise((r) => setTimeout(r, gap));
-    _getsmsLastAt = Date.now();
-    return _doCall(params);
-  });
-  _getsmsChain = run.then(() => {}, () => {}); // keep the queue alive regardless of outcome
-  return run;
-};
+async function _gsDrain() {
+  if (_gsDraining) return;
+  _gsDraining = true;
+  try {
+    while (_gsQueue.length) {
+      const item = _gsQueue.shift();
+      const gap = GETSMS_MIN_GAP_MS - (Date.now() - _gsLastAt);
+      if (gap > 0) await new Promise((r) => setTimeout(r, gap));
+      _gsLastAt = Date.now();
+      try { item.resolve(await _doCall(item.params)); }
+      catch (err) { item.reject(err); }
+    }
+  } finally {
+    _gsDraining = false;
+  }
+}
+
+// opts.background=true → low priority (SMS polling). Default → high priority
+// (user-facing). High-priority items insert ahead of the first background item;
+// FIFO is preserved within each level (the queue is always [high…, bg…]).
+const call = (params, opts = {}) => new Promise((resolve, reject) => {
+  const item = { params, bg: !!opts.background, resolve, reject };
+  if (item.bg) {
+    _gsQueue.push(item);
+  } else {
+    const i = _gsQueue.findIndex((q) => q.bg);
+    if (i === -1) _gsQueue.push(item);
+    else _gsQueue.splice(i, 0, item);
+  }
+  _gsDrain();
+});
 
 // Cache country data (services + prices) per ISO code
 // Success: 30 min TTL  |  Failure: 60s TTL so transient errors self-recover
@@ -293,10 +320,20 @@ const getNumber = async (countryIso, serviceSlug, days) => {
 // Response: { status:200, data: { sms_list: [{date, text}], status_rent } }
 const getSMS = async (rentId) => {
   try {
-    const raw = await call({ method: 'getsms', rentid: rentId });
+    // background:true → this poll yields to user-facing pricing/catalog/order calls.
+    const raw = await call({ method: 'getsms', rentid: rentId }, { background: true });
     const smsList = raw?.data?.sms_list;
     return Array.isArray(smsList) ? smsList : [];
   } catch (err) {
+    // Terminal: get-sms no longer has this rental ("Rental order not found").
+    // Signal the poller to STOP — a pile of dead rentals polling forever is exactly
+    // what saturated this queue and froze pricing. Transient errors (403/timeout)
+    // still return [] so polling continues.
+    if (/order not found/i.test(err.message || '')) {
+      const gone = new Error('GETSMS_RENTAL_GONE');
+      gone.code = 'GETSMS_RENTAL_GONE';
+      throw gone;
+    }
     logger.warn(`GetSMS getSMS failed for ${rentId}: ${err.message}`);
     return [];
   }

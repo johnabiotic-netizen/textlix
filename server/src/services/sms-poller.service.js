@@ -37,6 +37,7 @@ class SMSPollerService {
   constructor() {
     this.activePolls = new Map();
     this.pollFailures = new Map(); // orderId → consecutive error count
+    this.inFlight = new Set();     // orderIds whose poll is still running — skip overlapping ticks
     this.io = null;
   }
 
@@ -49,6 +50,12 @@ class SMSPollerService {
     if (this.activePolls.has(orderId)) return;
 
     const intervalId = setInterval(async () => {
+      // Skip if this order's previous poll hasn't finished. Under a slow/throttled
+      // provider queue (get-sms spaces calls 1.8s apart), overlapping ticks would
+      // pile up faster than they drain and saturate the queue — the bug that froze
+      // pricing. One poll per order at a time keeps the queue bounded.
+      if (this.inFlight.has(orderId)) return;
+      this.inFlight.add(orderId);
       try {
         await this._poll(order);
         this.pollFailures.delete(orderId);
@@ -60,6 +67,8 @@ class SMSPollerService {
           logger.warn(`Stopping poll for order ${orderId} after 10 consecutive errors`);
           this.stopPolling(orderId);
         }
+      } finally {
+        this.inFlight.delete(orderId);
       }
     }, 5000);
 
@@ -107,7 +116,20 @@ class SMSPollerService {
   }
 
   async _pollGetSms(order) {
-    const messages = await getsms.getSMS(order.providerOrderId);
+    let messages;
+    try {
+      messages = await getsms.getSMS(order.providerOrderId);
+    } catch (err) {
+      // get-sms lost this rental — stop polling it (a dead rental polling forever
+      // is what clogs the queue) and mark it so it leaves the active set.
+      if (err.code === 'GETSMS_RENTAL_GONE') {
+        logger.warn(`get-sms rental ${order.providerOrderId} no longer exists — stopping poll, marking EXPIRED`);
+        await NumberOrder.findByIdAndUpdate(order._id, { status: 'EXPIRED' });
+        this.stopPolling(order._id.toString());
+        return;
+      }
+      throw err; // transient — let the generic handler count it toward the 10-error stop
+    }
     if (!messages.length) return;
     const smsList = messages.map((m) => ({
       id: crypto.createHash('md5').update(`${m.text}|${m.date}`).digest('hex'),
@@ -297,6 +319,7 @@ class SMSPollerService {
       clearInterval(intervalId);
       this.activePolls.delete(key);
       this.pollFailures.delete(key);
+      this.inFlight.delete(key);
       logger.debug(`Stopped polling order ${key}`);
     }
   }
@@ -307,6 +330,7 @@ class SMSPollerService {
     }
     this.activePolls.clear();
     this.pollFailures.clear();
+    this.inFlight.clear();
     logger.info('All SMS polling stopped');
   }
 
