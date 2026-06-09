@@ -16,7 +16,7 @@ import UsageSparkline from '../../components/dashboard/UsageSparkline';
 import TrendingServices from '../../components/dashboard/TrendingServices';
 import RecentSmsInbox from '../../components/dashboard/RecentSmsInbox';
 import StreakTile from '../../components/dashboard/StreakTile';
-import WelcomeBonusCard from '../../components/dashboard/WelcomeBonusCard';
+import LaunchPromoCard from '../../components/dashboard/LaunchPromoCard';
 import useDismissedOrders from '../../hooks/useDismissedOrders';
 
 dayjs.extend(relativeTime);
@@ -206,8 +206,9 @@ export default function DashboardPage() {
         </Card>
       </Link>
 
-      {/* ── Pre-launch welcome bonus (renders only if user is eligible) ────── */}
-      <WelcomeBonusCard />
+      {/* ── Launch promo (LAUNCH10). Pre-launch WelcomeBonusCard is hidden for
+           now — re-import it here to bring it back after the promo ends. ───── */}
+      <LaunchPromoCard />
 
       {/* ── Stat cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -26,6 +26,7 @@ router.post('/korapay/webhook', paymentController.korapayWebhook);
 router.use(authenticate);
 router.get('/packages', paymentController.getPackages);
 router.post('/validate-promo', validate(schemas.validatePromoSchema), paymentController.validatePromo);
+router.get('/promo/:code/status', paymentController.getPromoStatus);
 
 // 0xProcessing (crypto)
 router.post('/oxprocessing/create', initLimiter, validate(schemas.oxprocessingCreateSchema), paymentController.oxprocessingCreate);

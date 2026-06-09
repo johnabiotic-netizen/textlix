@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { RiCoinLine, RiArrowLeftLine, RiBankCardLine } from 'react-icons/ri';
 import { FiCheck } from 'react-icons/fi';
@@ -48,17 +49,20 @@ const CRYPTO_COINS = [
   },
 ];
 
-function PromoCodeInput({ onApply }) {
-  const [open, setOpen] = useState(false);
-  const [code, setCode] = useState('');
+function PromoCodeInput({ onApply, amountUSD, initialCode }) {
+  const [open, setOpen] = useState(!!initialCode);
+  const [code, setCode] = useState(initialCode || '');
   const [checking, setChecking] = useState(false);
   const [applied, setApplied] = useState(null);
 
-  const handleApply = async () => {
-    if (!code.trim()) return;
+  const handleApply = async (raw) => {
+    const value = (typeof raw === 'string' ? raw : code).trim();
+    if (!value) return;
     setChecking(true);
     try {
-      const { data } = await validatePromo({ code: code.trim(), amountUSD: 2 });
+      // amountUSD 0 (nothing picked yet) skips the server's minimum check —
+      // the pay-time guard in handlePay enforces it against the final amount.
+      const { data } = await validatePromo({ code: value, amountUSD: amountUSD || 0 });
       const promo = data.data.promo;
       setApplied(promo);
       onApply(promo);
@@ -67,6 +71,12 @@ function PromoCodeInput({ onApply }) {
       toast.error(err.response?.data?.error?.message || 'Invalid promo code');
     } finally { setChecking(false); }
   };
+
+  // Pre-applied when arriving via a promo link (e.g. /credits?promo=LAUNCH10).
+  useEffect(() => {
+    if (initialCode) handleApply(initialCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (applied) return (
     <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3">
@@ -100,6 +110,8 @@ function PromoCodeInput({ onApply }) {
 
 export default function BuyCreditsPage() {
   const { user } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  const promoParam = searchParams.get('promo');
 
   // wizard state
   const [step, setStep] = useState(0); // 0 = method, 1 = details
@@ -134,6 +146,11 @@ export default function BuyCreditsPage() {
     ? selectedPkg.totalCredits
     : Math.floor(amountUSD * 100);
 
+  const promoMeetsMin = promoBonus && (!promoBonus.minAmountUSD || amountUSD >= promoBonus.minAmountUSD);
+  const promoBonusCredits = promoMeetsMin
+    ? (promoBonus.type === 'FLAT_BONUS' ? promoBonus.value : Math.floor((estimatedCredits * promoBonus.value) / 100))
+    : 0;
+
   const chooseMethod = (m) => {
     setMethod(m);
     setSelectedPkg(null);
@@ -151,6 +168,12 @@ export default function BuyCreditsPage() {
   const handlePay = async () => {
     if (amountUSD < 2) { toast.error('Minimum $2 required'); return; }
     if (method === 'crypto' && !selectedNetwork) { toast.error('Select a network to continue'); return; }
+    // The server gives no bonus (without erroring) below the promo minimum —
+    // block here so nobody pays expecting a bonus they won't receive.
+    if (promoBonus && !promoMeetsMin) {
+      toast.error(`Code ${promoBonus.code} needs a top-up of $${promoBonus.minAmountUSD}+ — pick a bigger amount or remove the code`);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -361,7 +384,24 @@ export default function BuyCreditsPage() {
           )}
 
           {/* Promo code */}
-          <PromoCodeInput onApply={(promo) => { setPromoBonus(promo); setAppliedPromoCode(promo?.code ?? null); }} />
+          <PromoCodeInput
+            onApply={(promo) => { setPromoBonus(promo); setAppliedPromoCode(promo?.code ?? null); }}
+            amountUSD={amountUSD}
+            initialCode={promoParam}
+          />
+
+          {/* Promo outcome preview */}
+          {promoBonus && amountUSD >= 2 && (
+            promoMeetsMin ? (
+              <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                🎉 You'll receive <strong>{(estimatedCredits + promoBonusCredits).toLocaleString()} credits</strong> — includes +{promoBonusCredits.toLocaleString()} bonus from {promoBonus.code}
+              </p>
+            ) : (
+              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                Top up ${promoBonus.minAmountUSD}+ to unlock your {promoBonus.type === 'FLAT_BONUS' ? `+${promoBonus.value} credits` : `+${promoBonus.value}%`} with {promoBonus.code}
+              </p>
+            )
+          )}
 
           {/* Pay button */}
           <div>

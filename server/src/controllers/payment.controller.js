@@ -73,7 +73,33 @@ exports.validatePromo = async (req, res, next) => {
     if (amountUSD && parseFloat(amountUSD) < promo.minAmountUSD) {
       throw new AppError('VALIDATION_ERROR', 400, `Minimum $${promo.minAmountUSD} required for this code`);
     }
-    success(res, { promo: { code: promo.code, type: promo.type, value: promo.value } });
+    success(res, { promo: { code: promo.code, type: promo.type, value: promo.value, minAmountUSD: promo.minAmountUSD } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Public-safe snapshot of a promo for marketing surfaces (launch banner):
+// exposes the terms and remaining slots, never errors on amount like validate.
+exports.getPromoStatus = async (req, res, next) => {
+  try {
+    const code = String(req.params.code || '').toUpperCase().trim();
+    const promo = await PromoCode.findOne({ code, isActive: true });
+    const live = promo
+      && (promo.maxUses === null || promo.usedCount < promo.maxUses)
+      && (!promo.expiresAt || promo.expiresAt > new Date());
+    if (!live) return success(res, { active: false });
+    success(res, {
+      active: true,
+      promo: {
+        code: promo.code,
+        type: promo.type,
+        value: promo.value,
+        minAmountUSD: promo.minAmountUSD,
+        maxUses: promo.maxUses,
+        remaining: promo.maxUses === null ? null : Math.max(0, promo.maxUses - promo.usedCount),
+      },
+    });
   } catch (err) {
     next(err);
   }
