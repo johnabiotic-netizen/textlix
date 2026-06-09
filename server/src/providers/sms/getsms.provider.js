@@ -4,6 +4,13 @@ const logger = require('../../config/logger');
 // Updated API base URL (changed per Get-SMS docs update)
 const BASE_URL = 'https://get-sms.com/api/v2/rent/rent_number.php';
 
+// get-sms.com blocks our datacenter (Railway) egress IP on its order/SMS endpoints
+// while the catalog endpoint still works. Route get-sms requests through an outbound
+// proxy with a clean/residential IP when GETSMS_PROXY_URL is set
+// (e.g. http://user:pass@host:port). Unset → direct (no behavior change).
+const { HttpsProxyAgent } = require('https-proxy-agent');
+const _getsmsProxyAgent = process.env.GETSMS_PROXY_URL ? new HttpsProxyAgent(process.env.GETSMS_PROXY_URL) : null;
+
 // Rental durations: minimum is 1 week (API only supports week/month)
 const DURATION_MAP = {
   7:  { type: 'week',  period: 1 },
@@ -156,6 +163,7 @@ const call = async (params) => {
   const { data } = await axios.get(BASE_URL, {
     params: { userkey: process.env.GETSMS_API_KEY, ...params },
     timeout: 30000,
+    ...(_getsmsProxyAgent ? { httpsAgent: _getsmsProxyAgent, proxy: false } : {}),
   });
   if (data?.status && data.status >= 400) {
     throw new Error(`GetSMS: ${data.data?.msg || data.status}`);
