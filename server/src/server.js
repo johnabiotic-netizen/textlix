@@ -79,16 +79,20 @@ const start = async () => {
     logger.info(`TextLix server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
-    // Background warm of price cache — non-blocking, staggered to avoid hammering APIs
-    setTimeout(async () => {
+    // Background warm of price cache — non-blocking, staggered to avoid hammering APIs.
+    // Re-run on an interval so caches never go cold in the request path (provider
+    // TTLs are 5min+; a slow smscodes rebuild must never land on a real visitor).
+    const { warmPriceCache } = require('./controllers/number.controller');
+    const runWarm = async () => {
       try {
-        const { warmPriceCache } = require('./controllers/number.controller');
         await warmPriceCache();
         logger.info('Price cache warmed');
       } catch (err) {
         logger.warn('Price cache warm failed:', err.message);
       }
-    }, 5000);
+    };
+    setTimeout(runWarm, 5000);              // initial warm shortly after boot
+    setInterval(runWarm, 4 * 60 * 1000);   // keep it warm (just under the 5min stock TTL)
   });
 };
 

@@ -129,12 +129,17 @@ exports.warmPriceCache = async function warmPriceCache() {
       await new Promise((r) => setTimeout(r, 300)); // small delay to avoid hammering 5sim
     } catch (_) {}
   }
-  // Build the GetSMS full map once (otherwise the first country page eats its
-  // cold build) and warm the per-country caches for the busiest countries.
-  try { await getsmsotp.getOtpPricesByCountry('US'); } catch (_) {}
+  // Warm smscodes (LIX 3) stock in the background so the first country/service page
+  // doesn't trigger its ~25s rebuild in the request path. (Dropped the old
+  // getsmsotp warm — that provider is retired, takes ~55s and returns nothing.)
+  try { await getSmsCodesStock(); } catch (_) {}
   for (const [slug, iso] of TOP_COUNTRIES) {
     try { await get5simCountryPrices(slug); } catch (_) {}
     try { await getGrizzlyCountryPrices(iso); } catch (_) {}
+    // Kick the slow smscodes (LIX 3) price fetch so its cache is warm before a
+    // real visitor arrives — otherwise the 2s request-path cap always wins and
+    // LIX 3 shows blank. The call self-populates the cache when it completes.
+    try { await getSmsCodesCountryPrices(iso); } catch (_) {}
     await new Promise((r) => setTimeout(r, 300));
   }
 };
@@ -415,27 +420,33 @@ const SMSCODES_STOCK_TTL = 5 * 60 * 1000;      // hold a good result 5 min
 const SMSCODES_STOCK_RETRY = 30 * 1000;        // smscodes call failed/empty → retry soon
 async function getSmsCodesStock() {
   if (!SMSCODES_ENABLED) return _smscodesStock;
-  if (Date.now() < _smscodesStockExpiry) return _smscodesStock; // serve last-good within window
-  if (_smscodesStockInflight) return _smscodesStockInflight;     // singleflight — no stampede on cold start
-  _smscodesStockInflight = (async () => {
-    try {
-      const map = await smscodes.getCountryStock();
-      if (map && Object.keys(map).length) {
-        const s = new Set();
-        for (const [iso, qty] of Object.entries(map)) if (qty > 0) s.add(iso.toUpperCase());
-        _smscodesStock = s;
-        _smscodesStockExpiry = Date.now() + SMSCODES_STOCK_TTL;
-      } else {
-        _smscodesStockExpiry = Date.now() + SMSCODES_STOCK_RETRY; // empty → keep last-good, retry soon
+  if (Date.now() < _smscodesStockExpiry) return _smscodesStock; // fresh enough — instant
+  // Stale or cold: kick off a background refresh (singleflight) but DON'T block the
+  // request on it. smscodes.getCountryStock() takes ~25s; awaiting it here used to
+  // freeze every country/service page. Serve the last-good Set immediately instead
+  // (stale-while-revalidate). Fail-closed: empty Set until the first warm completes.
+  if (!_smscodesStockInflight) {
+    // Push expiry forward now so we don't spawn a fresh refresh on every request
+    // during the ~25s the call is in flight.
+    _smscodesStockExpiry = Date.now() + SMSCODES_STOCK_RETRY;
+    _smscodesStockInflight = (async () => {
+      try {
+        const map = await smscodes.getCountryStock();
+        if (map && Object.keys(map).length) {
+          const s = new Set();
+          for (const [iso, qty] of Object.entries(map)) if (qty > 0) s.add(iso.toUpperCase());
+          _smscodesStock = s;
+          _smscodesStockExpiry = Date.now() + SMSCODES_STOCK_TTL;
+        }
+        // empty/error → keep last-good; expiry already set to RETRY above
+      } catch (_) {
+        /* keep last-good Set; retry after the RETRY window */
+      } finally {
+        _smscodesStockInflight = null;
       }
-    } catch (_) {
-      _smscodesStockExpiry = Date.now() + SMSCODES_STOCK_RETRY;   // error → keep last-good, retry soon
-    } finally {
-      _smscodesStockInflight = null;
-    }
-    return _smscodesStock;
-  })();
-  return _smscodesStockInflight;
+    })();
+  }
+  return _smscodesStock; // never blocks on the slow smscodes call
 }
 
 // ─── smscodes.io OTP price cache (LIX 3, keyed by serviceSlug → ISO → credits) ─
