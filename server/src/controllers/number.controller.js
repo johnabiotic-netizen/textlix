@@ -11,6 +11,7 @@ const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const smspool = require('../providers/sms/smspool.provider');
 const getsms = require('../providers/sms/getsms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
+const smscodes = require('../providers/sms/smscodes.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const { getSettingNum } = require('../utils/settings');
@@ -49,7 +50,25 @@ const ISO_TO_SLUG = {
   NZ:'newzealand',TR:'turkey',CN:'china',JP:'japan',KR:'southkorea',
 };
 
-const MARGIN = 0.60;
+// Live profit margin (fraction), sourced from the `default_margin_percent`
+// platform setting (default 60%). Cached in-process so the synchronous price
+// builders can read it via margin(); refreshed in the background when stale, so
+// admin changes to the setting take effect within ~1 minute without a restart.
+let _marginFraction = 0.60;
+let _marginExpiry = 0;
+const MARGIN_TTL_MS = 60 * 1000;
+async function refreshMargin() {
+  _marginExpiry = Date.now() + MARGIN_TTL_MS; // set first so concurrent calls don't stampede the DB
+  try {
+    const pct = await getSettingNum('default_margin_percent', 60);
+    if (Number.isFinite(pct) && pct >= 0) _marginFraction = pct / 100;
+  } catch (_) { /* keep last good value */ }
+}
+function margin() {
+  if (Date.now() > _marginExpiry) refreshMargin(); // fire-and-forget refresh; use cached value now
+  return _marginFraction;
+}
+refreshMargin(); // warm on startup
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 // Cache: serviceSlug → { countrySlug → { maxPrice, bestRate, totalCount } }
@@ -138,11 +157,11 @@ async function syncPricesToDB(serviceSlug, maxPrices) {
     const country = slugToCountry[countrySlug];
     if (!country) continue;
     const providerCost = Math.ceil(data.maxPrice * 100);
-    const finalPrice   = Math.ceil(providerCost * (1 + MARGIN));
+    const finalPrice   = Math.ceil(providerCost * (1 + margin()));
     ops.push({
       updateOne: {
         filter: { countryId: country._id, serviceId: svc._id },
-        update: { $set: { providerCost, finalPrice, marginPercent: 60, isAvailable: true } },
+        update: { $set: { providerCost, finalPrice, marginPercent: Math.round(margin() * 100), isAvailable: true } },
         upsert: true,
       },
     });
@@ -155,7 +174,30 @@ async function getChargeCredits(country5simSlug, serviceSlug, fallbackCredits) {
   const prices = await getMaxPrices(serviceSlug);
   const data = prices?.[country5simSlug];
   if (!data) return fallbackCredits;
-  return Math.ceil(Math.ceil(data.maxPrice * 100) * (1 + MARGIN));
+  return Math.ceil(Math.ceil(data.maxPrice * 100) * (1 + margin()));
+}
+
+/**
+ * Rank 5sim operators for a combo by live success rate (best first), keeping
+ * only those with stock. Buying from the highest-rate operator instead of the
+ * cheapest-by-default 'any' is the single biggest lever on delivery success.
+ * Returns operator names, best first; empty array on any failure (caller then
+ * falls back to 'any').
+ */
+async function rankFiveSimOperators(country5simSlug, serviceSlug) {
+  try {
+    const data = await fivesim.getPricesByCountry(country5simSlug);
+    const operators = data?.[country5simSlug]?.[serviceSlug];
+    if (!operators || typeof operators !== 'object') return [];
+    return Object.entries(operators)
+      .map(([name, op]) => ({ name, rate: Number(op?.rate) || 0, count: Number(op?.count) || 0 }))
+      .filter((o) => o.count > 0)
+      .sort((a, b) => (b.rate - a.rate) || (b.count - a.count))
+      .map((o) => o.name);
+  } catch (err) {
+    logger.warn(`rankFiveSimOperators(${country5simSlug}/${serviceSlug}) failed: ${err.message}`);
+    return [];
+  }
 }
 
 // ─── Public platform stats (cached 5 min) ────────────────────────────────────
@@ -288,7 +330,7 @@ async function get5simHostingPrices(serviceSlug) {
         totalCount += opData.count || 0;
       }
       if (minCost !== Infinity && totalCount > 0) {
-        result[countrySlug] = Math.ceil(Math.ceil(minCost * 100) * (1 + MARGIN));
+        result[countrySlug] = Math.ceil(Math.ceil(minCost * 100) * (1 + margin()));
       }
     }
 
@@ -316,7 +358,7 @@ async function getGrizzlyOtpPrices(serviceSlug) {
     for (const [countryId, data] of Object.entries(raw)) {
       const iso = grizzlysms.COUNTRY_ID_TO_ISO[countryId];
       if (iso && data.count > 0) {
-        result[iso] = Math.ceil(Math.ceil(data.cost * 100) * (1 + MARGIN));
+        result[iso] = Math.ceil(Math.ceil(data.cost * 100) * (1 + margin()));
       }
     }
     grizzlyOtpPriceCache.set(serviceSlug, { data: result, expiresAt: Date.now() + CACHE_TTL });
@@ -344,7 +386,7 @@ async function getGetSmsOtpPrices(serviceSlug) {
     const result = {};
     for (const [iso, data] of Object.entries(raw)) {
       if (data.count > 0) {
-        result[iso] = Math.ceil(Math.ceil(data.cost * 100) * (1 + MARGIN));
+        result[iso] = Math.ceil(Math.ceil(data.cost * 100) * (1 + margin()));
       }
     }
     const out = Object.keys(result).length > 0 ? result : null;
@@ -356,10 +398,90 @@ async function getGetSmsOtpPrices(serviceSlug) {
   }
 }
 
-// Provider → user-facing server label
+// smscodes.io (LIX 3) server-side kill-switch. smscodes aggressively blocks
+// request bursts; the adapter is now throttled (serialized queue + backoff), so
+// it's enabled. Flip to false to instantly pull smscodes from catalog + ordering.
+const SMSCODES_ENABLED = true;
+
+// smscodes (LIX 3) live per-country stock. GetCountryCodes only lists countries
+// with numbers right now, so we keep a Set of in-stock ISOs and hide LIX 3 in the
+// catalog wherever the country isn't in it — no point offering numbers that aren't
+// there. Cached 5 min (stock drifts as numbers sell); fail-closed (empty Set on
+// error → LIX 3 simply hidden until the next successful fetch).
+let _smscodesStock = new Set();
+let _smscodesStockExpiry = 0;
+let _smscodesStockInflight = null;
+const SMSCODES_STOCK_TTL = 5 * 60 * 1000;      // hold a good result 5 min
+const SMSCODES_STOCK_RETRY = 30 * 1000;        // smscodes call failed/empty → retry soon
+async function getSmsCodesStock() {
+  if (!SMSCODES_ENABLED) return _smscodesStock;
+  if (Date.now() < _smscodesStockExpiry) return _smscodesStock; // serve last-good within window
+  if (_smscodesStockInflight) return _smscodesStockInflight;     // singleflight — no stampede on cold start
+  _smscodesStockInflight = (async () => {
+    try {
+      const map = await smscodes.getCountryStock();
+      if (map && Object.keys(map).length) {
+        const s = new Set();
+        for (const [iso, qty] of Object.entries(map)) if (qty > 0) s.add(iso.toUpperCase());
+        _smscodesStock = s;
+        _smscodesStockExpiry = Date.now() + SMSCODES_STOCK_TTL;
+      } else {
+        _smscodesStockExpiry = Date.now() + SMSCODES_STOCK_RETRY; // empty → keep last-good, retry soon
+      }
+    } catch (_) {
+      _smscodesStockExpiry = Date.now() + SMSCODES_STOCK_RETRY;   // error → keep last-good, retry soon
+    } finally {
+      _smscodesStockInflight = null;
+    }
+    return _smscodesStock;
+  })();
+  return _smscodesStockInflight;
+}
+
+// ─── smscodes.io OTP price cache (LIX 3, keyed by serviceSlug → ISO → credits) ─
+const smscodesOtpPriceCache = new Map();
+
+async function getSmsCodesOtpPrices(serviceSlug) {
+  if (!SMSCODES_ENABLED) return null;
+  const cached = smscodesOtpPriceCache.get(serviceSlug);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+  try {
+    const raw = await smscodes.getOtpPrices(serviceSlug); // { ISO: { cost, count } }
+    if (!raw) {
+      smscodesOtpPriceCache.set(serviceSlug, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
+      return null;
+    }
+    const result = {};
+    for (const [iso, data] of Object.entries(raw)) {
+      if (data.count > 0) result[iso] = Math.ceil(Math.ceil(data.cost * 100) * (1 + margin()));
+    }
+    const out = Object.keys(result).length > 0 ? result : null;
+    smscodesOtpPriceCache.set(serviceSlug, { data: out, expiresAt: Date.now() + CACHE_TTL });
+    return out;
+  } catch (err) {
+    logger.warn(`getSmsCodesOtpPrices(${serviceSlug}) failed: ${err.message}`);
+    return null;
+  }
+}
+
+// ─── Tier → provider mapping ──────────────────────────────────────────────────
+// Single source of truth for which upstream provider backs each LIX tier.
+// Reassigning a tier is a one-line change here (the routing/labels read this).
+//   LIX 1 = 5sim · LIX 2 = GrizzlySMS · LIX 3 = smscodes.io
+const TIER_PROVIDER = {
+  lix1: 'fivesim',
+  lix2: 'grizzlysms',
+  lix3: 'smscodes',
+};
+
+// Provider → user-facing server label (never leak raw provider names). Derived
+// from TIER_PROVIDER, plus legacy providers kept so historical orders still
+// render a sensible label.
 const SERVER_LABEL = {
   fivesim: 'LIX 1',
   grizzlysms: 'LIX 2',
+  smscodes: 'LIX 3',
+  // legacy / retired providers from earlier tier layouts
   smspool: 'LIX 2',
   getsms: 'LIX 1',
   getsmsotp: 'LIX 3',
@@ -396,7 +518,7 @@ async function getGetSmsRentalPrices(countryIso, serviceSlug) {
     for (const [days, usdPrice] of Object.entries(raw.prices)) {
       const numDays = Number(days);
       if (RENTAL_DURATION_OPTIONS.includes(numDays)) {
-        result[numDays] = Math.ceil(usdPrice * 100 * (1 + MARGIN));
+        result[numDays] = Math.ceil(usdPrice * 100 * (1 + margin()));
       }
     }
     const data = Object.keys(result).length > 0 ? result : null;
@@ -447,17 +569,16 @@ exports.getServiceList = async (req, res, next) => {
 
     const enabledServices = services.filter((s) => countMap[s._id.toString()]?.countryCount > 0);
 
-    // Fetch LIX 2 and LIX 3 price ranges in parallel
-    const [grizzlyPriceMaps, lix3PriceMaps] = await Promise.all([
-      Promise.all(enabledServices.map((s) => getGrizzlyOtpPrices(s.slug))),
-      Promise.all(enabledServices.map((s) => getGetSmsOtpPrices(s.slug))),
-    ]);
+    // LIX 1 (5sim) uses the NumberPricing DB counts (countMap) it was synced from.
+    // LIX 2 (Grizzly) is live-priced here. LIX 3 (smscodes) is omitted from the
+    // service LIST on purpose — one call per service would burst its rate limit;
+    // its prices surface in the per-service / per-country views.
+    const grizzlyPriceMaps = await Promise.all(enabledServices.map((s) => getGrizzlyOtpPrices(s.slug)));
 
     const result = enabledServices.map((s, i) => {
       const gMap = grizzlyPriceMaps[i];
-      const l3Map = lix3PriceMaps[i];
       const lix2Prices = gMap ? Object.values(gMap) : [];
-      const lix3Prices = l3Map ? Object.values(l3Map) : [];
+      const cm = countMap[s._id.toString()];
       return {
         id: s._id,
         name: s.name,
@@ -465,17 +586,14 @@ exports.getServiceList = async (req, res, next) => {
         icon: s.icon,
         servers: {
           lix1: {
-            countryCount: countMap[s._id.toString()]?.countryCount || 0,
-            minPrice: countMap[s._id.toString()]?.minPrice || 0,
+            countryCount: cm?.countryCount || 0,
+            minPrice: cm?.minPrice || 0,
           },
           lix2: {
             countryCount: lix2Prices.length,
             minPrice: lix2Prices.length > 0 ? Math.min(...lix2Prices) : 0,
           },
-          lix3: {
-            countryCount: lix3Prices.length,
-            minPrice: lix3Prices.length > 0 ? Math.min(...lix3Prices) : 0,
-          },
+          lix3: { countryCount: 0, minPrice: 0 }, // smscodes priced in per-service/country views
         },
       };
     });
@@ -512,7 +630,7 @@ exports.getRecommendations = async (req, res, next) => {
         name: country.name,
         flagEmoji: country.flagEmoji,
         code: country.code,
-        price: Math.ceil(Math.ceil(data.maxPrice * 100) * (1 + MARGIN)),
+        price: Math.ceil(Math.ceil(data.maxPrice * 100) * (1 + margin())),
         successRate: Math.min(100, Math.round(data.bestRate * 1000) / 10),
         availableCount: data.totalCount,
         score,
@@ -549,10 +667,11 @@ exports.getCountriesForService = async (req, res, next) => {
     if (!svc) throw new AppError('NOT_FOUND', 404, 'Service not found');
 
     const pricing = await NumberPricing.find({ serviceId: svc._id, isAvailable: true }).populate('countryId');
-    const [maxPrices, grizzlyPrices, lix3Prices] = await Promise.all([
-      getMaxPrices(serviceSlug),
-      getGrizzlyOtpPrices(serviceSlug),
-      getGetSmsOtpPrices(serviceSlug),
+    const [grizzlyPrices, maxPrices, smscodesPrices, smscodesStock] = await Promise.all([
+      getGrizzlyOtpPrices(serviceSlug),  // LIX 2
+      getMaxPrices(serviceSlug),         // LIX 1 (5sim)
+      getSmsCodesOtpPrices(serviceSlug), // LIX 3
+      getSmsCodesStock(),                // LIX 3 live stock (gates availability)
     ]);
 
     const result = [];
@@ -560,14 +679,14 @@ exports.getCountriesForService = async (req, res, next) => {
       const c = p.countryId;
       if (!c || !c.isEnabled) continue;
       const slug = c.fivesimSlug || ISO_TO_SLUG[c.code] || c.code.toLowerCase();
-      const liveData = maxPrices?.[slug];
-      const lix1Price = liveData ? Math.ceil(Math.ceil(liveData.maxPrice * 100) * (1 + MARGIN)) : (maxPrices ? null : p.finalPrice);
+      const liveData = maxPrices?.[slug]; // 5sim → LIX 1
+      const lix1Price = liveData ? Math.ceil(Math.ceil(liveData.maxPrice * 100) * (1 + margin())) : null;
       const lix2Price = grizzlyPrices?.[c.code] ?? null;
-      const lix3Price = lix3Prices?.[c.code] ?? null;
+      // LIX 3 only when smscodes actually has numbers in this country.
+      const lix3Price = smscodesStock.has(c.code) ? (smscodesPrices?.[c.code] ?? null) : null;
       if (!lix1Price && !lix2Price && !lix3Price) continue;
 
-      // Live success signal from the provider (5sim). Only LIX 1 countries with
-      // numbers in stock carry a rate; LIX 2/3-only or out-of-stock have none.
+      // Live success signal from 5sim (LIX 1) — the only tier exposing a live rate.
       const hasRate = !!(liveData && lix1Price && liveData.totalCount > 0);
       const successRate = hasRate ? Math.min(100, Math.round(liveData.bestRate * 1000) / 10) : null;
       const availableCount = hasRate ? liveData.totalCount : null;
@@ -696,6 +815,33 @@ async function get5simCountryPrices(countrySlug) {
   }
 }
 
+// LIX 3 = smscodes.io. Its GetCountryPrices returns 1000+ services and is slow
+// (~30-60s), so we share one in-flight call per country, cache the result for
+// next time, and cap the inline wait at 2s (lix3 just shows unavailable on the
+// first cold load, then populates).
+const smscodesCountryCache = new Map();
+const smscodesCountryInflight = new Map();
+async function getSmsCodesCountryPrices(iso) {
+  if (!SMSCODES_ENABLED) return null;
+  const c = smscodesCountryCache.get(iso);
+  if (c && c.expiresAt > Date.now()) return c.data;
+  if (!smscodesCountryInflight.has(iso)) {
+    const promise = smscodes.getOtpPricesByCountry(iso)
+      .then((data) => { smscodesCountryCache.set(iso, { data, expiresAt: Date.now() + CACHE_TTL }); return data; })
+      .catch((err) => {
+        logger.warn(`getSmsCodesCountryPrices(${iso}) failed: ${err.message}`);
+        smscodesCountryCache.set(iso, { data: null, expiresAt: Date.now() + NEGATIVE_CACHE_TTL });
+        return null;
+      })
+      .finally(() => smscodesCountryInflight.delete(iso));
+    smscodesCountryInflight.set(iso, promise);
+  }
+  return Promise.race([
+    smscodesCountryInflight.get(iso),
+    new Promise((r) => setTimeout(() => r(null), 2000)),
+  ]);
+}
+
 async function getGrizzlyCountryPrices(iso) {
   const c = grizzlyCountryCache.get(iso);
   if (c && c.expiresAt > Date.now()) return c.data;
@@ -760,39 +906,54 @@ exports.getServices = async (req, res, next) => {
 
     // ONE call per provider for the whole country (each cached per country),
     // instead of one call per service — plus the cached success-rate aggregates.
-    const [fivesimMap, grizzlyMap, getsmsMap, serviceRates, providerRates] = await Promise.all([
-      get5simCountryPrices(fivesimSlug),
-      getGrizzlyCountryPrices(country.code),
-      getGetSmsCountryPrices(country.code),
+    // Fetch the LIX 3 stock set first (fast, cached) so we can SKIP the slow
+    // per-country smscodes price call (~30s cold) for countries with no stock —
+    // we'd hide LIX 3 there anyway. Stock is per-country, so no stock = no LIX 3
+    // for any service in it.
+    const smscodesStock = await getSmsCodesStock();
+    const smscodesInStock = smscodesStock.has(country.code);
+
+    const [grizzlyMap, fivesimMap, smscodesMap, serviceRates, providerRates] = await Promise.all([
+      getGrizzlyCountryPrices(country.code),   // LIX 2
+      get5simCountryPrices(fivesimSlug),       // LIX 1 (5sim)
+      smscodesInStock ? getSmsCodesCountryPrices(country.code) : Promise.resolve(null), // LIX 3 (skip if no stock)
       getServiceSuccessRates(),
       getServiceRatesByProvider(),
     ]);
 
     const services = enabledPricing.map((p) => {
       const slug = p.serviceId.slug;
-      const liveData = fivesimMap ? fivesimMap[slug] : undefined;
-      const available = fivesimMap != null ? (liveData?.maxPrice > 0) : p.isAvailable;
-      const fivesimRate = liveData?.bestRate != null ? Math.min(100, Math.round(liveData.bestRate * 1000) / 10) : null;
       const svcId = p.serviceId._id.toString();
-      const lix1Rate = fivesimRate ?? providerRates[svcId]?.fivesim ?? serviceRates[svcId] ?? null;
-      const lix2Rate = providerRates[svcId]?.grizzlysms ?? serviceRates[svcId] ?? null;
-      const lix1Price = liveData ? Math.ceil(Math.ceil(liveData.maxPrice * 100) * (1 + MARGIN)) : p.finalPrice;
-      const lix2Price = grizzlyMap?.[slug] ? Math.ceil(Math.ceil(grizzlyMap[slug].cost * 100) * (1 + MARGIN)) : null;
-      const lix3Price = getsmsMap?.[slug] ? Math.ceil(Math.ceil(getsmsMap[slug].cost * 100) * (1 + MARGIN)) : null;
+      const liveData = fivesimMap ? fivesimMap[slug] : undefined; // 5sim → LIX 1
+      const fivesimRate = liveData?.bestRate != null ? Math.min(100, Math.round(liveData.bestRate * 1000) / 10) : null;
+
+      // LIX 1 = 5sim (default), carries 5sim's live bestRate. The others use our
+      // measured per-provider success, or none.
+      const lix1Price = liveData ? Math.ceil(Math.ceil(liveData.maxPrice * 100) * (1 + margin())) : null;
+      const lix2Price = grizzlyMap?.[slug] ? Math.ceil(Math.ceil(grizzlyMap[slug].cost * 100) * (1 + margin())) : null;
+      const lix3Price = (smscodesInStock && smscodesMap?.[slug]) ? Math.ceil(Math.ceil(smscodesMap[slug].cost * 100) * (1 + margin())) : null;
+
+      const lix1Rate = fivesimRate ?? providerRates[svcId]?.fivesim ?? null;
+      const lix2Rate = providerRates[svcId]?.grizzlysms ?? null;
+      const lix3Rate = providerRates[svcId]?.smscodes ?? null;
+
+      // Service is orderable if any tier has stock.
+      const available = !!(lix1Price || lix2Price || lix3Price);
       return {
         id: p.serviceId._id,
         name: p.serviceId.name,
         slug: p.serviceId.slug,
         icon: p.serviceId.icon,
-        price: lix1Price,
+        price: lix1Price ?? lix2Price ?? lix3Price,
         available,
         pricingId: p._id,
-        successRate: lix1Rate,
+        // Headline rate = 5sim's live signal (LIX 1), falling back to measured.
+        successRate: lix1Rate ?? lix2Rate ?? lix3Rate,
         availableCount: liveData?.totalCount ?? null,
         servers: {
-          lix1: { price: lix1Price, available, successRate: lix1Rate },
+          lix1: { price: lix1Price, available: !!lix1Price, successRate: lix1Rate },
           lix2: { price: lix2Price, available: !!lix2Price, successRate: lix2Rate },
-          lix3: { price: lix3Price, available: !!lix3Price, successRate: null },
+          lix3: { price: lix3Price, available: !!lix3Price, successRate: lix3Rate },
         },
       };
     });
@@ -830,15 +991,17 @@ exports.orderNumber = async (req, res, next) => {
 
     const countryName = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
-    // Determine charge based on chosen server
+    // Determine charge based on chosen server (tier → provider via TIER_PROVIDER)
     let chargeCredits;
     if (server === 'lix2') {
       const gzPrices = await getGrizzlyOtpPrices(service.slug);
       chargeCredits = gzPrices?.[country.code] ?? pricing.finalPrice;
     } else if (server === 'lix3') {
-      const l3Prices = await getGetSmsOtpPrices(service.slug);
-      chargeCredits = l3Prices?.[country.code] ?? pricing.finalPrice;
+      // LIX 3 = smscodes.io
+      const scPrices = await getSmsCodesOtpPrices(service.slug);
+      chargeCredits = scPrices?.[country.code] ?? pricing.finalPrice;
     } else {
+      // LIX 1 (default) = 5sim
       chargeCredits = await getChargeCredits(countryName, service.slug, pricing.finalPrice);
     }
 
@@ -854,27 +1017,59 @@ exports.orderNumber = async (req, res, next) => {
     // detail is logged server-side for debugging.
     const NO_NUMBER_MSG = 'No numbers are available for this service right now. Please try another service or country.';
 
-    if (server === 'lix3') {
-      const l3Result = await getsmsotp.getNumber(service.slug, country.code).catch((err) => {
-        logger.warn(`LIX 3 getNumber failed (${country.code}/${service.slug}): ${err.message}`);
-        throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
-      });
-      providerResponse = { id: l3Result.id, phone: l3Result.phone, price: 0 };
-      usedProvider = 'getsmsotp';
-    } else if (server === 'lix2') {
+    if (server === 'lix2') {
       const gzResult = await grizzlysms.getNumber(service.slug, country.code).catch((err) => {
         logger.warn(`LIX 2 getNumber failed (${country.code}/${service.slug}): ${err.message}`);
         throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
       });
       providerResponse = { id: gzResult.id, phone: gzResult.phone, price: 0 };
       usedProvider = 'grizzlysms';
-    } else {
+    } else if (server === 'lix3') {
+      // LIX 3 = smscodes.io (real-SIM). No provider-side cancel — smscodes only
+      // bills on code delivery. Fall back to LIX 2 on failure.
+      if (!SMSCODES_ENABLED) throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
       try {
-        providerResponse = await fivesim.buyNumber(countryName, 'any', service.slug);
-        usedProvider = 'fivesim';
-      } catch (fivesimErr) {
-        const fivesimDetail = fivesimErr.response?.data || fivesimErr.message;
-        logger.warn(`LIX 1 (5sim) failed, retrying via LIX 2 — ${JSON.stringify(fivesimDetail)}`);
+        const sc = await smscodes.getNumber(service.slug, country.code);
+        if (!sc?.id || !sc?.phone) throw new Error('empty smscodes response');
+        providerResponse = { id: sc.id, phone: sc.phone, price: 0 };
+        usedProvider = 'smscodes';
+        logger.info(`LIX 3 (smscodes) bought for ${country.code}/${service.slug}`);
+      } catch (scErr) {
+        logger.warn(`LIX 3 (smscodes) failed (${country.code}/${service.slug}), retrying via LIX 2 — ${scErr.message}`);
+        try {
+          const gzResult = await grizzlysms.getNumber(service.slug, country.code);
+          providerResponse = { id: gzResult.id, phone: gzResult.phone, price: 0 };
+          usedProvider = 'grizzlysms';
+        } catch (gzErr) {
+          logger.error(`LIX 2 (GrizzlySMS) also failed — ${gzErr.message}`);
+          throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
+        }
+      }
+    } else {
+      // LIX 1 (default) = 5sim. Buy the best-delivery operator with stock, fall
+      // through the next-best, then 'any'; finally fall back to LIX 2. Break on
+      // first good number (single charge); cancel a malformed allocation so we
+      // never pay twice.
+      const ranked = await rankFiveSimOperators(countryName, service.slug);
+      const candidates = [...ranked.slice(0, 3), 'any'];
+      let lastErr = null;
+      for (const op of candidates) {
+        try {
+          const bought = await fivesim.buyNumber(countryName, op, service.slug);
+          if (bought?.phone && bought?.id) {
+            providerResponse = bought;
+            usedProvider = 'fivesim';
+            logger.info(`LIX 1 (5sim) bought via operator '${op}' for ${countryName}/${service.slug}`);
+            break;
+          }
+          if (bought?.id) { try { await fivesim.cancelOrder(bought.id); } catch (_) {} }
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      if (!usedProvider) {
+        const fivesimDetail = lastErr?.response?.data || lastErr?.message || 'no operator had stock';
+        logger.warn(`LIX 1 (5sim) failed all operators, retrying via LIX 2 — ${JSON.stringify(fivesimDetail)}`);
         try {
           const gzResult = await grizzlysms.getNumber(service.slug, country.code);
           providerResponse = { id: gzResult.id, phone: gzResult.phone, price: 0 };
@@ -933,6 +1128,8 @@ exports.orderNumber = async (req, res, next) => {
       try {
         if (usedProvider === 'grizzlysms') {
           await grizzlysms.setStatus(providerResponse.id.toString(), 8);
+        } else if (usedProvider === 'smscodes') {
+          /* smscodes has no cancel endpoint — it only bills on code delivery */
         } else {
           await fivesim.cancelOrder(providerResponse.id.toString());
         }
@@ -1039,6 +1236,8 @@ exports.cancelOrder = async (req, res, next) => {
       }
     } else if (order.provider === 'getsmsotp') {
       try { await getsmsotp.setStatus(order.providerOrderId, 8); } catch (_) {}
+    } else if (order.provider === 'smscodes') {
+      /* smscodes has no cancel endpoint — only billed on code delivery */
     } else if (order.provider !== 'smsactivate') {
       try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
     }
@@ -1217,7 +1416,16 @@ exports.orderRental = async (req, res, next) => {
       throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
     }
 
-    const result = await getsms.getNumber(country.code, service.slug, numDays);
+    // Rent the number BEFORE charging, so a provider outage never costs the user
+    // credits. get-sms.com occasionally 500s ("Internal server error") on its order
+    // endpoint — surface that as a clean, reassuring message instead of a raw 500.
+    let result;
+    try {
+      result = await getsms.getNumber(country.code, service.slug, numDays);
+    } catch (err) {
+      logger.warn(`Rental getNumber failed (${country.code}/${service.slug}, ${numDays}d): ${err.message}`);
+      throw new AppError('PROVIDER_ERROR', 502, 'Number rentals are temporarily unavailable. Please try again in a couple of minutes.');
+    }
 
     await spendCredits(userId, chargeCredits, `${numDays}-day rental: ${country.flagEmoji} ${country.name} - ${service.name}`);
 

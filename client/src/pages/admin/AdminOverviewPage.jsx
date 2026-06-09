@@ -22,7 +22,7 @@ function ProviderHealth() {
   const rows = [
     { label: '5sim balance', tier: 'LIX 1', value: bal(f?.balance) },
     { label: 'GrizzlySMS balance', tier: 'LIX 2', value: bal(data?.grizzlysms?.balance) },
-    { label: 'GetSMS balance', tier: 'LIX 3', value: bal(data?.getsmsotp?.balance) },
+    { label: 'smscodes.io balance', tier: 'LIX 3', value: bal(data?.smscodes?.balance) },
   ];
 
   return (
@@ -36,7 +36,7 @@ function ProviderHealth() {
         </div>
       ))}
       <div className="flex items-center justify-between text-sm pt-1 border-t border-gray-100">
-        <span className="text-gray-500">5sim success rate (1h)</span>
+        <span className="text-gray-500">5sim · LIX 3 success rate (1h)</span>
         <span className="font-semibold">{f?.successRate1h != null ? `${f.successRate1h}%` : '—'}</span>
       </div>
 

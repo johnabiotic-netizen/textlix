@@ -12,6 +12,7 @@ const { adminAdjustCredits } = require('../services/credit.service');
 const fivesim = require('../providers/sms/fivesim.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
+const smscodes = require('../providers/sms/smscodes.provider');
 const smsPoller = require('../services/sms-poller.service');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
@@ -54,7 +55,9 @@ exports.getDashboard = async (req, res, next) => {
       User.countDocuments({ createdAt: { $gte: startOfDay } }),
       User.countDocuments({ lastLoginAt: { $gte: startOfDay } }),
       NumberOrder.countDocuments({ status: 'ACTIVE' }),
-      NumberOrder.countDocuments({ createdAt: { $gte: LAUNCH_DATE } }),
+      // Exclude the retired getsmsotp provider (0/76 — all failures) so it
+      // doesn't inflate total orders or drag down the overall success rate.
+      NumberOrder.countDocuments({ createdAt: { $gte: LAUNCH_DATE }, provider: { $nin: ['getsmsotp', 'tigersms'] } }),
       CreditTransaction.aggregate([{ $match: { type: 'PURCHASE', createdAt: { $gte: LAUNCH_DATE } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
       CreditTransaction.aggregate([{ $match: { type: 'SPEND', createdAt: { $gte: LAUNCH_DATE } } }, { $group: { _id: null, total: { $sum: { $abs: '$amount' } } } }]),
       CreditTransaction.aggregate([{ $match: { type: 'REFUND', createdAt: { $gte: LAUNCH_DATE } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
@@ -63,6 +66,7 @@ exports.getDashboard = async (req, res, next) => {
     const successOrders = await NumberOrder.countDocuments({
       smsContent: { $ne: null },
       createdAt: { $gte: LAUNCH_DATE },
+      provider: { $nin: ['getsmsotp', 'tigersms'] },
     });
     const successRate = totalOrders > 0 ? Math.round((successOrders / totalOrders) * 100) : 0;
 
@@ -327,17 +331,34 @@ exports.updateService = async (req, res, next) => {
 
 exports.getPricing = async (req, res, next) => {
   try {
-    const { countryId, serviceId } = req.query;
+    const { country, service } = req.query;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 50), 200);
+    const skip = (page - 1) * limit;
+
+    // Filter by country / service NAME (matches the page's text filters). The
+    // Country/Service collections are small, so resolving names → ids is cheap.
     const filter = {};
-    if (countryId) filter.countryId = new mongoose.Types.ObjectId(countryId);
-    if (serviceId) filter.serviceId = new mongoose.Types.ObjectId(serviceId);
+    if (country && country.trim()) {
+      const ids = await Country.find({ name: { $regex: country.trim(), $options: 'i' } }, '_id');
+      filter.countryId = { $in: ids.map((c) => c._id) };
+    }
+    if (service && service.trim()) {
+      const ids = await Service.find({ name: { $regex: service.trim(), $options: 'i' } }, '_id');
+      filter.serviceId = { $in: ids.map((s) => s._id) };
+    }
 
-    const pricing = await NumberPricing.find(filter)
-      .populate('countryId', 'name flagEmoji code')
-      .populate('serviceId', 'name icon slug')
-      .sort({ 'countryId.name': 1 });
+    const [pricing, total] = await Promise.all([
+      NumberPricing.find(filter)
+        .populate('countryId', 'name flagEmoji code')
+        .populate('serviceId', 'name icon slug')
+        .sort({ countryId: 1, serviceId: 1 })
+        .skip(skip)
+        .limit(limit),
+      NumberPricing.countDocuments(filter),
+    ]);
 
-    success(res, { pricing });
+    success(res, { pricing, total, page, pages: Math.ceil(total / limit) || 1, limit });
   } catch (err) {
     next(err);
   }
@@ -371,17 +392,18 @@ exports.getSettings = async (req, res, next) => {
   }
 };
 
+// Keys the admin Settings page actually edits (must match the form field keys
+// in AdminSettingsPage.jsx). Anything not listed here is ignored on save rather
+// than rejected, so pass-through/legacy DB keys (e.g. WELCOME_BONUS_REMAINING)
+// never block a save.
 const ALLOWED_SETTINGS_KEYS = new Set([
-  'maxActiveNumbers',
-  'numberExpiryMinutes',
-  'defaultMarginPercent',
-  'maintenanceMode',
-  'korapayNgnRate',
-  'smsProviderPrimary',
-  'smsProviderFallback',
-  'referralBonusPercent',
-  'minTopupUSD',
+  'default_margin_percent',
+  'number_timeout_minutes',
+  'min_topup_usd',
+  'sms_retention_hours',
+  'sms_poll_interval_seconds',
   'announcementBanner',
+  'coingate_environment',
   'rental_price_3day',
   'rental_price_7day',
   'rental_price_14day',
@@ -401,9 +423,9 @@ exports.updateSettings = async (req, res, next) => {
   try {
     const updates = req.body;
     for (const [key, value] of Object.entries(updates)) {
-      if (!ALLOWED_SETTINGS_KEYS.has(key)) {
-        throw new AppError('VALIDATION_ERROR', 400, `Unknown setting key: ${key}`);
-      }
+      // Skip keys we don't manage (the form resends every DB key, including
+      // read-only/legacy ones) — don't fail the whole save over them.
+      if (!ALLOWED_SETTINGS_KEYS.has(key)) continue;
       await PlatformSettings.findOneAndUpdate(
         { key },
         { value: String(value) },
@@ -517,6 +539,7 @@ const ORDER_SUCCEEDED = {
 };
 
 const PROVIDER_LABELS = {
+  smscodes: 'smscodes.io',
   '5sim': '5sim', fivesim: '5sim', grizzlysms: 'GrizzlySMS', getsms: 'GetSMS',
   getsmsotp: 'GetSMS', smspool: 'SMSPool', smsactivate: 'SMS-Activate',
 };
@@ -525,10 +548,10 @@ exports.getProviderHealth = async (req, res, next) => {
   try {
     const since1h = new Date(Date.now() - 60 * 60 * 1000);
 
-    const [fivesimBalance, grizzlyBalance, getsmsBalance, hourlyAgg, providerAgg] = await Promise.all([
+    const [smscodesBalance, fivesimBalance, grizzlyBalance, hourlyAgg, providerAgg] = await Promise.all([
+      smscodes.getBalance().catch(() => null),
       fivesim.getProfile().then((p) => p?.balance ?? null).catch(() => null),
       grizzlysms.getBalance().catch(() => null),
-      getsmsotp.getBalance().catch(() => null),
       NumberOrder.aggregate([
         { $match: { provider: 'fivesim', createdAt: { $gte: since1h }, status: { $in: ['COMPLETED', 'EXPIRED', 'REFUNDED', 'CANCELLED'] } } },
         { $group: { _id: null, total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] } } } },
@@ -537,7 +560,7 @@ exports.getProviderHealth = async (req, res, next) => {
       // still in-flight (ACTIVE with no code yet) so the rate reflects decided
       // outcomes, not pending ones.
       NumberOrder.aggregate([
-        { $match: { createdAt: { $gte: LAUNCH_DATE } } },
+        { $match: { createdAt: { $gte: LAUNCH_DATE }, provider: { $nin: ['getsmsotp', 'tigersms'] } } },
         {
           $group: {
             _id: '$provider',
@@ -569,7 +592,7 @@ exports.getProviderHealth = async (req, res, next) => {
     success(res, {
       fivesim: { balance: fivesimBalance, successRate1h, ordersLast1h: hourly.total },
       grizzlysms: { balance: grizzlyBalance },
-      getsmsotp: { balance: getsmsBalance },
+      smscodes: { balance: smscodesBalance },
       successByProvider,
     });
   } catch (err) {

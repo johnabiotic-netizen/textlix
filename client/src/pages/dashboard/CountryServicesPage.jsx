@@ -11,10 +11,10 @@ import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import Input from '../../components/common/Input';
 
-// LIX 3 (get-sms.com activations) is temporarily unavailable: their OTP endpoint
-// issues numbers but never delivers codes. Hidden from selection until they
-// confirm a fix. Backend is untouched — flip this back to true to re-enable.
-const LIX3_ENABLED = false;
+// Tier layout: LIX 1 = 5sim (default, live rate) · LIX 2 = GrizzlySMS ·
+// LIX 3 = smscodes.io (real-SIM). LIX3_ENABLED gates smscodes — flip to false to
+// instantly hide the LIX 3 tier (its adapter is throttled, but keep the kill-switch).
+const LIX3_ENABLED = true;
 
 export default function CountryServicesPage({ mode: modeProp }) {
   const { countryId } = useParams();
@@ -125,16 +125,16 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const isTopCountry = topCountryIds.has(String(countryId));
   const myRec = (recData?.recommendations || []).find((r) => String(r.id) === String(countryId));
 
+  // AI Recommend ranks countries by 5sim's success rate, and 5sim is now LIX 1 —
+  // the default tier — so recommended countries already open on the provider the
+  // recommendation was based on. No tier override needed.
+
   const rentalOptions = rentalData?.options || [];
   const selectedRentalOption = rentalOptions.find((o) => o.days === rentalDays);
   const rentalPrice = selectedRentalOption?.price || 0;
 
   const otpPrice = selectedService
-    ? (selectedServer === 'lix3'
-        ? selectedService.servers?.lix3?.price
-        : selectedServer === 'lix2'
-          ? selectedService.servers?.lix2?.price
-          : selectedService.servers?.lix1?.price) || 0
+    ? (selectedService.servers?.[selectedServer]?.price || 0)
     : 0;
 
   const filteredServices = (servicesData?.services || []).filter(
@@ -300,7 +300,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     hover={anyAvail}
                     onClick={() => {
                       if (!anyAvail) return;
-                      // Auto-select server: prefer lix1, fallback to lix2, then lix3
+                      // Auto-select server: prefer lix1, then lix2, lix3
                       setSelectedServer(lix1Avail ? 'lix1' : lix2Avail ? 'lix2' : 'lix3');
                       setSelectedService(service);
                     }}
@@ -415,7 +415,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   <p className="font-mono-num font-bold text-emerald-700 dark:text-emerald-300">
                     {LIX3_ENABLED ? (selectedService.servers?.lix3?.price ?? '—') : '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{LIX3_ENABLED ? 'Server 3' : 'Unavailable'}</p>
+                  {LIX3_ENABLED && selectedService.servers?.lix3?.successRate != null
+                    ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix3.successRate)}`}>{selectedService.servers.lix3.successRate}% success</p>
+                    : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{LIX3_ENABLED ? 'Server 3' : 'Unavailable'}</p>}
                 </button>
               </div>
             </div>
@@ -432,7 +434,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Server</span>
-                <span className={`font-medium ${selectedServer === 'lix1' ? 'text-brand-600 dark:text-brand-300' : selectedServer === 'lix2' ? 'text-brand-600 dark:text-brand-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
+                <span className={`font-medium ${selectedServer === 'lix1' || selectedServer === 'lix2' ? 'text-brand-600 dark:text-brand-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
                   {selectedServer === 'lix1' ? 'LIX 1' : selectedServer === 'lix2' ? 'LIX 2' : 'LIX 3'}
                 </span>
               </div>

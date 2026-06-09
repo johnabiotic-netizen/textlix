@@ -7,6 +7,7 @@ const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const smspool = require('../providers/sms/smspool.provider');
 const getsms = require('../providers/sms/getsms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
+const smscodes = require('../providers/sms/smscodes.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
 // Mobile push lives only in the local/mobile build; the web deploy ships without
 // push.service.js. Load it if present, otherwise degrade to a no-op so the
@@ -67,7 +68,9 @@ class SMSPollerService {
   }
 
   async _poll(order) {
-    if (order.provider === 'getsmsotp') {
+    if (order.provider === 'smscodes') {
+      await this._pollSmsCodes(order);
+    } else if (order.provider === 'getsmsotp') {
       await this._pollGetSmsOtp(order);
     } else if (order.provider === 'getsms') {
       await this._pollGetSms(order);
@@ -79,6 +82,15 @@ class SMSPollerService {
       await this._pollGrizzly(order);
     } else {
       await this._pollFiveSim(order);
+    }
+  }
+
+  async _pollSmsCodes(order) {
+    // smscodes needs both the SecurityId (providerOrderId) and the number.
+    // Polling before a code arrives is free; it only bills once a code returns.
+    const code = await smscodes.getSMS(order.providerOrderId, order.phoneNumber);
+    if (code) {
+      await this._handleOtpSms(order, { text: `Your code: ${code}`, code });
     }
   }
 
