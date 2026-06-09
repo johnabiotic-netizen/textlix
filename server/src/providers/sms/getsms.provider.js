@@ -160,7 +160,7 @@ const COUNTRY_CODE_MAP = {
 };
 const toProviderCountry = (iso) => COUNTRY_CODE_MAP[iso] || iso;
 
-const call = async (params) => {
+const _doCall = async (params) => {
   let data;
   try {
     ({ data } = await axios.get(BASE_URL, {
@@ -176,6 +176,26 @@ const call = async (params) => {
     throw new Error(`GetSMS: ${data.data?.msg || data.status}`);
   }
   return data;
+};
+
+// Serialize ALL get-sms requests with a minimum gap. get-sms (behind Cloudflare)
+// rate-limits bursts from a single IP — and since we now egress through one proxy
+// IP, the poller's concurrent polls + retries would burst and get 403'd. Spacing
+// requests ~1.8s apart keeps us under the limit (verified: spaced calls return 200,
+// bursts return 403). Same queue pattern as the smscodes adapter.
+const GETSMS_MIN_GAP_MS = 1800;
+let _getsmsChain = Promise.resolve();
+let _getsmsLastAt = 0;
+
+const call = (params) => {
+  const run = _getsmsChain.then(async () => {
+    const gap = GETSMS_MIN_GAP_MS - (Date.now() - _getsmsLastAt);
+    if (gap > 0) await new Promise((r) => setTimeout(r, gap));
+    _getsmsLastAt = Date.now();
+    return _doCall(params);
+  });
+  _getsmsChain = run.then(() => {}, () => {}); // keep the queue alive regardless of outcome
+  return run;
 };
 
 // Cache country data (services + prices) per ISO code
