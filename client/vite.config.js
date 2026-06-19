@@ -12,6 +12,10 @@ export default defineConfig({
     viteCompression({ algorithm: 'brotliCompress', ext: '.br' }),
     VitePWA({
       registerType: 'autoUpdate',
+      // We register the SW ourselves in main.jsx (with update polling), so don't
+      // also auto-inject the bare registerSW.js — that one never checks for
+      // updates, which left users on a stale build until they cleared cache.
+      injectRegister: false,
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png'],
       manifest: {
         name: 'Textlix',

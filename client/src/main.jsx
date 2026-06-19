@@ -6,6 +6,24 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './styles/index.css';
 
+// Register the PWA service worker with frequent update checks. registerType is
+// 'autoUpdate', so when a new deploy is detected the SW activates (skipWaiting +
+// clientsClaim) and the page silently reloads to the new build — no manual cache
+// clear. We poll for updates on an interval and whenever the tab regains focus,
+// because the browser otherwise only checks on a cold navigation.
+import { registerSW } from 'virtual:pwa-register';
+registerSW({
+  immediate: true,
+  onRegisteredSW(_swUrl, registration) {
+    if (!registration) return;
+    const checkForUpdate = () => registration.update().catch(() => {});
+    setInterval(checkForUpdate, 60 * 1000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkForUpdate();
+    });
+  },
+});
+
 // Sentry is dynamically imported and initialised 1.5s after window 'load' so
 // it doesn't add to the initial JS bundle parsed during the LCP/TBT window.
 // Crashes that happen in the first ~2s of a session are still picked up by
