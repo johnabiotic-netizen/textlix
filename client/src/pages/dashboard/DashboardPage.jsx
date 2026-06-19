@@ -190,6 +190,30 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* ── Primary actions: OTP + Rent (top-level so Rent is easy to find) ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link to="/numbers/otp" className="group">
+          <Card className="p-5 h-full flex items-center gap-4 border-2 border-brand-200 dark:border-brand-800 hover:border-brand-400 dark:hover:border-brand-600 transition-colors">
+            <div className="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-2xl shrink-0">⚡</div>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-display font-semibold text-gray-900 dark:text-white">Get OTP Number</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">One-time code in seconds. Auto-refunds if none arrives.</p>
+            </div>
+            <span className="shrink-0 text-brand-600 dark:text-brand-300 font-semibold group-hover:translate-x-0.5 transition-transform">→</span>
+          </Card>
+        </Link>
+        <Link to="/numbers/rental" className="group">
+          <Card className="p-5 h-full flex items-center gap-4 border-2 border-violet-200 dark:border-violet-800 hover:border-violet-400 dark:hover:border-violet-600 transition-colors">
+            <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center text-2xl shrink-0">🗓️</div>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-display font-semibold text-gray-900 dark:text-white">Rent a Number</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Keep the same number 1 week to 1 month. Get many codes.</p>
+            </div>
+            <span className="shrink-0 text-violet-600 dark:text-violet-300 font-semibold group-hover:translate-x-0.5 transition-transform">→</span>
+          </Card>
+        </Link>
+      </div>
+
       {/* ── AI Recommendation CTA ──────────────────────────────────────────── */}
       <Link to="/recommend" className="block group">
         <Card className="p-5 md:p-6 bg-gradient-to-r from-brand-50 to-white dark:from-brand-900/20 dark:to-gray-900 border border-brand-100 dark:border-brand-900/40">
