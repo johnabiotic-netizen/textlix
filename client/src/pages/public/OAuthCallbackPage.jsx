@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
+import { trackCompleteRegistration } from '../../utils/tiktok';
 
 export default function OAuthCallbackPage() {
   const navigate = useNavigate();
@@ -27,9 +28,15 @@ export default function OAuthCallbackPage() {
     useAuthStore.getState().setAccessToken(token);
 
     api.get('/user/me').then(({ data }) => {
-      setAuth(data.data.user, token);
+      const user = data.data.user;
+      setAuth(user, token);
+      // OAuth has no new-vs-returning flag, so count it as a signup only when the
+      // account was just created (within ~2 min) — avoids logging every login.
+      if (user.createdAt && Date.now() - new Date(user.createdAt).getTime() < 120000) {
+        trackCompleteRegistration();
+      }
       toast.success('Logged in successfully!');
-      navigate(data.data.user.role === 'ADMIN' ? '/admin' : '/dashboard');
+      navigate(user.role === 'ADMIN' ? '/admin' : '/dashboard');
     }).catch(() => {
       navigate('/login');
     });

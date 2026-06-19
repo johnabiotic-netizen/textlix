@@ -1,9 +1,21 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import axios from 'axios';
 import api from './api/axios';
 import useAuthStore from './store/authStore';
 import { getMe } from './api/user';
+import { trackPageView } from './utils/tiktok';
+
+// Fires a TikTok PageView on every route change. This is an SPA, so the pixel
+// in index.html only sees the first load — without this, navigations are
+// invisible to TikTok. Rendered inside <BrowserRouter> so it has router context.
+function PixelPageViews() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView();
+  }, [location.pathname]);
+  return null;
+}
 
 // Layouts (small, load eagerly)
 import UserLayout from './components/layout/UserLayout';
@@ -229,6 +241,7 @@ export default function App() {
   if (isCreatorSubdomain) {
     return (
       <BrowserRouter>
+        <PixelPageViews />
         <Suspense fallback={<PageSpinner />}>
           <CreatorApp />
         </Suspense>
@@ -238,6 +251,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <PixelPageViews />
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}

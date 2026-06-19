@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { RiCoinLine, RiArrowLeftLine, RiBankCardLine } from 'react-icons/ri';
 import { FiCheck } from 'react-icons/fi';
 import { getPackages, initializeKorapay, createOxprocessing, getPaymentHistory, validatePromo } from '../../api/payments';
+import { trackInitiateCheckout } from '../../utils/tiktok';
 import useAuthStore from '../../store/authStore';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
@@ -175,6 +176,9 @@ export default function BuyCreditsPage() {
       return;
     }
     setLoading(true);
+    // User has begun checkout (passed validation, about to hand off to the
+    // provider). Fire before any redirect, since the redirect navigates away.
+    trackInitiateCheckout({ valueUSD: amountUSD });
 
     try {
       if (method === 'naira') {

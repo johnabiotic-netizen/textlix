@@ -92,7 +92,9 @@
     ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
 
       ttq.load('D8QHHJRC77U5NRSHK6P0');
-      ttq.page();
+      // PageView is fired from React on every route change (SPA) — see
+      // PixelPageViews in App.jsx — so we intentionally do NOT call ttq.page()
+      // here, to avoid double-counting the first page.
     }(window, document, 'ttq');
     </script>
     <!-- TikTok Pixel Code End -->
