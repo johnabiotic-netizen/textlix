@@ -4,6 +4,7 @@ import { verifyKorapay } from '../../api/payments';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
 import { useSocket } from '../../hooks/useSocket';
+import { trackCompletePayment } from '../../utils/tiktok';
 
 export default function PaymentVerifyPage() {
   const [params] = useSearchParams();
@@ -26,12 +27,14 @@ export default function PaymentVerifyPage() {
   const [countdown, setCountdown] = useState(5);
 
   // Listen for payment:completed socket event while on the crypto pending screen
-  const handlePaymentCompleted = useCallback(async () => {
+  const handlePaymentCompleted = useCallback(async (data) => {
     if (status !== 'crypto_pending') return;
     try {
       const meRes = await getMe();
       useAuthStore.setState({ user: meRes.data.data.user });
     } catch (_) {}
+    // The socket payload only carries creditsAdded; credits bill at 100/$1.
+    trackCompletePayment({ valueUSD: (data?.creditsAdded ?? 0) / 100 });
     setStatus('success');
   }, [status]);
 
@@ -49,6 +52,7 @@ export default function PaymentVerifyPage() {
         if (payment?.status === 'COMPLETED') {
           const meRes = await getMe();
           useAuthStore.setState({ user: meRes.data.data.user });
+          trackCompletePayment({ valueUSD: payment.amountUSD ?? (payment.creditsAdded ?? 0) / 100 });
           setStatus('success');
         } else {
           setStatus('cancelled');
