@@ -1,4 +1,37 @@
 {
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/login/:p*", "destination": "/index.html" },
+    { "source": "/register", "destination": "/index.html" },
+    { "source": "/register/:p*", "destination": "/index.html" },
+    { "source": "/forgot-password", "destination": "/index.html" },
+    { "source": "/forgot-password/:p*", "destination": "/index.html" },
+    { "source": "/reset-password", "destination": "/index.html" },
+    { "source": "/reset-password/:p*", "destination": "/index.html" },
+    { "source": "/auth", "destination": "/index.html" },
+    { "source": "/auth/:p*", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/dashboard/:p*", "destination": "/index.html" },
+    { "source": "/recommend", "destination": "/index.html" },
+    { "source": "/recommend/:p*", "destination": "/index.html" },
+    { "source": "/numbers", "destination": "/index.html" },
+    { "source": "/numbers/:p*", "destination": "/index.html" },
+    { "source": "/credits", "destination": "/index.html" },
+    { "source": "/credits/:p*", "destination": "/index.html" },
+    { "source": "/transactions", "destination": "/index.html" },
+    { "source": "/transactions/:p*", "destination": "/index.html" },
+    { "source": "/orders", "destination": "/index.html" },
+    { "source": "/orders/:p*", "destination": "/index.html" },
+    { "source": "/settings", "destination": "/index.html" },
+    { "source": "/settings/:p*", "destination": "/index.html" },
+    { "source": "/api-keys", "destination": "/index.html" },
+    { "source": "/api-keys/:p*", "destination": "/index.html" },
+    { "source": "/payments", "destination": "/index.html" },
+    { "source": "/payments/:p*", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/:p*", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "assets/**/*.@(js|css|map)",
@@ -19,7 +52,7 @@
       ]
     },
     {
-      "source": "index.html",
+      "source": "**/*.html",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache" }
       ]

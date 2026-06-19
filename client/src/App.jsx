@@ -57,6 +57,7 @@ const OrderDetailPage = lazy(() => import('./pages/dashboard/OrderDetailPage'));
 const AdminPromoCodesPage = lazy(() => import('./pages/admin/AdminPromoCodesPage'));
 const ApiKeysPage = lazy(() => import('./pages/dashboard/ApiKeysPage'));
 const VirtualNumberLandingPage = lazy(() => import('./pages/public/VirtualNumberLandingPage'));
+const VirtualNumbersIndexPage = lazy(() => import('./pages/public/VirtualNumbersIndexPage'));
 
 // Admin pages — lazy (recharts lives here, never hits regular users)
 const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'));
@@ -270,6 +271,7 @@ export default function App() {
           <Route path="/docs" element={<DocsPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/virtual-numbers" element={<VirtualNumbersIndexPage />} />
           <Route path="/virtual-numbers/:countryCode/:serviceSlug" element={<VirtualNumberLandingPage />} />
 
           {/* User dashboard */}

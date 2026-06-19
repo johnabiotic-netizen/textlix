@@ -5,6 +5,7 @@ import Logo from '../common/Logo';
 import ThemeToggle from '../common/ThemeToggle';
 
 const NAV_LINKS = [
+  { to: '/virtual-numbers', label: 'Numbers' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/docs', label: 'Docs' },
   { to: '/blog', label: 'Blog' },
@@ -84,6 +85,7 @@ export default function PublicLayout({ children }) {
               <div>
                 <p className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Product</p>
                 <div className="space-y-2">
+                  <Link to="/virtual-numbers" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Virtual Numbers</Link>
                   <Link to="/pricing" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Pricing</Link>
                   <Link to="/docs" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Documentation</Link>
                   <Link to="/blog" className="block text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Blog</Link>

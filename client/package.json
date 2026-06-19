@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/prerender/entry-prerender.jsx --outDir dist-ssr && node scripts/prerender-pseo.mjs && node scripts/generate-sitemap.mjs",
     "preview": "vite preview",
-    "start": "npm run build && serve -s dist -l $PORT",
+    "start": "npm run build && serve dist -l $PORT",
     "lint": "eslint src --ext .js,.jsx"
   },
   "dependencies": {
