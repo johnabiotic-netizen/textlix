@@ -92,9 +92,12 @@
     ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
 
       ttq.load('D8QHHJRC77U5NRSHK6P0');
-      // PageView is fired from React on every route change (SPA) — see
-      // PixelPageViews in App.jsx — so we intentionally do NOT call ttq.page()
-      // here, to avoid double-counting the first page.
+      // Fire the initial PageView here in the raw HTML (TikTok's standard
+      // install). This guarantees the pixel is detectable and the landing
+      // PageView fires even before React mounts. SPA route changes are tracked
+      // separately by PixelPageViews in App.jsx, which SKIPS the first render
+      // so we don't double-count this initial page.
+      ttq.page();
     }(window, document, 'ttq');
     </script>
     <!-- TikTok Pixel Code End -->
