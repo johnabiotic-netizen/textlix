@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import toast from 'react-hot-toast';
-import { register } from '../../api/auth';
+import { register, setAttribution } from '../../api/auth';
 import useAuthStore from '../../store/authStore';
 import { trackCompleteRegistration } from '../../utils/analytics';
+import { getAttribution, getSessionId } from '../../utils/attribution';
 import Logo from '../../components/common/Logo';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -36,6 +37,8 @@ export default function RegisterPage() {
       const { user, accessToken } = data.data;
       setAuth(user, accessToken);
       trackCompleteRegistration();
+      // Stamp first-touch acquisition source (best-effort, non-blocking).
+      setAttribution({ attribution: getAttribution(), sessionId: getSessionId() }).catch(() => {});
       toast.success('Account created!');
       navigate('/dashboard');
     } catch (err) {

@@ -5,6 +5,12 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './styles/index.css';
+import { captureAttribution, pingVisit } from './utils/attribution';
+
+// Capture first-touch ad attribution and fire a one-per-session visit beacon as
+// early as possible. Fully fail-safe — never blocks render.
+captureAttribution();
+pingVisit();
 
 // Register the PWA service worker with frequent update checks. registerType is
 // 'autoUpdate', so when a new deploy is detected the SW activates (skipWaiting +

@@ -29,6 +29,7 @@ const adminRoutes = require('./routes/admin.routes');
 const creatorRoutes = require('./routes/creator.routes');
 const welcomeBonusRoutes = require('./routes/welcome-bonus.routes');
 const supportRoutes = require('./routes/support.routes');
+const trackRoutes = require('./routes/track.routes');
 const errorMiddleware = require('./middleware/error.middleware');
 const { getPublicStats } = require('./controllers/number.controller');
 
@@ -137,6 +138,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/creator', creatorRoutes);
 app.use('/api/v1/welcome-bonus', welcomeBonusRoutes);
 app.use('/api/v1/support', supportRoutes);
+app.use('/api/v1/track', trackRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));

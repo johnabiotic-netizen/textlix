@@ -4,6 +4,7 @@ const adminController = require('../controllers/admin.controller');
 const adminCreatorController = require('../controllers/admin.creator.controller');
 const adminSupport = require('../controllers/admin.support.controller');
 const adminAgents = require('../controllers/admin.agents.controller');
+const adminAnalytics = require('../controllers/admin.analytics.controller');
 const { authenticate, requireSupportStaff, adminSectionGuard } = require('../middleware/auth.middleware');
 const AuditLog = require('../models/AuditLog');
 const { success } = require('../utils/response');
@@ -45,6 +46,11 @@ router.patch('/settings', adminController.updateSettings);
 
 router.get('/revenue-report', adminController.getRevenueReport);
 router.get('/export/transactions', adminController.exportTransactions);
+
+// Conversion / acquisition analytics
+router.get('/analytics/overview', adminAnalytics.getOverview);
+router.get('/analytics/timeseries', adminAnalytics.getTimeseries);
+router.get('/analytics/export', adminAnalytics.exportReport);
 
 router.get('/provider-health', adminController.getProviderHealth);
 

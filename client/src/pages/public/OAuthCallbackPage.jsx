@@ -4,6 +4,8 @@ import useAuthStore from '../../store/authStore';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { trackCompleteRegistration } from '../../utils/analytics';
+import { setAttribution } from '../../api/auth';
+import { getAttribution, getSessionId } from '../../utils/attribution';
 
 export default function OAuthCallbackPage() {
   const navigate = useNavigate();
@@ -34,6 +36,8 @@ export default function OAuthCallbackPage() {
       // account was just created (within ~2 min) — avoids logging every login.
       if (user.createdAt && Date.now() - new Date(user.createdAt).getTime() < 120000) {
         trackCompleteRegistration();
+        // Stamp first-touch acquisition source for the new account (best-effort).
+        setAttribution({ attribution: getAttribution(), sessionId: getSessionId() }).catch(() => {});
       }
       toast.success('Logged in successfully!');
       navigate(user.role === 'ADMIN' ? '/admin' : '/dashboard');

@@ -37,6 +37,50 @@ exports.updateMe = async (req, res, next) => {
   }
 };
 
+// POST /user/attribution — stamp the user's first-touch acquisition source.
+// Called by the client right after signup (email or OAuth). First-touch: only
+// writes if the user has no source yet, so it never overwrites the original.
+exports.setAttribution = async (req, res, next) => {
+  try {
+    const { attribution = {}, sessionId } = req.body || {};
+    const str = (v, max = 300) => (typeof v === 'string' ? v.slice(0, max) : null);
+
+    const user = await User.findById(req.user.userId).select('attribution');
+    if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
+
+    if (!user.attribution || !user.attribution.source) {
+      await User.findByIdAndUpdate(req.user.userId, {
+        attribution: {
+          source: str(attribution.source, 120) || 'direct',
+          medium: str(attribution.medium, 120),
+          campaign: str(attribution.campaign, 200),
+          content: str(attribution.content, 200),
+          term: str(attribution.term, 200),
+          fbclid: str(attribution.fbclid, 300),
+          ttclid: str(attribution.ttclid, 300),
+          gclid: str(attribution.gclid, 300),
+          referrer: str(attribution.referrer, 300),
+          landingPath: str(attribution.landingPath, 300),
+          capturedAt: new Date(),
+        },
+      });
+    }
+
+    // Best-effort: link this session's Visit row to the user.
+    if (typeof sessionId === 'string' && sessionId) {
+      const Visit = require('../models/Visit');
+      Visit.updateOne(
+        { sessionId: sessionId.slice(0, 100), userId: null },
+        { $set: { userId: req.user.userId } }
+      ).catch(() => {});
+    }
+
+    success(res, { ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;

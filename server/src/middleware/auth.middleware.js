@@ -66,6 +66,7 @@ const SECTION_BY_SEGMENT = {
   settings: 'settings',
   'promo-codes': 'promo-codes',
   reports: 'reports',
+  analytics: 'analytics',
   creators: 'creators',
   dashboard: 'overview',
   'provider-health': 'overview',

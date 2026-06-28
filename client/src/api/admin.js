@@ -20,6 +20,11 @@ export const updateSettings = (data) => api.patch('/admin/settings', data);
 export const getRevenueReport = (params) => api.get('/admin/revenue-report', { params });
 export const exportTransactions = (params) => api.get('/admin/export/transactions', { responseType: 'blob', params });
 export const getProviderHealth = () => api.get('/admin/provider-health');
+
+// Conversion / acquisition analytics
+export const getAnalyticsOverview = (params) => api.get('/admin/analytics/overview', { params });
+export const getAnalyticsTimeseries = (params) => api.get('/admin/analytics/timeseries', { params });
+export const exportAnalytics = (params) => api.get('/admin/analytics/export', { responseType: 'blob', params });
 export const getPromoCodes = () => api.get('/admin/promo-codes');
 export const createPromoCode = (data) => api.post('/admin/promo-codes', data);
 export const updatePromoCode = (id, data) => api.patch(`/admin/promo-codes/${id}`, data);

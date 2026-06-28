@@ -62,6 +62,23 @@ const userSchema = new mongoose.Schema(
     pendingEarningsNaira: { type: Number, default: 0 },
     totalEarningsNaira: { type: Number, default: 0 },
     withdrawnNaira: { type: Number, default: 0 },
+    // ── Acquisition attribution (first-touch) ────────────────────────────────
+    // Where this user originally came from, captured from the landing URL at
+    // signup (utm_*, fbclid/ttclid/gclid → normalized `source`). Powers the
+    // admin conversion tracker. Set once and never overwritten (first-touch).
+    attribution: {
+      source: { type: String, default: null },
+      medium: { type: String, default: null },
+      campaign: { type: String, default: null },
+      content: { type: String, default: null },
+      term: { type: String, default: null },
+      fbclid: { type: String, default: null },
+      ttclid: { type: String, default: null },
+      gclid: { type: String, default: null },
+      referrer: { type: String, default: null },
+      landingPath: { type: String, default: null },
+      capturedAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );
@@ -70,5 +87,7 @@ userSchema.index({ provider: 1, providerId: 1 });
 // Welcome-bonus abuse checks — cheap because the claimed subset is capped at 500
 userSchema.index({ welcomeBonusClaimed: 1, emailNormalized: 1 });
 userSchema.index({ welcomeBonusClaimed: 1, welcomeBonusClaimedIp: 1 });
+// Conversion-tracker aggregations: signups grouped by acquisition source.
+userSchema.index({ 'attribution.source': 1, createdAt: -1 });
 
 module.exports = mongoose.model('User', userSchema);

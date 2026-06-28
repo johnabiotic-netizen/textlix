@@ -77,6 +77,7 @@ const AdminCatalogPage = lazy(() => import('./pages/admin/AdminCatalogPage'));
 const AdminPricingPage = lazy(() => import('./pages/admin/AdminPricingPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
 const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
+const AdminConversionsPage = lazy(() => import('./pages/admin/AdminConversionsPage'));
 const AdminCreatorsPage = lazy(() => import('./pages/admin/AdminCreatorsPage'));
 const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'));
 const AdminAgentsPage = lazy(() => import('./pages/admin/AdminAgentsPage'));
@@ -319,6 +320,7 @@ export default function App() {
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="promo-codes" element={<AdminPromoCodesPage />} />
             <Route path="reports" element={<AdminReportsPage />} />
+            <Route path="conversions" element={<AdminConversionsPage />} />
             <Route path="creators" element={<AdminCreatorsPage />} />
             <Route path="support" element={<AdminSupportPage />} />
             <Route path="agents" element={<AdminAgentsPage />} />
