@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
-import { trackCompleteRegistration } from '../../utils/tiktok';
+import { trackCompleteRegistration } from '../../utils/analytics';
 
 export default function OAuthCallbackPage() {
   const navigate = useNavigate();

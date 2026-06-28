@@ -4,7 +4,7 @@ import { FcGoogle } from 'react-icons/fc';
 import toast from 'react-hot-toast';
 import { register } from '../../api/auth';
 import useAuthStore from '../../store/authStore';
-import { trackCompleteRegistration } from '../../utils/tiktok';
+import { trackCompleteRegistration } from '../../utils/analytics';
 import Logo from '../../components/common/Logo';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';

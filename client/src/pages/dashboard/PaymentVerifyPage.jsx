@@ -4,7 +4,7 @@ import { verifyKorapay } from '../../api/payments';
 import { getMe } from '../../api/user';
 import useAuthStore from '../../store/authStore';
 import { useSocket } from '../../hooks/useSocket';
-import { trackCompletePayment } from '../../utils/tiktok';
+import { trackCompletePayment } from '../../utils/analytics';
 
 export default function PaymentVerifyPage() {
   const [params] = useSearchParams();

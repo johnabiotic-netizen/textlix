@@ -83,6 +83,8 @@
     <!-- Preconnect to the TikTok pixel CDN so its async script load overlaps
          the rest of the page download instead of opening a fresh connection. -->
     <link rel="preconnect" href="https://analytics.tiktok.com" crossorigin />
+    <!-- Preconnect to the Meta pixel CDN for the same overlap benefit. -->
+    <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
 
     <!-- TikTok Pixel Code Start -->
     <script>
@@ -101,6 +103,27 @@
     }(window, document, 'ttq');
     </script>
     <!-- TikTok Pixel Code End -->
+
+    <!-- Meta Pixel Code Start -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '882035734956886');
+      // Fire the initial PageView here in the raw HTML (Meta's standard
+      // install) so the pixel is detectable on load. SPA route changes are
+      // tracked from PixelPageViews in App.jsx, which SKIPS its first render
+      // so this initial page isn't double-counted.
+      fbq('track', 'PageView');
+    </script>
+    <!-- (No <noscript> fallback: this is a JS-only SPA, and a <noscript><img>
+         is invalid inside <head> for strict HTML parsers/build tooling.) -->
+    <!-- Meta Pixel Code End -->
 
     <!-- Fonts — load the stylesheet non-blocking so it doesn't delay first
          paint. `media="print"` makes the browser fetch but skip parse for the

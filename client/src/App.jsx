@@ -4,7 +4,7 @@ import axios from 'axios';
 import api from './api/axios';
 import useAuthStore from './store/authStore';
 import { getMe } from './api/user';
-import { trackPageView } from './utils/tiktok';
+import { trackPageView } from './utils/analytics';
 
 // Fires a TikTok PageView on every route change. This is an SPA, so the pixel
 // in index.html only sees the first load — without this, navigations are
