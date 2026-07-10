@@ -14,14 +14,14 @@ const { getUsdToNgnRate } = require('../utils/exchangerate');
 
 const getNgnRate = () => parseFloat(process.env.KORAPAY_NGN_RATE) || 1600;
 
-// Recharge packages are flat 1¢/credit — no built-in bonus. The launch promo
-// (LAUNCH10: +20% on $10+) is the only top-up bonus, applied via promo code.
+// Recharge packages include a built-in bonus that scales with the top-up
+// amount — buy more, get more free credits. Starter has no bonus.
 const PACKAGES = [
   { id: 'starter', amountUSD: 2, credits: 200, bonus: 0, label: 'Starter' },
-  { id: 'basic', amountUSD: 5, credits: 500, bonus: 0, label: 'Basic' },
-  { id: 'standard', amountUSD: 10, credits: 1000, bonus: 0, label: 'Standard' },
-  { id: 'pro', amountUSD: 25, credits: 2500, bonus: 0, label: 'Pro' },
-  { id: 'premium', amountUSD: 50, credits: 5000, bonus: 0, label: 'Premium' },
+  { id: 'basic', amountUSD: 5, credits: 500, bonus: 50, label: 'Basic' },
+  { id: 'standard', amountUSD: 10, credits: 1000, bonus: 150, label: 'Standard' },
+  { id: 'pro', amountUSD: 25, credits: 2500, bonus: 500, label: 'Pro' },
+  { id: 'premium', amountUSD: 50, credits: 5000, bonus: 1500, label: 'Premium' },
 ];
 
 const calcCredits = (amountUSD, packageId) => {

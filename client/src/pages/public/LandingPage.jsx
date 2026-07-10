@@ -14,10 +14,10 @@ import CountryMarquee from '../../components/landing/CountryMarquee';
 
 const PACKAGES = [
   { label: 'Starter', usd: '$2', credits: '200 credits' },
-  { label: 'Basic', usd: '$5', credits: '500 credits' },
-  { label: 'Standard', usd: '$10', credits: '1,000 credits', popular: true },
-  { label: 'Pro', usd: '$25', credits: '2,500 credits' },
-  { label: 'Premium', usd: '$50', credits: '5,000 credits' },
+  { label: 'Basic', usd: '$5', credits: '550 credits', bonus: '+50 bonus' },
+  { label: 'Standard', usd: '$10', credits: '1,150 credits', bonus: '+150 bonus', popular: true },
+  { label: 'Pro', usd: '$25', credits: '3,000 credits', bonus: '+500 bonus' },
+  { label: 'Premium', usd: '$50', credits: '6,500 credits', bonus: '+1,500 bonus' },
 ];
 
 const COUNTRIES = ['🇺🇸', '🇬🇧', '🇮🇳', '🇳🇬', '🇷🇺', '🇧🇷', '🇩🇪', '🇫🇷', '🇨🇦', '🇦🇺', '🇮🇩', '🇵🇭', '🇻🇳', '🇲🇽', '🇵🇰', '🇰🇪', '🇿🇦', '🇺🇦'];
@@ -384,15 +384,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <Reveal>
             <h2 className="font-display font-bold text-3xl text-gray-900 dark:text-white text-center mb-3">Simple Pricing</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-center mb-8">1 credit = $0.01. Numbers from 10–500 credits. Credits never expire.</p>
-          </Reveal>
-          <Reveal>
-            <div className="max-w-2xl mx-auto mb-10 rounded-xl border border-brand-300 dark:border-brand-500 bg-brand-50 dark:bg-brand-900/30 px-5 py-4 text-center">
-              <p className="font-display font-bold text-brand-700 dark:text-brand-300">🚀 Launch offer — first 500 only</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                Use code <span className="font-mono-num font-bold tracking-wide">LAUNCH10</span> at checkout for <strong>+20% credits</strong> on any recharge of $10 or more.
-              </p>
-            </div>
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-12">1 credit = $0.01. Numbers from 10–500 credits. Credits never expire.</p>
           </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {PACKAGES.map((pkg, i) => (
