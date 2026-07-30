@@ -358,13 +358,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
                         </span>
                       )}
                     </div>
-                    {service.successRate != null && (
-                      <div className="mt-2">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${service.successRate >= 90 ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : service.successRate >= 75 ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
-                          {service.successRate}% success
-                        </span>
-                      </div>
-                    )}
+                    {/* Per-server success scores are shown in the order modal (one per
+                        LIX tier), not here — a single aggregate score on the card was
+                        just LIX 1's (usually low) and misrepresented the other tiers. */}
                   </Card>
                 );
               })}
