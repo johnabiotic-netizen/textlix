@@ -14,16 +14,6 @@ const SERVICE_EMOJIS = {
   uber: '🚗', amazon: '📦', netflix: '🎬', spotify: '🎵', paypal: '💳',
 };
 
-function rateBadge(sr) {
-  if (sr == null) return null;
-  const tone = sr >= 90
-    ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-    : sr >= 75
-    ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-    : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300';
-  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${tone}`}>{sr}%</span>;
-}
-
 function CountryCard({ country, mode, onClick, highlight }) {
   return (
     <Card hover onClick={onClick} className={`p-5 relative ${highlight ? 'ring-2 ring-brand-500 dark:ring-brand-400' : ''}`}>
@@ -34,7 +24,8 @@ function CountryCard({ country, mode, onClick, highlight }) {
       )}
       <div className="flex items-start justify-between mb-3">
         <span className="text-3xl">{country.flagEmoji}</span>
-        {rateBadge(country.successRate)}
+        {/* Success score intentionally omitted here — it was only LIX 1's (usually
+            low). Per-server scores show in the order modal after picking a country. */}
       </div>
       <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{country.name}</h3>
       <p className="text-xs font-medium mt-1 text-brand-600">
