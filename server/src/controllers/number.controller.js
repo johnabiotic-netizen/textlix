@@ -304,11 +304,19 @@ async function getServiceRatesByProvider() {
   ]);
 
   const rates = {};
+  // LIX 4 (SMS-BUS) is brand new. Seed its score with a strong 100% prior so it
+  // reads 100% until real usage builds up, then converges toward the true rate as
+  // orders arrive (Bayesian smoothing: (completed + PRIOR) / (total + PRIOR), with
+  // a 100% prior). Other providers use the raw rate once they have a meaningful
+  // sample (>= 5 orders).
+  const SMSBUS_PRIOR = 20; // prior belief ≈ 20 successful orders — decays as real orders come in
   for (const row of agg) {
-    if (row.total >= 5) {
-      const svcId = row._id.serviceId.toString();
-      const provider = row._id.provider || 'fivesim';
-      if (!rates[svcId]) rates[svcId] = {};
+    const svcId = row._id.serviceId.toString();
+    const provider = row._id.provider || 'fivesim';
+    if (!rates[svcId]) rates[svcId] = {};
+    if (provider === 'smsbus') {
+      rates[svcId].smsbus = Math.round(((row.completed + SMSBUS_PRIOR) / (row.total + SMSBUS_PRIOR)) * 1000) / 10;
+    } else if (row.total >= 5) {
       rates[svcId][provider] = Math.round((row.completed / row.total) * 1000) / 10;
     }
   }
@@ -1056,7 +1064,9 @@ exports.getServices = async (req, res, next) => {
       const lix1Rate = fivesimRate ?? providerRates[svcId]?.fivesim ?? null;
       const lix2Rate = providerRates[svcId]?.grizzlysms ?? null;
       const lix3Rate = providerRates[svcId]?.smscodes ?? null;
-      const lix4Rate = providerRates[svcId]?.smsbus ?? null;
+      // No smsbus orders yet for this service → show the 100% seed while LIX 4 is
+      // available; once orders exist, providerRates carries the recalculating score.
+      const lix4Rate = providerRates[svcId]?.smsbus ?? (lix4Price ? 100 : null);
 
       // Service is orderable if any tier has stock.
       const available = !!(lix1Price || lix2Price || lix3Price || lix4Price);
