@@ -23,12 +23,25 @@ registerSW({
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
     const checkForUpdate = () => registration.update().catch(() => {});
-    setInterval(checkForUpdate, 60 * 1000);
+    checkForUpdate();                       // check right away on load, not only after the first interval
+    setInterval(checkForUpdate, 30 * 1000); // then every 30s so a fresh deploy reaches open tabs fast
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') checkForUpdate();
     });
   },
 });
+// Belt-and-suspenders on top of vite-plugin-pwa's autoUpdate: when the updated SW
+// takes control, reload once so the page swaps to the new build with no manual
+// refresh. Guarded to skip the FIRST install (no prior controller) and fire once.
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return; // don't reload brand-new installs; only real updates
+    reloaded = true;
+    window.location.reload();
+  });
+}
 
 // Sentry is dynamically imported and initialised 1.5s after window 'load' so
 // it doesn't add to the initial JS bundle parsed during the LCP/TBT window.
