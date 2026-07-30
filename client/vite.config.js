@@ -45,6 +45,13 @@ export default defineConfig(({ isSsrBuild }) => ({
               ],
             },
             workbox: {
+              // Take control of open pages the moment the new SW activates. Without
+              // clientsClaim the updated SW never becomes the controller of an
+              // already-open tab, so `controllerchange` never fires and the page
+              // keeps running the OLD bundle until a manual cache-clear/refresh —
+              // which is why new deploys weren't reaching users automatically.
+              clientsClaim: true,
+              skipWaiting: true,
               globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
               // Prerendered marketing pages are real HTML files (generated after
               // this SW manifest is built). Keep the SW's navigation fallback from
