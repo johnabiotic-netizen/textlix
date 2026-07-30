@@ -5,6 +5,7 @@ const fivesim = require('../providers/sms/fivesim.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const smspool = require('../providers/sms/smspool.provider');
 const smspva = require('../providers/sms/smspva.provider');
+const smsbus = require('../providers/sms/smsbus.provider');
 const smsPoller = require('../services/sms-poller.service');
 const logger = require('../config/logger');
 
@@ -103,6 +104,10 @@ const runExpiryCheck = async () => {
       try {
         if (order.provider === 'grizzlysms') {
           await grizzlysms.setStatus(order.providerOrderId, 8);
+        } else if (order.provider === 'smsbus') {
+          await smsbus.cancel(order.providerOrderId);
+        } else if (order.provider === 'smscodes') {
+          /* smscodes has no cancel endpoint — only billed on delivery */
         } else {
           await fivesim.cancelOrder(order.providerOrderId);
         }

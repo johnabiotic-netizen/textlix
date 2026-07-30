@@ -13,6 +13,7 @@ const fivesim = require('../providers/sms/fivesim.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const smscodes = require('../providers/sms/smscodes.provider');
+const smsbus = require('../providers/sms/smsbus.provider');
 const smsPoller = require('../services/sms-poller.service');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
@@ -539,7 +540,7 @@ const ORDER_SUCCEEDED = {
 };
 
 const PROVIDER_LABELS = {
-  smscodes: 'smscodes.io',
+  smscodes: 'smscodes.io', smsbus: 'SMS-BUS',
   '5sim': '5sim', fivesim: '5sim', grizzlysms: 'GrizzlySMS', getsms: 'GetSMS',
   getsmsotp: 'GetSMS', smspool: 'SMSPool', smsactivate: 'SMS-Activate',
 };
@@ -548,10 +549,11 @@ exports.getProviderHealth = async (req, res, next) => {
   try {
     const since1h = new Date(Date.now() - 60 * 60 * 1000);
 
-    const [smscodesBalance, fivesimBalance, grizzlyBalance, hourlyAgg, providerAgg] = await Promise.all([
+    const [smscodesBalance, fivesimBalance, grizzlyBalance, smsbusBalance, hourlyAgg, providerAgg] = await Promise.all([
       smscodes.getBalance().catch(() => null),
       fivesim.getProfile().then((p) => p?.balance ?? null).catch(() => null),
       grizzlysms.getBalance().catch(() => null),
+      smsbus.getBalance().catch(() => null),
       NumberOrder.aggregate([
         { $match: { provider: 'fivesim', createdAt: { $gte: since1h }, status: { $in: ['COMPLETED', 'EXPIRED', 'REFUNDED', 'CANCELLED'] } } },
         { $group: { _id: null, total: { $sum: 1 }, completed: { $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] } } } },
@@ -593,6 +595,7 @@ exports.getProviderHealth = async (req, res, next) => {
       fivesim: { balance: fivesimBalance, successRate1h, ordersLast1h: hourly.total },
       grizzlysms: { balance: grizzlyBalance },
       smscodes: { balance: smscodesBalance },
+      smsbus: { balance: smsbusBalance },
       successByProvider,
     });
   } catch (err) {

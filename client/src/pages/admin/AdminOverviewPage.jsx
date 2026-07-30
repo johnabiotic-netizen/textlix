@@ -23,6 +23,7 @@ function ProviderHealth() {
     { label: '5sim balance', tier: 'LIX 1', value: bal(f?.balance) },
     { label: 'GrizzlySMS balance', tier: 'LIX 2', value: bal(data?.grizzlysms?.balance) },
     { label: 'smscodes.io balance', tier: 'LIX 3', value: bal(data?.smscodes?.balance) },
+    { label: 'SMS-BUS balance', tier: 'LIX 4', value: bal(data?.smsbus?.balance) },
   ];
 
   return (

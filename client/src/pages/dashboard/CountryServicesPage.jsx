@@ -15,6 +15,9 @@ import Input from '../../components/common/Input';
 // LIX 3 = smscodes.io (real-SIM). LIX3_ENABLED gates smscodes — flip to false to
 // instantly hide the LIX 3 tier (its adapter is throttled, but keep the kill-switch).
 const LIX3_ENABLED = true;
+// LIX 4 = SMS-BUS. Flip to false to instantly hide the LIX 4 tier client-side
+// (the server also honors SMSBUS_ENABLED).
+const LIX4_ENABLED = true;
 
 export default function CountryServicesPage({ mode: modeProp }) {
   const { countryId } = useParams();
@@ -103,10 +106,11 @@ export default function CountryServicesPage({ mode: modeProp }) {
     const lix1Avail = match.servers?.lix1?.available;
     const lix2Avail = match.servers?.lix2?.available;
     const lix3Avail = LIX3_ENABLED && match.servers?.lix3?.available;
-    if (!(lix1Avail || lix2Avail || lix3Avail)) return;
+    const lix4Avail = LIX4_ENABLED && match.servers?.lix4?.available;
+    if (!(lix1Avail || lix2Avail || lix3Avail || lix4Avail)) return;
 
     didAutoOpenOtp.current = true;
-    setSelectedServer(lix1Avail ? 'lix1' : lix2Avail ? 'lix2' : 'lix3');
+    setSelectedServer(lix1Avail ? 'lix1' : lix2Avail ? 'lix2' : lix3Avail ? 'lix3' : 'lix4');
     setSelectedService(match);
   }, [mode, preselectedService, servicesData]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -305,15 +309,16 @@ export default function CountryServicesPage({ mode: modeProp }) {
                 const lix1Avail = service.servers?.lix1?.available;
                 const lix2Avail = service.servers?.lix2?.available;
                 const lix3Avail = LIX3_ENABLED && service.servers?.lix3?.available;
-                const anyAvail = lix1Avail || lix2Avail || lix3Avail;
+                const lix4Avail = LIX4_ENABLED && service.servers?.lix4?.available;
+                const anyAvail = lix1Avail || lix2Avail || lix3Avail || lix4Avail;
                 return (
                   <Card
                     key={service.id}
                     hover={anyAvail}
                     onClick={() => {
                       if (!anyAvail) return;
-                      // Auto-select server: prefer lix1, then lix2, lix3
-                      setSelectedServer(lix1Avail ? 'lix1' : lix2Avail ? 'lix2' : 'lix3');
+                      // Auto-select server: prefer lix1, then lix2, lix3, lix4
+                      setSelectedServer(lix1Avail ? 'lix1' : lix2Avail ? 'lix2' : lix3Avail ? 'lix3' : 'lix4');
                       setSelectedService(service);
                     }}
                     className={`p-5 ${!anyAvail ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -347,6 +352,11 @@ export default function CountryServicesPage({ mode: modeProp }) {
                           LIX 3 · {service.servers.lix3.price} cr
                         </span>
                       )}
+                      {lix4Avail && (
+                        <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-medium">
+                          LIX 4 · {service.servers.lix4.price} cr
+                        </span>
+                      )}
                     </div>
                     {service.successRate != null && (
                       <div className="mt-2">
@@ -374,7 +384,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
             {/* Server selector */}
             <div>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Select Server</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setSelectedServer('lix1')}
                   disabled={!selectedService.servers?.lix1?.available}
@@ -431,6 +441,25 @@ export default function CountryServicesPage({ mode: modeProp }) {
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix3.successRate)}`}>{selectedService.servers.lix3.successRate}% success</p>
                     : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{LIX3_ENABLED ? 'Server 3' : 'Unavailable'}</p>}
                 </button>
+
+                <button
+                  onClick={() => LIX4_ENABLED && setSelectedServer('lix4')}
+                  disabled={!LIX4_ENABLED || !selectedService.servers?.lix4?.available}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    selectedServer === 'lix4' ? 'border-amber-600 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-amber-300'
+                  } ${!LIX4_ENABLED || !selectedService.servers?.lix4?.available ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-xs font-bold bg-amber-600 text-white px-1.5 py-0.5 rounded">LIX 4</span>
+                    {LIX4_ENABLED && selectedServer === 'lix4' && <FiCheckCircle size={13} className="text-amber-600" />}
+                  </div>
+                  <p className="font-mono-num font-bold text-amber-700 dark:text-amber-300">
+                    {LIX4_ENABLED ? (selectedService.servers?.lix4?.price ?? '—') : '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
+                  </p>
+                  {LIX4_ENABLED && selectedService.servers?.lix4?.successRate != null
+                    ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix4.successRate)}`}>{selectedService.servers.lix4.successRate}% success</p>
+                    : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{LIX4_ENABLED ? 'Server 4' : 'Unavailable'}</p>}
+                </button>
               </div>
             </div>
 
@@ -446,8 +475,8 @@ export default function CountryServicesPage({ mode: modeProp }) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Server</span>
-                <span className={`font-medium ${selectedServer === 'lix1' || selectedServer === 'lix2' ? 'text-brand-600 dark:text-brand-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
-                  {selectedServer === 'lix1' ? 'LIX 1' : selectedServer === 'lix2' ? 'LIX 2' : 'LIX 3'}
+                <span className={`font-medium ${selectedServer === 'lix1' || selectedServer === 'lix2' ? 'text-brand-600 dark:text-brand-300' : selectedServer === 'lix4' ? 'text-amber-600 dark:text-amber-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
+                  {selectedServer === 'lix1' ? 'LIX 1' : selectedServer === 'lix2' ? 'LIX 2' : selectedServer === 'lix3' ? 'LIX 3' : 'LIX 4'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">

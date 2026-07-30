@@ -9,6 +9,7 @@ const getsms = require('../providers/sms/getsms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const smscodes = require('../providers/sms/smscodes.provider');
 const smspva = require('../providers/sms/smspva.provider');
+const smsbus = require('../providers/sms/smsbus.provider');
 const { sendSmsNotificationEmail } = require('../utils/email');
 // Mobile push lives only in the local/mobile build; the web deploy ships without
 // push.service.js. Load it if present, otherwise degrade to a no-op so the
@@ -80,6 +81,8 @@ class SMSPollerService {
   async _poll(order) {
     if (order.provider === 'smscodes') {
       await this._pollSmsCodes(order);
+    } else if (order.provider === 'smsbus') {
+      await this._pollSmsBus(order);
     } else if (order.provider === 'getsmsotp') {
       await this._pollGetSmsOtp(order);
     } else if (order.provider === 'getsms') {
@@ -101,6 +104,15 @@ class SMSPollerService {
     // smscodes needs both the SecurityId (providerOrderId) and the number.
     // Polling before a code arrives is free; it only bills once a code returns.
     const code = await smscodes.getSMS(order.providerOrderId, order.phoneNumber);
+    if (code) {
+      await this._handleOtpSms(order, { text: `Your code: ${code}`, code });
+    }
+  }
+
+  async _pollSmsBus(order) {
+    // SMS-BUS (LIX 4) OTP — poll the request id for a code. Waiting/expired both
+    // return null (no code yet); the expiry cron handles timeout + refund.
+    const code = await smsbus.getSMS(order.providerOrderId);
     if (code) {
       await this._handleOtpSms(order, { text: `Your code: ${code}`, code });
     }

@@ -13,6 +13,7 @@ const getsms = require('../providers/sms/getsms.provider');
 const getsmsotp = require('../providers/sms/getsmsotp.provider');
 const smscodes = require('../providers/sms/smscodes.provider');
 const smspva = require('../providers/sms/smspva.provider');
+const smsbus = require('../providers/sms/smsbus.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const { getSettingNum } = require('../utils/settings');
@@ -134,6 +135,8 @@ exports.warmPriceCache = async function warmPriceCache() {
   // doesn't trigger its ~25s rebuild in the request path. (Dropped the old
   // getsmsotp warm — that provider is retired, takes ~55s and returns nothing.)
   try { await getSmsCodesStock(); } catch (_) {}
+  // Kick the SMS-BUS (LIX 4) catalog warm in the background (non-blocking).
+  try { ensureSmsBusWarm(); } catch (_) {}
   for (const [slug, iso] of TOP_COUNTRIES) {
     try { await get5simCountryPrices(slug); } catch (_) {}
     try { await getGrizzlyCountryPrices(iso); } catch (_) {}
@@ -487,6 +490,68 @@ async function getSmsCodesOtpPrices(serviceSlug) {
   }
 }
 
+// ─── SMS-BUS (LIX 4) full catalog cache ───────────────────────────────────────
+// SMS-BUS prices per-country (one call → every service in that country). To serve
+// BOTH the per-country and per-service views instantly, we warm every SMS-BUS
+// country in the background (stale-while-revalidate, like the smscodes stock set)
+// and index the result two ways:
+//   _smsBusByCountry[ISO] = { slug: { cost (USD), count } }   raw cost
+//   _smsBusByService[slug] = { ISO: credits }                 margin applied
+// Flip SMSBUS_ENABLED=false in env to instantly pull LIX 4 from catalog + ordering.
+const SMSBUS_ENABLED = process.env.SMSBUS_ENABLED !== 'false';
+let _smsBusByCountry = {};
+let _smsBusByService = {};
+let _smsBusExpiry = 0;
+let _smsBusInflight = null;
+const SMSBUS_TTL = 10 * 60 * 1000;   // hold a good catalog 10 min
+const SMSBUS_RETRY = 60 * 1000;      // failed/empty → retry after 1 min
+
+async function refreshSmsBusCatalog() {
+  const map = await smsbus.getCountryMap(); // { ISO: country_id } (SMS-BUS's own list)
+  const byCountry = {};
+  const byService = {};
+  for (const iso of Object.keys(map || {})) {
+    try {
+      const prices = await smsbus.getOtpPricesByCountry(iso); // { slug: { cost, count } }
+      if (!prices) continue;
+      byCountry[iso] = prices;
+      for (const [slug, d] of Object.entries(prices)) {
+        if (d.count > 0 && d.cost > 0) {
+          (byService[slug] || (byService[slug] = {}))[iso] = Math.ceil(Math.ceil(d.cost * 100) * (1 + margin()));
+        }
+      }
+    } catch (_) { /* skip a country on transient error */ }
+    await new Promise((r) => setTimeout(r, 120));
+  }
+  if (Object.keys(byCountry).length) { _smsBusByCountry = byCountry; _smsBusByService = byService; }
+}
+
+// Non-blocking warm: serve the last-good index immediately, refresh in background.
+function ensureSmsBusWarm() {
+  if (!SMSBUS_ENABLED) return;
+  if (Date.now() < _smsBusExpiry) return;
+  if (!_smsBusInflight) {
+    _smsBusExpiry = Date.now() + SMSBUS_RETRY; // avoid spawning a refresh per request while in flight
+    _smsBusInflight = refreshSmsBusCatalog()
+      .then(() => { _smsBusExpiry = Date.now() + SMSBUS_TTL; })
+      .catch(() => {})
+      .finally(() => { _smsBusInflight = null; });
+  }
+}
+
+// LIX 4 per-country raw prices { slug: { cost, count } } — for getServices.
+function getSmsBusCountryPrices(iso) {
+  if (!SMSBUS_ENABLED) return null;
+  ensureSmsBusWarm();
+  return _smsBusByCountry[iso] || null;
+}
+// LIX 4 per-service prices { ISO: credits } — for getCountriesForService / list.
+function getSmsBusOtpPrices(serviceSlug) {
+  if (!SMSBUS_ENABLED) return null;
+  ensureSmsBusWarm();
+  return _smsBusByService[serviceSlug] || null;
+}
+
 // ─── Tier → provider mapping ──────────────────────────────────────────────────
 // Single source of truth for which upstream provider backs each LIX tier.
 // Reassigning a tier is a one-line change here (the routing/labels read this).
@@ -495,6 +560,7 @@ const TIER_PROVIDER = {
   lix1: 'fivesim',
   lix2: 'grizzlysms',
   lix3: 'smscodes',
+  lix4: 'smsbus',
 };
 
 // Provider → user-facing server label (never leak raw provider names). Derived
@@ -504,6 +570,7 @@ const SERVER_LABEL = {
   fivesim: 'LIX 1',
   grizzlysms: 'LIX 2',
   smscodes: 'LIX 3',
+  smsbus: 'LIX 4',
   // rental-only provider (RENTAL_TIER_PROVIDER) — display label only, NOT an
   // OTP tier; OTP routing above is untouched
   smspva: 'LIX 2',
@@ -636,6 +703,11 @@ exports.getServiceList = async (req, res, next) => {
             minPrice: lix2Prices.length > 0 ? Math.min(...lix2Prices) : 0,
           },
           lix3: { countryCount: 0, minPrice: 0 }, // smscodes priced in per-service/country views
+          lix4: (() => {
+            const m = getSmsBusOtpPrices(s.slug); // { ISO: credits } from the cached catalog
+            const vals = m ? Object.values(m) : [];
+            return { countryCount: vals.length, minPrice: vals.length ? Math.min(...vals) : 0 };
+          })(),
         },
       };
     });
@@ -716,6 +788,8 @@ exports.getCountriesForService = async (req, res, next) => {
       getSmsCodesStock(),                // LIX 3 live stock (gates availability)
     ]);
 
+    const smsbusPrices = getSmsBusOtpPrices(serviceSlug); // LIX 4 — { ISO: credits } (cached catalog)
+
     const result = [];
     for (const p of pricing) {
       const c = p.countryId;
@@ -726,7 +800,8 @@ exports.getCountriesForService = async (req, res, next) => {
       const lix2Price = grizzlyPrices?.[c.code] ?? null;
       // LIX 3 only when smscodes actually has numbers in this country.
       const lix3Price = smscodesStock.has(c.code) ? (smscodesPrices?.[c.code] ?? null) : null;
-      if (!lix1Price && !lix2Price && !lix3Price) continue;
+      const lix4Price = smsbusPrices?.[c.code] ?? null;
+      if (!lix1Price && !lix2Price && !lix3Price && !lix4Price) continue;
 
       // Live success signal from 5sim (LIX 1) — the only tier exposing a live rate.
       const hasRate = !!(liveData && lix1Price && liveData.totalCount > 0);
@@ -738,13 +813,14 @@ exports.getCountriesForService = async (req, res, next) => {
         name: c.name,
         code: c.code,
         flagEmoji: c.flagEmoji,
-        minPrice: Math.min(...[lix1Price, lix2Price, lix3Price].filter(Boolean)),
+        minPrice: Math.min(...[lix1Price, lix2Price, lix3Price, lix4Price].filter(Boolean)),
         successRate,
         availableCount,
         servers: {
           lix1: { available: !!lix1Price, price: lix1Price },
           lix2: { available: !!lix2Price, price: lix2Price },
           lix3: { available: !!lix3Price, price: lix3Price },
+          lix4: { available: !!lix4Price, price: lix4Price },
         },
       });
     }
@@ -954,6 +1030,7 @@ exports.getServices = async (req, res, next) => {
     // for any service in it.
     const smscodesStock = await getSmsCodesStock();
     const smscodesInStock = smscodesStock.has(country.code);
+    const smsbusMap = getSmsBusCountryPrices(country.code); // LIX 4 — { slug: { cost, count } } (cached catalog)
 
     const [grizzlyMap, fivesimMap, smscodesMap, serviceRates, providerRates] = await Promise.all([
       getGrizzlyCountryPrices(country.code),   // LIX 2
@@ -974,28 +1051,31 @@ exports.getServices = async (req, res, next) => {
       const lix1Price = liveData ? Math.ceil(Math.ceil(liveData.maxPrice * 100) * (1 + margin())) : null;
       const lix2Price = grizzlyMap?.[slug] ? Math.ceil(Math.ceil(grizzlyMap[slug].cost * 100) * (1 + margin())) : null;
       const lix3Price = (smscodesInStock && smscodesMap?.[slug]) ? Math.ceil(Math.ceil(smscodesMap[slug].cost * 100) * (1 + margin())) : null;
+      const lix4Price = (smsbusMap?.[slug] && smsbusMap[slug].count > 0) ? Math.ceil(Math.ceil(smsbusMap[slug].cost * 100) * (1 + margin())) : null;
 
       const lix1Rate = fivesimRate ?? providerRates[svcId]?.fivesim ?? null;
       const lix2Rate = providerRates[svcId]?.grizzlysms ?? null;
       const lix3Rate = providerRates[svcId]?.smscodes ?? null;
+      const lix4Rate = providerRates[svcId]?.smsbus ?? null;
 
       // Service is orderable if any tier has stock.
-      const available = !!(lix1Price || lix2Price || lix3Price);
+      const available = !!(lix1Price || lix2Price || lix3Price || lix4Price);
       return {
         id: p.serviceId._id,
         name: p.serviceId.name,
         slug: p.serviceId.slug,
         icon: p.serviceId.icon,
-        price: lix1Price ?? lix2Price ?? lix3Price,
+        price: lix1Price ?? lix2Price ?? lix3Price ?? lix4Price,
         available,
         pricingId: p._id,
         // Headline rate = 5sim's live signal (LIX 1), falling back to measured.
-        successRate: lix1Rate ?? lix2Rate ?? lix3Rate,
+        successRate: lix1Rate ?? lix2Rate ?? lix3Rate ?? lix4Rate,
         availableCount: liveData?.totalCount ?? null,
         servers: {
           lix1: { price: lix1Price, available: !!lix1Price, successRate: lix1Rate },
           lix2: { price: lix2Price, available: !!lix2Price, successRate: lix2Rate },
           lix3: { price: lix3Price, available: !!lix3Price, successRate: lix3Rate },
+          lix4: { price: lix4Price, available: !!lix4Price, successRate: lix4Rate },
         },
       };
     });
@@ -1042,6 +1122,12 @@ exports.orderNumber = async (req, res, next) => {
       // LIX 3 = smscodes.io
       const scPrices = await getSmsCodesOtpPrices(service.slug);
       chargeCredits = scPrices?.[country.code] ?? pricing.finalPrice;
+    } else if (server === 'lix4') {
+      // LIX 4 = SMS-BUS. Price the exact combo live at order time (one call) so we
+      // never charge off a stale catalog entry; fall back to the DB price if absent.
+      const busPrices = await smsbus.getOtpPricesByCountry(country.code);
+      const d = busPrices?.[service.slug];
+      chargeCredits = (d && d.cost > 0) ? Math.ceil(Math.ceil(d.cost * 100) * (1 + margin())) : pricing.finalPrice;
     } else {
       // LIX 1 (default) = 5sim
       chargeCredits = await getChargeCredits(countryName, service.slug, pricing.finalPrice);
@@ -1086,6 +1172,21 @@ exports.orderNumber = async (req, res, next) => {
           logger.error(`LIX 2 (GrizzlySMS) also failed — ${gzErr.message}`);
           throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
         }
+      }
+    } else if (server === 'lix4') {
+      // LIX 4 = SMS-BUS. NO fallback — LIX 4 exists to deliver routes the others
+      // can't (e.g. Fiverr USA), so falling through to another provider would
+      // defeat the point. If SMS-BUS has no number, the order simply fails.
+      if (!SMSBUS_ENABLED) throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
+      try {
+        const bus = await smsbus.getNumber(service.slug, country.code);
+        if (!bus?.id || !bus?.phone) throw new Error('empty smsbus response');
+        providerResponse = { id: bus.id, phone: bus.phone, price: 0 };
+        usedProvider = 'smsbus';
+        logger.info(`LIX 4 (smsbus) bought for ${country.code}/${service.slug}`);
+      } catch (busErr) {
+        logger.warn(`LIX 4 (smsbus) failed (${country.code}/${service.slug}): ${busErr.message}`);
+        throw new AppError('PROVIDER_ERROR', 502, NO_NUMBER_MSG);
       }
     } else {
       // LIX 1 (default) = 5sim. Buy the best-delivery operator with stock, fall
@@ -1132,6 +1233,7 @@ exports.orderNumber = async (req, res, next) => {
       try {
         if (providerResponse?.id) {
           if (usedProvider === 'grizzlysms') await grizzlysms.setStatus(String(providerResponse.id), 8);
+          else if (usedProvider === 'smsbus') await smsbus.cancel(String(providerResponse.id));
           else if (usedProvider === 'fivesim') await fivesim.cancelOrder(String(providerResponse.id));
         }
       } catch (_) {}
@@ -1187,6 +1289,8 @@ exports.orderNumber = async (req, res, next) => {
           await grizzlysms.setStatus(providerResponse.id.toString(), 8);
         } else if (usedProvider === 'smscodes') {
           /* smscodes has no cancel endpoint — it only bills on code delivery */
+        } else if (usedProvider === 'smsbus') {
+          await smsbus.cancel(providerResponse.id.toString());
         } else {
           await fivesim.cancelOrder(providerResponse.id.toString());
         }
@@ -1295,6 +1399,8 @@ exports.cancelOrder = async (req, res, next) => {
       try { await getsmsotp.setStatus(order.providerOrderId, 8); } catch (_) {}
     } else if (order.provider === 'smscodes') {
       /* smscodes has no cancel endpoint — only billed on code delivery */
+    } else if (order.provider === 'smsbus') {
+      try { await smsbus.cancel(order.providerOrderId); } catch (_) {}
     } else if (order.provider !== 'smsactivate') {
       try { await fivesim.cancelOrder(order.providerOrderId); } catch (_) {}
     }
@@ -1324,7 +1430,18 @@ exports.cancelOrder = async (req, res, next) => {
                 status: 'COMPLETED',
               });
             }
-          } else if (order.provider !== 'smsactivate') {
+          } else if (order.provider === 'smsbus') {
+            const code = await smsbus.getSMS(order.providerOrderId);
+            if (code) {
+              hasSms = true;
+              await NumberOrder.findByIdAndUpdate(order._id, {
+                smsContent: `Your code: ${code}`,
+                smsCode: code,
+                smsReceivedAt: new Date(),
+                status: 'COMPLETED',
+              });
+            }
+          } else if (order.provider !== 'smsactivate' && order.provider !== 'smscodes') {
             const live = await fivesim.checkOrder(order.providerOrderId);
             if (live?.sms?.length > 0) {
               hasSms = true;
