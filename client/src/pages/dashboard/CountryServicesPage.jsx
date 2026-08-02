@@ -10,6 +10,7 @@ import Modal from '../../components/common/Modal';
 import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import Input from '../../components/common/Input';
+import ServiceLogo from '../../components/common/ServiceLogo';
 
 // Tier layout: LIX 1 = 5sim (default, live rate) · LIX 2 = GrizzlySMS ·
 // LIX 3 = smscodes.io (real-SIM). LIX3_ENABLED gates smscodes — flip to false to
@@ -267,7 +268,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-xl">
-                      {serviceEmoji(svc.slug)}
+                      <ServiceLogo slug={svc.slug} size={26} />
                     </div>
                     <span className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-300">
                       <FiCalendar size={11} />Multi-day
@@ -325,7 +326,7 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-xl">
-                        {serviceEmoji(service.slug)}
+                        <ServiceLogo slug={service.slug} size={26} />
                       </div>
                       {anyAvail ? (
                         <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
@@ -653,13 +654,4 @@ function rateColor(rate) {
   if (rate >= 90) return 'text-green-600';
   if (rate >= 75) return 'text-yellow-600';
   return 'text-red-500';
-}
-
-function serviceEmoji(slug) {
-  const map = {
-    whatsapp: '💬', telegram: '✈️', google: '🔵', facebook: '📘', instagram: '📸',
-    twitter: '🐦', tiktok: '🎵', snapchat: '👻', linkedin: '💼', discord: '🎮',
-    uber: '🚗', amazon: '📦',
-  };
-  return map[slug] || '📱';
 }

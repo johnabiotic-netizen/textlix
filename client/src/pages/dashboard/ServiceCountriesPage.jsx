@@ -7,12 +7,7 @@ import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
-
-const SERVICE_EMOJIS = {
-  whatsapp: '💬', telegram: '✈️', google: '🔵', facebook: '📘', instagram: '📸',
-  twitter: '🐦', tiktok: '🎵', snapchat: '👻', linkedin: '💼', discord: '🎮',
-  uber: '🚗', amazon: '📦', netflix: '🎬', spotify: '🎵', paypal: '💳',
-};
+import ServiceLogo from '../../components/common/ServiceLogo';
 
 function CountryCard({ country, mode, onClick, highlight }) {
   return (
@@ -64,7 +59,6 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
   const rest = isSearching ? filtered : filtered.filter((c) => !c.recommended);
 
   const serviceName = data?.service?.name || serviceSlug;
-  const emoji = SERVICE_EMOJIS[serviceSlug] || '📱';
 
   const handleCountryClick = (countryId) => {
     navigate(`/numbers/${mode === 'rental' ? 'rental' : 'otp'}/${countryId}?service=${serviceSlug}`);
@@ -79,7 +73,7 @@ export default function ServiceCountriesPage({ mode: modeProp }) {
         </Link>
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{emoji}</span>
+            <ServiceLogo slug={serviceSlug} size={30} />
             <h1 className="font-display font-bold text-2xl text-gray-900 dark:text-white">{serviceName}</h1>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
