@@ -73,9 +73,9 @@ async function loadProjects() {
   for (const p of list) {
     if (!p || p.id == null) continue;
     // Key on both the provider `code` and normalized `title` so our slug matches either.
-    const keys = [norm(p.code), norm(p.title)].filter(Boolean);
+    const keys = [...new Set([norm(p.code), norm(p.title)].filter(Boolean))];
     for (const k of keys) if (!(k in bySlug)) bySlug[k] = p.id;
-    byId[p.id] = norm(p.code) || norm(p.title);
+    byId[p.id] = keys; // ALL keys (code + title) so prices index under every alias
   }
   if (Object.keys(bySlug).length) {
     _projects = bySlug; _projectById = byId; _projectsExp = Date.now() + TTL;
@@ -156,10 +156,14 @@ const getOtpPricesByCountry = async (countryIso) => {
     const rows = Array.isArray(res.data) ? res.data : Object.values(res.data || {});
     const result = {};
     for (const row of rows) {
-      const slug = _projectById?.[row.project_id];
       const cost = Number(row.cost);
       const count = Number(row.total_count) || 0;
-      if (slug && cost > 0 && !(slug in result)) result[slug] = { cost, count };
+      if (!(cost > 0)) continue;
+      // Index the price under EVERY alias for this project — the SMS-BUS code
+      // (e.g. "tg"), the normalized title (e.g. "telegram"), and the row's own
+      // project_code — so it matches whichever slug our Service catalog uses.
+      const keys = [...(_projectById?.[row.project_id] || []), norm(row.project_code)].filter(Boolean);
+      for (const k of new Set(keys)) if (!(k in result)) result[k] = { cost, count };
     }
     return Object.keys(result).length ? result : null;
   } catch (err) {
