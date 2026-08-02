@@ -123,7 +123,10 @@ async function getMaxPrices(serviceSlug) {
 /** Warm price caches on server startup so early users skip the cold fan-out */
 const TOP_SERVICES = ['whatsapp', 'telegram', 'google'];
 // 5sim slug + ISO for the busiest country pages, warmed by country.
-const TOP_COUNTRIES = [['usa', 'US'], ['england', 'GB'], ['germany', 'DE'], ['india', 'IN'], ['russia', 'RU']];
+const TOP_COUNTRIES = [
+  ['usa', 'US'], ['england', 'GB'], ['germany', 'DE'], ['india', 'IN'], ['russia', 'RU'],
+  ['nigeria', 'NG'], ['netherlands', 'NL'], ['canada', 'CA'], ['france', 'FR'], ['indonesia', 'ID'],
+];
 exports.warmPriceCache = async function warmPriceCache() {
   for (const slug of TOP_SERVICES) {
     try {
@@ -1015,7 +1018,7 @@ async function getGetSmsCountryPrices(iso) {
 // Response-level cache for /numbers/countries/:countryId/services.
 // Keeps repeat hits on the same country instant even between provider-cache windows.
 const countryServicesResponseCache = new Map();
-const COUNTRY_SERVICES_RESPONSE_TTL = 60 * 1000;
+const COUNTRY_SERVICES_RESPONSE_TTL = 5 * 60 * 1000; // 5 min — fewer cold rebuilds of the heavy per-country response
 
 exports.getServices = async (req, res, next) => {
   try {
@@ -1036,7 +1039,7 @@ exports.getServices = async (req, res, next) => {
     const rows = await NumberPricing.find({ countryId }, 'serviceId').lean();
     const svcs = await Service.find(
       { _id: { $in: rows.map((r) => r.serviceId).filter(Boolean) }, isEnabled: true },
-      'slug name icon sortOrder',
+      'slug name sortOrder', // icon dropped — the browse renders logos from the slug
     ).lean();
     const svcById = new Map(svcs.map((s) => [String(s._id), s]));
 
@@ -1092,7 +1095,6 @@ exports.getServices = async (req, res, next) => {
         id: p.serviceId._id,
         name: p.serviceId.name,
         slug: p.serviceId.slug,
-        icon: p.serviceId.icon,
         price: lix1Price ?? lix2Price ?? lix3Price ?? lix4Price,
         available,
         pricingId: p._id,
