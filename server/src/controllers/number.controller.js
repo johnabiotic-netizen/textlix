@@ -1021,14 +1021,24 @@ exports.getServices = async (req, res, next) => {
     const country = await Country.findById(countryId);
     if (!country || !country.isEnabled) throw new AppError('NOT_FOUND', 404, 'Country not found');
 
-    const pricing = await NumberPricing.find({ countryId }).populate('serviceId');
+    // Lean two-step instead of populate: fetch the pricing rows' service ids,
+    // then load ONLY the enabled services with just the fields we need, and join
+    // in memory. Populating full Service docs for every row (1,000+ after the
+    // catalog import) was the main cost of this endpoint.
+    const rows = await NumberPricing.find({ countryId }, 'serviceId').lean();
+    const svcs = await Service.find(
+      { _id: { $in: rows.map((r) => r.serviceId).filter(Boolean) }, isEnabled: true },
+      'slug name icon sortOrder',
+    ).lean();
+    const svcById = new Map(svcs.map((s) => [String(s._id), s]));
 
     const fivesimSlug = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
     // Sort first so indices stay stable when we zip with price results
-    const enabledPricing = pricing
-      .filter((p) => p.serviceId && p.serviceId.isEnabled)
-      .sort((a, b) => a.serviceId.sortOrder - b.serviceId.sortOrder);
+    const enabledPricing = rows
+      .map((r) => ({ _id: r._id, serviceId: svcById.get(String(r.serviceId)) }))
+      .filter((p) => p.serviceId)
+      .sort((a, b) => (a.serviceId.sortOrder || 0) - (b.serviceId.sortOrder || 0));
 
     // ONE call per provider for the whole country (each cached per country),
     // instead of one call per service — plus the cached success-rate aggregates.
