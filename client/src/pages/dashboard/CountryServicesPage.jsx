@@ -41,6 +41,10 @@ export default function CountryServicesPage({ mode: modeProp }) {
   const [showRentalModal, setShowRentalModal] = useState(false);
   const [rentalSearch, setRentalSearch] = useState('');
   const [ordering, setOrdering] = useState(false);
+  // Progressive rendering: only mount a batch of service cards at a time (big
+  // countries now have 1,000+ services). More reveal as the sentinel scrolls in.
+  const [visibleCount, setVisibleCount] = useState(60);
+  const sentinelRef = useRef(null);
 
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data: servicesData, isLoading: servicesLoading } = useQuery({
@@ -166,6 +170,20 @@ export default function CountryServicesPage({ mode: modeProp }) {
       s.slug.toLowerCase().includes(rentalSearch.toLowerCase())
   );
 
+  // Reset the visible batch when the list changes (new country, search, mode).
+  useEffect(() => { setVisibleCount(60); }, [countryId, mode, search, rentalSearch]);
+  // Reveal the next batch when the bottom sentinel scrolls into view.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) setVisibleCount((c) => c + 60); },
+      { rootMargin: '600px' } // preload before the user reaches the bottom
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [filteredServices.length, filteredRentalServices.length, mode, visibleCount]);
+
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleOtpOrder = async () => {
@@ -254,8 +272,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
               <p className="font-medium">No platforms found{rentalSearch ? ` for "${rentalSearch}"` : ''}</p>
             </div>
           ) : (
+            <>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {filteredRentalServices.map((svc) => (
+              {filteredRentalServices.slice(0, visibleCount).map((svc) => (
                 <Card
                   key={svc.slug}
                   hover
@@ -279,6 +298,8 @@ export default function CountryServicesPage({ mode: modeProp }) {
                 </Card>
               ))}
             </div>
+            {filteredRentalServices.length > visibleCount && <div ref={sentinelRef} className="h-8" />}
+            </>
           )}
         </div>
       )}
@@ -305,8 +326,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
               <p className="font-medium">No services found{search ? ` for "${search}"` : ''}</p>
             </div>
           ) : (
+            <>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {filteredServices.map((service) => {
+              {filteredServices.slice(0, visibleCount).map((service) => {
                 const lix1Avail = service.servers?.lix1?.available;
                 const lix2Avail = service.servers?.lix2?.available;
                 const lix3Avail = LIX3_ENABLED && service.servers?.lix3?.available;
@@ -366,6 +388,8 @@ export default function CountryServicesPage({ mode: modeProp }) {
                 );
               })}
             </div>
+            {filteredServices.length > visibleCount && <div ref={sentinelRef} className="h-8" />}
+            </>
           )}
         </div>
       )}
