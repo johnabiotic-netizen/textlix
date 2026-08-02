@@ -28,10 +28,13 @@ async function computeOverview(start, end) {
       { $match: { createdAt: { $gte: start, $lte: end } } },
       { $group: { _id: { $ifNull: ['$source', 'direct'] }, visits: { $sum: 1 } } },
     ]),
-    // Signups per source (real users only)
+    // Signups per source (real users only). A MISSING source falls back to
+    // 'direct' — "unknown" is reserved as the explicit pre-ads-team baseline
+    // label (backfilled onto all users that existed before attribution tracking
+    // mattered), so new untracked signups never pollute that baseline bucket.
     User.aggregate([
       { $match: { role: 'USER', createdAt: { $gte: start, $lte: end } } },
-      { $group: { _id: { $ifNull: ['$attribution.source', 'unknown'] }, signups: { $sum: 1 } } },
+      { $group: { _id: { $ifNull: ['$attribution.source', 'direct'] }, signups: { $sum: 1 } } },
     ]),
     // Paying users / sales / revenue per source — join completed payments to the
     // buyer's first-touch source.
@@ -41,7 +44,7 @@ async function computeOverview(start, end) {
       { $unwind: '$u' },
       {
         $group: {
-          _id: { $ifNull: ['$u.attribution.source', 'unknown'] },
+          _id: { $ifNull: ['$u.attribution.source', 'direct'] },
           revenueUSD: { $sum: '$amountUSD' },
           sales: { $sum: 1 },
           payers: { $addToSet: '$userId' },
