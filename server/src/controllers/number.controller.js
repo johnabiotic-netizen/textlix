@@ -788,7 +788,15 @@ exports.getCountriesForService = async (req, res, next) => {
     const svc = await Service.findOne({ slug: serviceSlug, isEnabled: true });
     if (!svc) throw new AppError('NOT_FOUND', 404, 'Service not found');
 
-    const pricing = await NumberPricing.find({ serviceId: svc._id, isAvailable: true }).populate('countryId');
+    // Lean join instead of populate (see getServices) — load only enabled
+    // countries with the fields we use, join in memory.
+    const priceRows = await NumberPricing.find({ serviceId: svc._id, isAvailable: true }, 'countryId').lean();
+    const ctys = await Country.find(
+      { _id: { $in: priceRows.map((r) => r.countryId).filter(Boolean) }, isEnabled: true },
+      'code name flagEmoji fivesimSlug isEnabled',
+    ).lean();
+    const ctyById = new Map(ctys.map((c) => [String(c._id), c]));
+    const pricing = priceRows.map((r) => ({ countryId: ctyById.get(String(r.countryId)) })).filter((p) => p.countryId);
     const [grizzlyPrices, maxPrices, smscodesPrices, smscodesStock] = await Promise.all([
       getGrizzlyOtpPrices(serviceSlug),  // LIX 2
       getMaxPrices(serviceSlug),         // LIX 1 (5sim)
