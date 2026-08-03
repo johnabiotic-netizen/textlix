@@ -41,7 +41,8 @@ async function appendMessage(conversation, { sender, text, adminId = null, meta 
 
   const unreadField = sender === 'USER' ? 'unreadForAdmin' : 'unreadForUser';
   await SupportConversation.findByIdAndUpdate(conversation._id, {
-    $set: { lastMessagePreview: String(text).slice(0, PREVIEW_LEN), lastMessageAt: new Date(), lastSender: sender },
+    // A USER reply (or a fresh AGENT reply) clears any pending auto-close warning.
+    $set: { lastMessagePreview: String(text).slice(0, PREVIEW_LEN), lastMessageAt: new Date(), lastSender: sender, ...((sender === 'USER' || sender === 'AGENT') ? { autoResolveWarnedAt: null } : {}) },
     $inc: { [unreadField]: 1 },
   });
 

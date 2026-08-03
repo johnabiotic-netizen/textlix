@@ -19,6 +19,7 @@ const supportConversationSchema = new mongoose.Schema(
     lastMessagePreview: { type: String, default: '' },
     lastMessageAt: { type: Date, default: Date.now },
     lastSender: { type: String, default: null }, // USER | AI | AGENT | SYSTEM — for idle auto-resolve
+    autoResolveWarnedAt: { type: Date, default: null }, // when we warned the user the chat will auto-close; cleared on their reply
     unreadForUser: { type: Number, default: 0 },
     unreadForAdmin: { type: Number, default: 0 },
     escalatedAt: { type: Date, default: null },
