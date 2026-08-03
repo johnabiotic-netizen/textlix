@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FiMessageCircle, FiX, FiSend } from 'react-icons/fi';
+import { FiMessageCircle, FiX, FiSend, FiImage } from 'react-icons/fi';
 import {
   startConversation,
   getMessages,
   sendMessage as apiSend,
+  sendImage as apiSendImage,
   escalateConversation,
   markRead,
 } from '../../api/support';
@@ -17,6 +18,8 @@ export default function SupportWidget() {
   const [open, setOpen] = useState(false);
   const [convId, setConvId] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const imageInputRef = useRef(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [booting, setBooting] = useState(false);
@@ -32,7 +35,7 @@ export default function SupportWidget() {
   // De-duped append (socket can echo a reply we already loaded over HTTP).
   const pushMessage = useCallback((m) => {
     setMessages((prev) => {
-      if (prev.some((p) => p.sender === m.sender && p.text === m.text)) return prev;
+      if (prev.some((p) => p.sender === m.sender && p.text === m.text && (p.imageUrl || null) === (m.imageUrl || null))) return prev;
       return [...prev, m];
     });
     scrollToBottom();
@@ -43,7 +46,7 @@ export default function SupportWidget() {
     (data) => {
       if (convId && String(data.conversationId) !== String(convId)) return;
       if (open) {
-        pushMessage({ sender: data.sender, text: data.text });
+        pushMessage({ sender: data.sender, text: data.text, imageUrl: data.imageUrl });
         // Ding even when open if the tab is in the background.
         if (typeof document !== 'undefined' && document.hidden) playMessageSound();
       } else {
@@ -99,6 +102,26 @@ export default function SupportWidget() {
       pushMessage({ sender: 'SYSTEM', text: "Message didn't send. Please try again." });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImage = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file || !convId || uploading) return;
+    if (file.size > 5 * 1024 * 1024) {
+      pushMessage({ sender: 'SYSTEM', text: 'That image is too large (max 5 MB).' });
+      return;
+    }
+    setUploading(true);
+    try {
+      const { data } = await apiSendImage(convId, file, input.trim());
+      setInput('');
+      if (data.data.messages) { setMessages(data.data.messages); scrollToBottom(); }
+    } catch {
+      pushMessage({ sender: 'SYSTEM', text: "Couldn't send image. Please try again." });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -179,6 +202,11 @@ export default function SupportWidget() {
                       ? 'bg-brand-600 text-white rounded-br-sm'
                       : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-bl-sm'
                   }`}>
+                    {m.imageUrl && (
+                      <a href={m.imageUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={m.imageUrl} alt="attachment" loading="lazy" className={`rounded-lg max-h-52 w-auto object-cover ${m.text ? 'mb-1.5' : ''}`} />
+                      </a>
+                    )}
                     {m.text}
                   </div>
                 </div>
@@ -190,14 +218,24 @@ export default function SupportWidget() {
           {/* Footer */}
           <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <form onSubmit={handleSend} className="flex items-center gap-2 px-3 py-2.5">
+              <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleImage} className="hidden" />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={booting || uploading}
+                title="Share an image"
+                className="h-9 w-9 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-500 dark:text-gray-300 flex items-center justify-center"
+              >
+                <FiImage size={16} />
+              </button>
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message…"
-                disabled={booting}
+                placeholder={uploading ? 'Sending image…' : 'Type a message…'}
+                disabled={booting || uploading}
                 className="flex-1 text-sm bg-gray-100 dark:bg-gray-800 dark:text-white rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-brand-500"
               />
-              <button type="submit" disabled={!input.trim() || loading} className="h-9 w-9 shrink-0 rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white flex items-center justify-center">
+              <button type="submit" disabled={!input.trim() || loading || uploading} className="h-9 w-9 shrink-0 rounded-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white flex items-center justify-center">
                 <FiSend size={16} />
               </button>
             </form>

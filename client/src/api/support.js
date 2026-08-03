@@ -5,6 +5,12 @@ export const listConversations = () => api.get('/support/conversations');
 export const startConversation = (text) => api.post('/support/conversations', text ? { text } : {});
 export const getMessages = (id) => api.get(`/support/conversations/${id}/messages`);
 export const sendMessage = (id, text) => api.post(`/support/conversations/${id}/messages`, { text });
+export const sendImage = (id, file, text = '') => {
+  const fd = new FormData();
+  fd.append('image', file);
+  if (text) fd.append('text', text);
+  return api.post(`/support/conversations/${id}/image`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+};
 export const escalateConversation = (id, reason) => api.post(`/support/conversations/${id}/escalate`, reason ? { reason } : {});
 export const markRead = (id) => api.post(`/support/conversations/${id}/read`);
 
@@ -14,6 +20,12 @@ export const adminListConversations = (status = '', page = 1) =>
   api.get(`/admin/support/conversations?status=${status}&page=${page}`);
 export const adminGetMessages = (id) => api.get(`/admin/support/conversations/${id}/messages`);
 export const adminReply = (id, text) => api.post(`/admin/support/conversations/${id}/messages`, { text });
+export const adminReplyImage = (id, file, text = '') => {
+  const fd = new FormData();
+  fd.append('image', file);
+  if (text) fd.append('text', text);
+  return api.post(`/admin/support/conversations/${id}/image`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+};
 export const adminAssign = (id) => api.post(`/admin/support/conversations/${id}/assign`);
 export const adminRelease = (id) => api.post(`/admin/support/conversations/${id}/release`);
 export const adminResolve = (id) => api.post(`/admin/support/conversations/${id}/resolve`);

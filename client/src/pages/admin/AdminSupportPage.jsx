@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
+import { FiImage } from 'react-icons/fi';
 import { playNotificationSound, playMessageSound } from '../../hooks/useNotificationSound';
 import {
   adminGetUsage,
   adminListConversations,
   adminGetMessages,
   adminReply,
+  adminReplyImage,
   adminAssign,
   adminRelease,
   adminResolve,
@@ -72,6 +74,7 @@ function Thread({ conversationId, onChanged }) {
   const [sending, setSending] = useState(false);
 
   const lastUserMsgRef = useRef(null);
+  const imageInputRef = useRef(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['adminSupportThread', conversationId],
@@ -139,6 +142,17 @@ function Thread({ conversationId, onChanged }) {
     finally { setSending(false); }
   };
 
+  const sendImage = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || sending) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image too large (max 5 MB)'); return; }
+    setSending(true);
+    try { await adminReplyImage(conversationId, file, reply.trim()); setReply(''); refresh(); }
+    catch (e2) { toast.error(errMsg(e2) || 'Image failed'); refresh(); }
+    finally { setSending(false); }
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Thread header / actions */}
@@ -190,6 +204,11 @@ function Thread({ conversationId, onChanged }) {
                   : m.sender === 'AI' ? 'bg-blue-50 dark:bg-blue-900/20 text-gray-800 dark:text-gray-100'
                   : 'bg-brand-600 text-white'
               }`}>
+                {m.imageUrl && (
+                  <a href={m.imageUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={m.imageUrl} alt="attachment" loading="lazy" className={`rounded-lg max-h-56 w-auto object-cover ${m.text ? 'mb-1.5' : ''}`} />
+                  </a>
+                )}
                 {m.text}
               </div>
               <span className="text-[10px] text-gray-300 mt-0.5">{dayjs(m.createdAt).format('MMM D, HH:mm')}</span>
@@ -205,10 +224,20 @@ function Thread({ conversationId, onChanged }) {
         </div>
       ) : (
         <form onSubmit={send} className="flex items-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+          <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={sendImage} className="hidden" />
+          <button
+            type="button"
+            onClick={() => imageInputRef.current?.click()}
+            disabled={sending}
+            title="Share an image"
+            className="h-9 w-9 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-500 dark:text-gray-300 flex items-center justify-center"
+          >
+            <FiImage size={16} />
+          </button>
           <input
             value={reply}
             onChange={(e) => setReply(e.target.value)}
-            placeholder={canTakeOver ? 'Reply to take over this chat…' : owner ? 'Reply as support…' : 'Reply to take this chat…'}
+            placeholder={sending ? 'Sending…' : canTakeOver ? 'Reply to take over this chat…' : owner ? 'Reply as support…' : 'Reply to take this chat…'}
             className="flex-1 text-sm bg-gray-100 dark:bg-gray-800 dark:text-white rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-brand-500"
           />
           <button type="submit" disabled={!reply.trim() || sending} className="text-sm font-medium px-4 py-2 rounded-full bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50">Send</button>
