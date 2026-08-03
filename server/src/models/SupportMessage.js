@@ -14,7 +14,8 @@ const supportMessageSchema = new mongoose.Schema(
     },
     sender: { type: String, enum: ['USER', 'AI', 'AGENT', 'SYSTEM'], required: true },
     adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    text: { type: String, required: true },
+    text: { type: String, default: '' }, // optional — a message may be image-only
+    imageUrl: { type: String, default: null }, // R2 public URL of a shared image, if any
     meta: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }

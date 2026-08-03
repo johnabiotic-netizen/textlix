@@ -3,6 +3,7 @@ const SupportMessage = require('../models/SupportMessage');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
 const support = require('../services/support.service');
+const r2 = require('../services/r2.service');
 
 const OPEN_STATUSES = ['AI', 'WAITING_HUMAN', 'HUMAN'];
 
@@ -86,6 +87,32 @@ exports.sendMessage = async (req, res, next) => {
       throw new AppError('VALIDATION_ERROR', 400, 'This conversation is closed. Start a new one.');
     }
     await support.handleUserMessage(convo, req.body.text.trim());
+    const messages = await SupportMessage.find({ conversationId: convo._id }).sort({ createdAt: 1 });
+    success(res, { messages: messages.map(support.serializeMessage) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /support/conversations/:id/image — user shares an image (optional caption).
+exports.sendImage = async (req, res, next) => {
+  try {
+    if (!r2.enabled()) throw new AppError('INTERNAL_ERROR', 503, 'Image sharing is not available right now.');
+    const convo = await loadOwned(req.params.id, req.user.userId);
+    if (convo.status === 'CLOSED') throw new AppError('VALIDATION_ERROR', 400, 'This conversation is closed. Start a new one.');
+    if (!req.file) throw new AppError('VALIDATION_ERROR', 400, 'No image provided');
+
+    const imageUrl = await r2.uploadImage(req.file.buffer, req.file.mimetype, 'support');
+    const caption = (req.body.text || '').trim();
+
+    // Reopen a resolved/closed chat, mirroring handleUserMessage.
+    if (convo.status === 'RESOLVED' || convo.status === 'CLOSED') {
+      await SupportConversation.findByIdAndUpdate(convo._id, { $set: { status: 'AI', aiEnabled: true, assignedAdminId: null } });
+    }
+
+    await support.appendMessage(convo, { sender: 'USER', text: caption, imageUrl });
+    support.emitToAdmins('support:new', { conversationId: convo._id, userId: convo.userId, preview: caption || '📷 Photo' });
+
     const messages = await SupportMessage.find({ conversationId: convo._id }).sort({ createdAt: 1 });
     success(res, { messages: messages.map(support.serializeMessage) });
   } catch (err) {

@@ -6,6 +6,7 @@ const adminSupport = require('../controllers/admin.support.controller');
 const adminAgents = require('../controllers/admin.agents.controller');
 const adminAnalytics = require('../controllers/admin.analytics.controller');
 const { authenticate, requireSupportStaff, adminSectionGuard } = require('../middleware/auth.middleware');
+const upload = require('../middleware/upload');
 const AuditLog = require('../models/AuditLog');
 const { success } = require('../utils/response');
 
@@ -124,6 +125,7 @@ router.get('/support/usage', adminSupport.getUsage);
 router.get('/support/conversations', adminSupport.listConversations);
 router.get('/support/conversations/:id/messages', adminSupport.getMessages);
 router.post('/support/conversations/:id/messages', adminSupport.reply);
+router.post('/support/conversations/:id/image', upload.single('image'), adminSupport.replyImage);
 router.post('/support/conversations/:id/assign', adminSupport.assign);
 router.post('/support/conversations/:id/release', adminSupport.release);
 router.post('/support/conversations/:id/resolve', adminSupport.resolve);

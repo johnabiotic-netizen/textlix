@@ -6,6 +6,7 @@ const { success } = require('../utils/response');
 const support = require('../services/support.service');
 const supportUsage = require('../services/support-usage');
 const settings = require('../services/support-settings');
+const r2 = require('../services/r2.service');
 
 function serializeConversation(c, user, assignedAdminName, staleClaim) {
   return {
@@ -198,6 +199,32 @@ exports.reply = async (req, res, next) => {
 
     support.emitToUser(convo.userId, 'support:message', { conversationId: convo._id, sender: 'AGENT', text });
     success(res, { ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /admin/support/conversations/:id/image — agent shares an image (optional caption).
+exports.replyImage = async (req, res, next) => {
+  try {
+    if (!r2.enabled()) throw new AppError('INTERNAL_ERROR', 503, 'Image sharing is not configured.');
+    const convo = await loadConversation(req.params.id);
+    if (!req.file) throw new AppError('VALIDATION_ERROR', 400, 'No image provided');
+
+    const imageUrl = await r2.uploadImage(req.file.buffer, req.file.mimetype, 'support');
+    const caption = (req.body.text || '').trim();
+
+    const prevOwner = convo.assignedAdminId ? String(convo.assignedAdminId) : null;
+    await claimFor(convo._id, req.user.userId); // 409 if owned by another active agent
+    if (prevOwner !== String(req.user.userId)) {
+      support.emitToAdmins('support:claimed', { conversationId: convo._id, adminId: req.user.userId, adminName: await adminName(req.user.userId) });
+    }
+
+    await support.appendMessage(convo, { sender: 'AGENT', text: caption, adminId: req.user.userId, imageUrl });
+    await SupportConversation.findByIdAndUpdate(convo._id, { $set: { unreadForAdmin: 0 } });
+
+    support.emitToUser(convo.userId, 'support:message', { conversationId: convo._id, sender: 'AGENT', text: caption, imageUrl });
+    success(res, { ok: true, imageUrl });
   } catch (err) {
     next(err);
   }

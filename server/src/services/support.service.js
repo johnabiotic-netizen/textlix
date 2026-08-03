@@ -23,6 +23,7 @@ function serializeMessage(m) {
     conversationId: m.conversationId,
     sender: m.sender,
     text: m.text,
+    imageUrl: m.imageUrl || null,
     deflected: !!(m.meta && m.meta.deflected),
     createdAt: m.createdAt,
   };
@@ -30,19 +31,21 @@ function serializeMessage(m) {
 
 // Persist a message and roll the conversation's preview / unread counters.
 // USER messages mark unread for admins; everything else marks unread for the user.
-async function appendMessage(conversation, { sender, text, adminId = null, meta = {} }) {
+async function appendMessage(conversation, { sender, text = '', adminId = null, meta = {}, imageUrl = null }) {
   const msg = await SupportMessage.create({
     conversationId: conversation._id,
     sender,
     adminId,
     text,
+    imageUrl,
     meta,
   });
 
   const unreadField = sender === 'USER' ? 'unreadForAdmin' : 'unreadForUser';
+  const preview = imageUrl && !text ? '📷 Photo' : String(text).slice(0, PREVIEW_LEN);
   await SupportConversation.findByIdAndUpdate(conversation._id, {
     // A USER reply (or a fresh AGENT reply) clears any pending auto-close warning.
-    $set: { lastMessagePreview: String(text).slice(0, PREVIEW_LEN), lastMessageAt: new Date(), lastSender: sender, ...((sender === 'USER' || sender === 'AGENT') ? { autoResolveWarnedAt: null } : {}) },
+    $set: { lastMessagePreview: preview, lastMessageAt: new Date(), lastSender: sender, ...((sender === 'USER' || sender === 'AGENT') ? { autoResolveWarnedAt: null } : {}) },
     $inc: { [unreadField]: 1 },
   });
 

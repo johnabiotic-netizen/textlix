@@ -4,6 +4,7 @@ const support = require('../controllers/support.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const validate = require('../middleware/validate.middleware');
 const schemas = require('../schemas/support.schemas');
+const upload = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.get('/conversations', support.listConversations);
 router.post('/conversations', messageLimiter, validate(schemas.startConversationSchema), support.startConversation);
 router.get('/conversations/:id/messages', support.getMessages);
 router.post('/conversations/:id/messages', messageLimiter, validate(schemas.messageSchema), support.sendMessage);
+router.post('/conversations/:id/image', messageLimiter, upload.single('image'), support.sendImage);
 router.post('/conversations/:id/escalate', validate(schemas.escalateSchema), support.escalate);
 router.post('/conversations/:id/read', support.markRead);
 
