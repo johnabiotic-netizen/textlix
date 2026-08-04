@@ -2,6 +2,20 @@ const SupportConversation = require('../models/SupportConversation');
 const SupportMessage = require('../models/SupportMessage');
 const { getIO } = require('../config/io');
 const logger = require('../config/logger');
+// Best-effort mobile push (absent in the web-only deploy — degrade to no-op).
+let pushService;
+try { pushService = require('./push.service'); } catch (_) { pushService = { sendToUser: () => {} }; }
+
+// Push a notification to every admin/support-staff device (best-effort).
+async function pushAdmins(payload) {
+  try {
+    const User = require('../models/User');
+    const admins = await User.find({ role: { $in: ['ADMIN', 'AGENT'] } }, '_id').lean();
+    for (const a of admins) pushService.sendToUser(a._id, payload);
+  } catch (err) {
+    logger.warn(`pushAdmins failed: ${err.message}`);
+  }
+}
 
 const PREVIEW_LEN = 120;
 
@@ -71,6 +85,16 @@ async function escalate(conversation, reason) {
     reason: set.escalationReason || conversation.escalationReason,
   });
 
+  // Ping admin/support phones — only on a fresh escalation so we don't re-notify
+  // on every follow-up message of an already-waiting chat.
+  if (set.escalatedAt) {
+    pushAdmins({
+      title: '🆘 Support ticket escalated',
+      body: (set.escalationReason || 'A user needs a human agent').slice(0, 140),
+      data: { type: 'support_escalated', conversationId: String(conversation._id) },
+    });
+  }
+
   // Email every human agent — but only on the FIRST escalation, so follow-up
   // messages on an already-waiting chat don't re-spam the whole team.
   if (set.escalatedAt) {
@@ -126,6 +150,15 @@ async function handleUserMessage(conversation, text) {
     userId: conversation.userId,
     preview: String(text).slice(0, PREVIEW_LEN),
   });
+
+  // If a human agent is handling this chat, ping their phone about the new reply.
+  if (!conversation.aiEnabled && conversation.assignedAdminId) {
+    pushService.sendToUser(conversation.assignedAdminId, {
+      title: 'New reply in a support chat',
+      body: String(text).slice(0, 140),
+      data: { type: 'support_message', conversationId: String(conversation._id) },
+    });
+  }
 
   // FAQ deflection — answer common questions for $0 before touching the AI.
   // Only while the AI is in charge of this conversation (not after a human took over).
