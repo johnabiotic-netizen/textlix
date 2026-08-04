@@ -122,6 +122,7 @@ exports.getMessages = async (req, res, next) => {
         id: m._id,
         sender: m.sender,
         text: m.text,
+        imageUrl: m.imageUrl || null,
         adminId: m.adminId,
         deflected: !!(m.meta && m.meta.deflected),
         createdAt: m.createdAt,
