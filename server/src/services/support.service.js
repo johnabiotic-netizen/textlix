@@ -199,6 +199,14 @@ async function handleUserMessage(conversation, text) {
     }
   }
 
+  // Already assigned to and actively handled by a human agent → do NOT
+  // re-escalate. Re-escalating would bounce a live HUMAN chat back to
+  // WAITING_HUMAN on every customer reply and re-clutter the "needs you" queue.
+  // The assigned agent was already pushed about this reply above.
+  if (!conversation.aiEnabled && conversation.assignedAdminId) {
+    return userMsg;
+  }
+
   // No AI (Phase 1, or AI disabled) → make sure a human picks it up.
   await escalate(conversation, conversation.aiEnabled ? 'Awaiting human agent' : 'AI disabled');
   return userMsg;
