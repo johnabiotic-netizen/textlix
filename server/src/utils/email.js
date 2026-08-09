@@ -238,4 +238,44 @@ const sendSupportEscalationEmail = async (to, { conversationId, preview, reason 
   });
 };
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail, sendPaymentConfirmedEmail, sendGoodwillCreditEmail, sendSupportEscalationEmail };
+// Abandoned-checkout recovery nudge — "you started a top-up, finish it".
+// Angle: no new discount, just spotlight the EXISTING pack bonuses + risk-free.
+const sendRecoveryNudgeEmail = async (email, firstName) => {
+  const name = firstName || 'there';
+  const creditsUrl = 'https://textlix.com/credits';
+  const packs = [
+    { usd: '$5', total: 550, bonus: 50 },
+    { usd: '$10', total: 1150, bonus: 150, popular: true },
+    { usd: '$25', total: 3000, bonus: 500 },
+    { usd: '$50', total: 6500, bonus: 1500 },
+  ];
+  const rows = packs.map((p) => `
+    <tr>
+      <td style="padding:9px 12px;border-bottom:1px solid #eef2f7;font-weight:700;color:#111827;">${p.usd}${p.popular ? ' <span style="font-size:10px;font-weight:700;color:#6366f1;background:#eef2ff;padding:2px 6px;border-radius:6px;">POPULAR</span>' : ''}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #eef2f7;color:#111827;">${p.total.toLocaleString()} credits</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #eef2f7;color:#059669;font-weight:700;">+${p.bonus.toLocaleString()} free</td>
+    </tr>`).join('');
+  const body = `
+    <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111827;">Hey ${name}, you're almost there 👋</h1>
+    <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
+      You started adding credits to your TextLix wallet but didn't finish checkout. No wahala — your account is ready, and picking up where you left off takes about <strong>30 seconds</strong>. Once you top up, grab a number and start receiving codes right away.
+    </p>
+    <div style="text-align:center;margin:26px 0;">
+      <a href="${creditsUrl}" style="display:inline-block;background:#6366f1;color:#fff;font-size:16px;font-weight:700;text-decoration:none;padding:14px 34px;border-radius:10px;">Finish my top-up →</a>
+    </div>
+    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#111827;">Load more, get more — free credits on every pack:</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eef2f7;border-radius:10px;overflow:hidden;font-size:13px;">
+      <tr style="background:#f9fafb;"><td style="padding:8px 12px;font-weight:700;color:#6b7280;">Top up</td><td style="padding:8px 12px;font-weight:700;color:#6b7280;">You get</td><td style="padding:8px 12px;font-weight:700;color:#6b7280;">Bonus</td></tr>
+      ${rows}
+    </table>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-top:18px;">
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#166534;"><strong>Risk-free:</strong> if a number doesn't receive your code in the wait window, you're automatically refunded in credits. You only pay for codes that land.</p>
+    </div>`;
+  await sendEmail({
+    to: email,
+    subject: `${name}, you're one step from your credits`,
+    html: baseTemplate('Finish your TextLix top-up', body),
+  });
+};
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail, sendPaymentConfirmedEmail, sendGoodwillCreditEmail, sendSupportEscalationEmail, sendRecoveryNudgeEmail };

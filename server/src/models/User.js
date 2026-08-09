@@ -79,6 +79,10 @@ const userSchema = new mongoose.Schema(
       landingPath: { type: String, default: null },
       capturedAt: { type: Date, default: null },
     },
+    // Abandoned-checkout recovery: set the first (and only) time we email this
+    // user a "finish your top-up" nudge. Enforces the once-per-user-ever cap so
+    // the recovery job can never re-nudge the same person.
+    recoveryNudgeSentAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
