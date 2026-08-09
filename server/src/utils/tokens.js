@@ -42,6 +42,15 @@ const issueRefreshToken = async (user, res, UserModel) => {
   return token;
 };
 
+// Mobile clients can't use httpOnly cookies — they get the refresh token in
+// the response body and store it in expo-secure-store (iOS Keychain / Android
+// Keystore). JTI rotation + reuse detection works identically to the web flow.
+const issueMobileRefreshToken = async (user, UserModel) => {
+  const jti = crypto.randomUUID();
+  await UserModel.findByIdAndUpdate(user._id, { refreshJti: jti });
+  return generateRefreshToken(user, jti);
+};
+
 const generateRandomToken = () => crypto.randomBytes(32).toString('hex');
 
 const generateReferralCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -70,6 +79,7 @@ module.exports = {
   generateAccessToken,
   generateRefreshToken,
   issueRefreshToken,
+  issueMobileRefreshToken,
   generateRandomToken,
   generateReferralCode,
   setRefreshCookie,

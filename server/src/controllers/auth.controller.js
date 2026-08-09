@@ -7,6 +7,7 @@ const { success } = require('../utils/response');
 const {
   generateAccessToken,
   issueRefreshToken,
+  issueMobileRefreshToken,
   generateRandomToken,
   generateReferralCode,
   clearRefreshCookie,
@@ -224,7 +225,7 @@ exports.logout = async (req, res, next) => {
   }
 };
 
-exports.oauthCallback = async (user, res, refCode) => {
+exports.oauthCallback = async (user, res, refCode, isMobile = false) => {
   try {
     if (refCode) {
       const freshUser = await User.findById(user._id);
@@ -246,11 +247,50 @@ exports.oauthCallback = async (user, res, refCode) => {
   } catch (err) {
     logger.warn(`OAuth referral apply failed: ${err.message}`);
   }
+
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
+
+  // Mobile path: don't set a refresh cookie (won't work in-app). Issue a
+  // one-time 90s SSO token, redirect to the Universal/App Link landing page
+  // where the app intercepts and exchanges it for a real session.
+  if (isMobile) {
+    const ssoToken = jwt.sign(
+      { userId: user._id, type: 'mobile_oauth' },
+      process.env.JWT_ACCESS_SECRET,
+      { expiresIn: '90s' }
+    );
+    audit('OAUTH_LOGIN', { userId: user._id, email: user.email, meta: { client: 'mobile' } });
+    return res.redirect(`${frontendUrl}/auth/callback?mobileSso=${ssoToken}`);
+  }
+
   const accessToken = generateAccessToken(user);
   await issueRefreshToken(user, res, User);
   audit('OAUTH_LOGIN', { userId: user._id, email: user.email });
-  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
   res.redirect(`${frontendUrl}/auth/callback#token=${accessToken}`);
+};
+
+// POST /auth/sso/exchange-mobile — exchange a mobile_oauth SSO token (issued by
+// oauthCallback in mobile mode) for a full session: access + refresh in body.
+exports.mobileOauthExchange = async (req, res, next) => {
+  try {
+    const { ssoToken } = req.body;
+    if (!ssoToken) throw new AppError('VALIDATION_ERROR', 400, 'Missing sso token');
+    let payload;
+    try {
+      payload = jwt.verify(ssoToken, process.env.JWT_ACCESS_SECRET);
+    } catch {
+      throw new AppError('UNAUTHORIZED', 401, 'Invalid or expired SSO token');
+    }
+    if (payload.type !== 'mobile_oauth') throw new AppError('UNAUTHORIZED', 401, 'Invalid SSO token type');
+    const user = await User.findById(payload.userId);
+    if (!user) throw new AppError('UNAUTHORIZED', 401, 'User not found');
+    if (user.isBanned) throw new AppError('UNAUTHORIZED', 401, 'Account suspended');
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await issueMobileRefreshToken(user, User);
+    audit('LOGIN_SUCCESS', { userId: user._id, email: user.email, meta: { client: 'mobile', via: 'oauth' } });
+    success(res, { user: formatUser(user), accessToken, refreshToken });
+  } catch (err) { next(err); }
 };
 
 exports.forgotPassword = async (req, res, next) => {
@@ -511,4 +551,179 @@ exports.creatorSsoExchange = async (req, res, next) => {
     await issueRefreshToken(user, res, User);
     success(res, { user: formatUser(user), accessToken });
   } catch (err) { next(err); }
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Mobile auth — refresh token in response body (SecureStore on device), not in
+// an httpOnly cookie. JTI rotation + reuse detection is identical to the web
+// flow; the only difference is where the token is stored client-side.
+// ──────────────────────────────────────────────────────────────────────────────
+
+exports.registerMobile = async (req, res, next) => {
+  try {
+    const { email, password, name, referralCode: refCode } = req.body;
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      return success(res, { message: 'If this email is new, your account has been created.' }, 201);
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const emailVerifyToken = generateRandomToken();
+    const referralCode = generateReferralCode();
+
+    let referredBy = null;
+    let creatorReferredBy = null;
+    if (refCode) {
+      const referrer = await User.findOne({ referralCode: refCode.toUpperCase() });
+      if (referrer) {
+        if (referrer.isCreator) creatorReferredBy = referrer._id;
+        else referredBy = referrer._id;
+      }
+    }
+
+    const user = await User.create({
+      email: email.toLowerCase(),
+      passwordHash,
+      name,
+      provider: 'LOCAL',
+      emailVerifyToken,
+      referralCode,
+      referredBy,
+      creatorReferredBy,
+    });
+
+    sendVerificationEmail(user.email, emailVerifyToken).catch((err) => {
+      logger.error('Failed to send verification email', { email: user.email, error: err.message });
+    });
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await issueMobileRefreshToken(user, User);
+
+    success(res, { user: formatUser(user), accessToken, refreshToken }, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.loginMobile = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const ip = getIP(req);
+    const ua = getUA(req);
+    const normalEmail = email.toLowerCase();
+
+    const user = await User.findOne({ email: normalEmail });
+
+    if (!user || !user.passwordHash) {
+      audit('LOGIN_FAILURE', { email: normalEmail, ip, userAgent: ua, success: false, meta: { reason: 'user_not_found', client: 'mobile' } });
+      throw new AppError('UNAUTHORIZED', 401, 'Invalid credentials');
+    }
+
+    if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockoutUntil - Date.now()) / 60000);
+      audit('LOGIN_LOCKED', { userId: user._id, email: normalEmail, ip, userAgent: ua, success: false, meta: { minutesLeft, client: 'mobile' } });
+      throw new AppError('UNAUTHORIZED', 401, `Account temporarily locked. Try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}.`);
+    }
+
+    if (user.isBanned) {
+      audit('LOGIN_FAILURE', { userId: user._id, email: normalEmail, ip, userAgent: ua, success: false, meta: { reason: 'banned', client: 'mobile' } });
+      throw new AppError('UNAUTHORIZED', 401, `Account suspended: ${user.banReason || 'Contact support'}`);
+    }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+
+    if (!valid) {
+      const attempts = (user.loginAttempts || 0) + 1;
+      const update = { loginAttempts: attempts };
+      if (attempts >= MAX_LOGIN_ATTEMPTS) {
+        update.lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+        update.loginAttempts = 0;
+        await User.findByIdAndUpdate(user._id, update);
+        audit('LOGIN_LOCKED', { userId: user._id, email: normalEmail, ip, userAgent: ua, success: false, meta: { triggeredAfterAttempts: attempts, client: 'mobile' } });
+        throw new AppError('UNAUTHORIZED', 401, 'Too many failed attempts. Account locked for 15 minutes.');
+      }
+      await User.findByIdAndUpdate(user._id, update);
+      audit('LOGIN_FAILURE', { userId: user._id, email: normalEmail, ip, userAgent: ua, success: false, meta: { attempts, client: 'mobile' } });
+      throw new AppError('UNAUTHORIZED', 401, 'Invalid credentials');
+    }
+
+    user.loginAttempts = 0;
+    user.lockoutUntil = null;
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    audit('LOGIN_SUCCESS', { userId: user._id, email: normalEmail, ip, userAgent: ua, meta: { client: 'mobile' } });
+
+    if (user.twoFAEnabled) {
+      const tempToken = jwt.sign(
+        { userId: user._id.toString(), type: '2fa_pending' },
+        process.env.JWT_ACCESS_SECRET,
+        { expiresIn: '5m' }
+      );
+      return success(res, { requiresTwoFA: true, tempToken });
+    }
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await issueMobileRefreshToken(user, User);
+
+    success(res, { user: formatUser(user), accessToken, refreshToken });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.refreshMobile = async (req, res, next) => {
+  try {
+    // Mobile sends refresh token in the Authorization header as "Bearer <refresh>"
+    // or in the request body. No cookie fallback.
+    let token = req.body.refreshToken;
+    if (!token) {
+      const authHeader = req.headers.authorization || '';
+      if (authHeader.startsWith('Bearer ')) token = authHeader.slice(7);
+    }
+    if (!token) throw new AppError('UNAUTHORIZED', 401, 'No refresh token');
+
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    } catch {
+      throw new AppError('UNAUTHORIZED', 401, 'Invalid refresh token');
+    }
+
+    const user = await User.findById(payload.userId);
+    if (!user || user.tokenVersion !== payload.tokenVersion) {
+      throw new AppError('UNAUTHORIZED', 401, 'Session expired');
+    }
+    if (user.isBanned) throw new AppError('UNAUTHORIZED', 401, 'Account suspended');
+
+    // Refresh-token reuse detection — see notes on web `refresh` handler.
+    const incomingJti = payload.jti;
+    if (user.refreshJti || incomingJti) {
+      if (!incomingJti || user.refreshJti !== incomingJti) {
+        await User.findByIdAndUpdate(user._id, {
+          $inc: { tokenVersion: 1 },
+          refreshJti: null,
+        });
+        audit('SUSPICIOUS_ACTIVITY', {
+          userId: user._id,
+          email: user.email,
+          ip: getIP(req),
+          userAgent: getUA(req),
+          meta: { reason: 'refresh_token_reuse', client: 'mobile' },
+          success: false,
+        });
+        logger.warn(`Mobile refresh token reuse detected for user ${user._id} — session revoked`);
+        throw new AppError('UNAUTHORIZED', 401, 'Session revoked. Please log in again.');
+      }
+    }
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await issueMobileRefreshToken(user, User);
+
+    audit('TOKEN_REFRESH', { userId: user._id, ip: getIP(req), userAgent: getUA(req), meta: { client: 'mobile' } });
+    success(res, { accessToken, refreshToken });
+  } catch (err) {
+    next(err);
+  }
 };
