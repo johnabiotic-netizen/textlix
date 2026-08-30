@@ -420,7 +420,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   <p className="font-mono-num font-bold text-brand-700 dark:text-brand-300">
                     {selectedService.servers?.lix1?.price ?? '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
-                  {selectedService.servers?.lix1?.successRate != null
+                  {selectedService.servers?.lix1?.disabled
+                    ? <p className="text-xs mt-0.5 font-medium text-red-500 dark:text-red-400">Low delivery</p>
+                    : selectedService.servers?.lix1?.successRate != null
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix1.successRate)}`}>{selectedService.servers.lix1.successRate}% success</p>
                     : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Server 1</p>}
                 </button>
@@ -439,7 +441,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   <p className="font-mono-num font-bold text-brand-700 dark:text-brand-300">
                     {selectedService.servers?.lix2?.price ?? '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
-                  {selectedService.servers?.lix2?.successRate != null
+                  {selectedService.servers?.lix2?.disabled
+                    ? <p className="text-xs mt-0.5 font-medium text-red-500 dark:text-red-400">Low delivery</p>
+                    : selectedService.servers?.lix2?.successRate != null
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix2.successRate)}`}>{selectedService.servers.lix2.successRate}% success</p>
                     : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Server 2</p>}
                 </button>
@@ -458,7 +462,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   <p className="font-mono-num font-bold text-emerald-700 dark:text-emerald-300">
                     {LIX3_ENABLED ? (selectedService.servers?.lix3?.price ?? '—') : '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
-                  {LIX3_ENABLED && selectedService.servers?.lix3?.successRate != null
+                  {LIX3_ENABLED && selectedService.servers?.lix3?.disabled
+                    ? <p className="text-xs mt-0.5 font-medium text-red-500 dark:text-red-400">Low delivery</p>
+                    : LIX3_ENABLED && selectedService.servers?.lix3?.successRate != null
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix3.successRate)}`}>{selectedService.servers.lix3.successRate}% success</p>
                     : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{LIX3_ENABLED ? 'Server 3' : 'Unavailable'}</p>}
                 </button>
@@ -477,7 +483,9 @@ export default function CountryServicesPage({ mode: modeProp }) {
                   <p className="font-mono-num font-bold text-amber-700 dark:text-amber-300">
                     {LIX4_ENABLED ? (selectedService.servers?.lix4?.price ?? '—') : '—'} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">cr</span>
                   </p>
-                  {LIX4_ENABLED && selectedService.servers?.lix4?.successRate != null
+                  {LIX4_ENABLED && selectedService.servers?.lix4?.disabled
+                    ? <p className="text-xs mt-0.5 font-medium text-red-500 dark:text-red-400">Low delivery</p>
+                    : LIX4_ENABLED && selectedService.servers?.lix4?.successRate != null
                     ? <p className={`text-xs mt-0.5 font-medium ${rateColor(selectedService.servers.lix4.successRate)}`}>{selectedService.servers.lix4.successRate}% success</p>
                     : <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{LIX4_ENABLED ? 'Server 4' : 'Unavailable'}</p>}
                 </button>

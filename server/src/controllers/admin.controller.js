@@ -402,6 +402,7 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   'number_timeout_minutes',
   'min_topup_usd',
   'min_topup_new_usd',
+  'min_lix_success_rate',
   'sms_retention_hours',
   'sms_poll_interval_seconds',
   'announcementBanner',

@@ -1069,6 +1069,11 @@ exports.getServices = async (req, res, next) => {
       getServiceRatesByProvider(),
     ]);
 
+    // A tier is auto-disabled for a service when its MEASURED success rate
+    // (only computed at >=5 orders / 7d) falls below this floor. Admin-tunable
+    // via min_lix_success_rate; 0 disables the feature.
+    const disableFloor = await getSettingNum('min_lix_success_rate', 5);
+
     const services = enabledPricing.map((p) => {
       const slug = p.serviceId.slug;
       const svcId = p.serviceId._id.toString();
@@ -1089,6 +1094,16 @@ exports.getServices = async (req, res, next) => {
       // available; once orders exist, providerRates carries the recalculating score.
       const lix4Rate = providerRates[svcId]?.smsbus ?? (lix4Price ? 100 : null);
 
+      // Auto-disable a tier for this service when its MEASURED per-provider rate
+      // (>=5 orders/7d) is below the floor — keyed on measured, NOT the advertised
+      // 5sim rate or the LIX 4 seed, so e.g. Fiverr-on-LIX 2 (0%) becomes
+      // unclickable. Disabled tiers report available:false so the client greys them.
+      const off = (m) => disableFloor > 0 && m != null && m < disableFloor;
+      const lix1Off = off(providerRates[svcId]?.fivesim);
+      const lix2Off = off(providerRates[svcId]?.grizzlysms);
+      const lix3Off = off(providerRates[svcId]?.smscodes);
+      const lix4Off = off(providerRates[svcId]?.smsbus);
+
       // Service is orderable if any tier has stock.
       const available = !!(lix1Price || lix2Price || lix3Price || lix4Price);
       return {
@@ -1102,10 +1117,10 @@ exports.getServices = async (req, res, next) => {
         successRate: lix1Rate ?? lix2Rate ?? lix3Rate ?? lix4Rate,
         availableCount: liveData?.totalCount ?? null,
         servers: {
-          lix1: { price: lix1Price, available: !!lix1Price, successRate: lix1Rate },
-          lix2: { price: lix2Price, available: !!lix2Price, successRate: lix2Rate },
-          lix3: { price: lix3Price, available: !!lix3Price, successRate: lix3Rate },
-          lix4: { price: lix4Price, available: !!lix4Price, successRate: lix4Rate },
+          lix1: { price: lix1Price, available: !!lix1Price && !lix1Off, successRate: lix1Rate, disabled: lix1Off },
+          lix2: { price: lix2Price, available: !!lix2Price && !lix2Off, successRate: lix2Rate, disabled: lix2Off },
+          lix3: { price: lix3Price, available: !!lix3Price && !lix3Off, successRate: lix3Rate, disabled: lix3Off },
+          lix4: { price: lix4Price, available: !!lix4Price && !lix4Off, successRate: lix4Rate, disabled: lix4Off },
         },
       };
     });
@@ -1140,6 +1155,17 @@ exports.orderNumber = async (req, res, next) => {
     const service = await Service.findById(serviceId);
 
     if (!country || !service) throw new AppError('NOT_FOUND', 404, 'Country or service not found');
+
+    // Block a tier we've auto-disabled for this service (measured success below
+    // the floor) — server-side guard behind the greyed-out UI box.
+    const disableFloor = await getSettingNum('min_lix_success_rate', 5);
+    if (disableFloor > 0) {
+      const rates = await getServiceRatesByProvider();
+      const measured = rates[String(serviceId)]?.[TIER_PROVIDER[server]];
+      if (measured != null && measured < disableFloor) {
+        throw new AppError('PROVIDER_ERROR', 400, 'This server has low delivery for this service — please pick another server.');
+      }
+    }
 
     const countryName = country.fivesimSlug || ISO_TO_SLUG[country.code] || country.code.toLowerCase();
 
