@@ -264,11 +264,29 @@ const cancel = async (rentId) => {
   }
 };
 
+// Account balance (USD). Lives on the activation endpoint, NOT the rent API —
+// priemnik.php?metod=get_balance → { response:"1", balance:"47.7600" }.
+const getBalance = async () => {
+  try {
+    const { data } = await axios.get('https://smspva.com/priemnik.php', {
+      params: { metod: 'get_balance', apikey: process.env.SMSPVA_API_KEY },
+      timeout: 20000,
+      ...(_proxyAgent ? { httpsAgent: _proxyAgent, proxy: false } : {}),
+    });
+    if (data && String(data.response) === '1' && data.balance != null) return Number(data.balance);
+    return null;
+  } catch (err) {
+    logger.warn(`SMSPVA getBalance failed: ${err.message}`);
+    return null;
+  }
+};
+
 module.exports = {
   getPrices,
   getNumber,
   getSMS,
   cancel,
+  getBalance,
   getSupportedCountries,
   getCountryData,
   DURATION_MAP,

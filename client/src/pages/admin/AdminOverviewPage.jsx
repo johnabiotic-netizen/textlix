@@ -24,6 +24,8 @@ function ProviderHealth() {
     { label: 'GrizzlySMS balance', tier: 'LIX 2', value: bal(data?.grizzlysms?.balance) },
     { label: 'smscodes.io balance', tier: 'LIX 3', value: bal(data?.smscodes?.balance) },
     { label: 'SMS-BUS balance', tier: 'LIX 4', value: bal(data?.smsbus?.balance) },
+    { label: 'GetSMS balance', tier: 'Rental LIX 1', value: bal(data?.getsms?.balance) },
+    { label: 'SMSPVA balance', tier: 'Rental LIX 2', value: bal(data?.smspva?.balance) },
   ];
 
   return (
