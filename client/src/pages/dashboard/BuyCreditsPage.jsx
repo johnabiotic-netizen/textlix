@@ -307,7 +307,7 @@ export default function BuyCreditsPage() {
                 }`}
               >
                 <p className="font-bold text-lg text-gray-900 dark:text-white">Custom</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Min $2</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Min ${minTopup}</p>
               </button>
             </div>
 
