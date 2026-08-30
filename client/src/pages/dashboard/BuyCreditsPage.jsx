@@ -137,8 +137,27 @@ export default function BuyCreditsPage() {
   const ngnRate = pkgResponse?.ngnRate || 1600;
   // Per-user minimum top-up (existing users grandfathered; new users higher).
   const minTopup = pkgResponse?.minTopupUsd ?? 2;
-  // Hide any preset package below the user's minimum (e.g. the $2 Starter for a $3+ user).
-  const pkgData = (pkgResponse?.packages || []).filter((p) => p.amountUSD >= minTopup);
+  // A preset below the user's minimum (e.g. the $2 Starter for a $3 user) is
+  // BUMPED up to the minimum as a custom-amount pack (id:null → charged as a
+  // custom top-up server-side, at min*100 credits, no bonus) rather than hidden —
+  // so the lowest-entry option still shows. Skipped if a real pack already sits
+  // at the minimum (e.g. new users at $5 already have the $5 Basic pack), and
+  // deduped by amount.
+  const pkgData = (() => {
+    const raw = pkgResponse?.packages || [];
+    const seen = new Set();
+    const out = [];
+    for (const p of raw) {
+      if (p.amountUSD >= minTopup) {
+        if (!seen.has(p.amountUSD)) { seen.add(p.amountUSD); out.push(p); }
+      } else if (!seen.has(minTopup) && !raw.some((q) => q.amountUSD === minTopup)) {
+        seen.add(minTopup);
+        const cr = Math.round(minTopup * 100);
+        out.push({ id: null, amountUSD: minTopup, credits: cr, bonus: 0, totalCredits: cr, label: p.label });
+      }
+    }
+    return out.sort((a, b) => a.amountUSD - b.amountUSD);
+  })();
 
   const { data: payData } = useQuery({
     queryKey: ['paymentHistory'],
@@ -185,12 +204,12 @@ export default function BuyCreditsPage() {
 
     try {
       if (method === 'naira') {
-        const body = selectedPkg ? { packageId: selectedPkg.id } : { amountUSD };
+        const body = selectedPkg?.id ? { packageId: selectedPkg.id } : { amountUSD };
         if (appliedPromoCode) body.promoCode = appliedPromoCode;
         const { data } = await initializeKorapay(body);
         window.location.href = data.data.checkoutUrl;
       } else {
-        const body = selectedPkg
+        const body = selectedPkg?.id
           ? { packageId: selectedPkg.id, currency: selectedNetwork.value }
           : { amountUSD, currency: selectedNetwork.value };
         if (appliedPromoCode) body.promoCode = appliedPromoCode;
@@ -281,7 +300,7 @@ export default function BuyCreditsPage() {
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
               {(pkgData || []).map((pkg) => (
                 <button
-                  key={pkg.id}
+                  key={pkg.id ?? 'min'}
                   onClick={() => { setSelectedPkg(pkg); setCustomUSD(''); }}
                   className={`border rounded-xl p-3 text-center transition-all ${
                     selectedPkg?.id === pkg.id
