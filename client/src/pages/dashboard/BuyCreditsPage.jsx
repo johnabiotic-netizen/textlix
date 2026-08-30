@@ -134,10 +134,11 @@ export default function BuyCreditsPage() {
     queryKey: ['packages'],
     queryFn: () => getPackages().then((r) => r.data.data),
   });
-  const pkgData = pkgResponse?.packages;
   const ngnRate = pkgResponse?.ngnRate || 1600;
-  // Per-user minimum top-up (existing users grandfathered to $2; new users higher).
+  // Per-user minimum top-up (existing users grandfathered; new users higher).
   const minTopup = pkgResponse?.minTopupUsd ?? 2;
+  // Hide any preset package below the user's minimum (e.g. the $2 Starter for a $3+ user).
+  const pkgData = (pkgResponse?.packages || []).filter((p) => p.amountUSD >= minTopup);
 
   const { data: payData } = useQuery({
     queryKey: ['paymentHistory'],
