@@ -136,6 +136,8 @@ export default function BuyCreditsPage() {
   });
   const pkgData = pkgResponse?.packages;
   const ngnRate = pkgResponse?.ngnRate || 1600;
+  // Per-user minimum top-up (existing users grandfathered to $2; new users higher).
+  const minTopup = pkgResponse?.minTopupUsd ?? 2;
 
   const { data: payData } = useQuery({
     queryKey: ['paymentHistory'],
@@ -167,7 +169,7 @@ export default function BuyCreditsPage() {
   };
 
   const handlePay = async () => {
-    if (amountUSD < 2) { toast.error('Minimum $2 required'); return; }
+    if (amountUSD < minTopup) { toast.error(`Minimum $${minTopup} required`); return; }
     if (method === 'crypto' && !selectedNetwork) { toast.error('Select a network to continue'); return; }
     // The server gives no bonus (without erroring) below the promo minimum —
     // block here so nobody pays expecting a bonus they won't receive.
@@ -213,7 +215,7 @@ export default function BuyCreditsPage() {
     }
   };
 
-  const canPay = amountUSD >= 2 && (method === 'naira' || (selectedCoin && selectedNetwork));
+  const canPay = amountUSD >= minTopup && (method === 'naira' || (selectedCoin && selectedNetwork));
 
   return (
     <div className="max-w-2xl space-y-8">
@@ -316,11 +318,11 @@ export default function BuyCreditsPage() {
                   type="number"
                   value={customUSD}
                   onChange={(e) => setCustomUSD(e.target.value)}
-                  placeholder="Enter amount (min $2)"
-                  min="2"
+                  placeholder={`Enter amount (min $${minTopup})`}
+                  min={minTopup}
                   className="border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none w-48"
                 />
-                {amountUSD >= 2 && (
+                {amountUSD >= minTopup && (
                   <span className="text-sm text-gray-500 dark:text-gray-400">
                     = {estimatedCredits.toLocaleString()} credits
                   </span>
@@ -329,7 +331,7 @@ export default function BuyCreditsPage() {
             )}
 
             {/* NGN equivalent for Naira method */}
-            {method === 'naira' && amountUSD >= 2 && (
+            {method === 'naira' && amountUSD >= minTopup && (
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 ≈ ₦{(amountUSD * ngnRate).toLocaleString()} at current rate
               </p>
@@ -395,7 +397,7 @@ export default function BuyCreditsPage() {
           />
 
           {/* Promo outcome preview */}
-          {promoBonus && amountUSD >= 2 && (
+          {promoBonus && amountUSD >= minTopup && (
             promoMeetsMin ? (
               <p className="text-sm font-medium text-green-600 dark:text-green-400">
                 🎉 You'll receive <strong>{(estimatedCredits + promoBonusCredits).toLocaleString()} credits</strong> — includes +{promoBonusCredits.toLocaleString()} bonus from {promoBonus.code}
@@ -417,9 +419,9 @@ export default function BuyCreditsPage() {
               className="w-full sm:w-auto"
             >
               {method === 'naira'
-                ? `Pay ₦${amountUSD >= 2 ? (amountUSD * ngnRate).toLocaleString() : '—'}`
+                ? `Pay ₦${amountUSD >= minTopup ? (amountUSD * ngnRate).toLocaleString() : '—'}`
                 : selectedNetwork
-                  ? `Pay $${amountUSD >= 2 ? amountUSD.toFixed(2) : '—'} with ${selectedCoin?.label} (${selectedNetwork.label})`
+                  ? `Pay $${amountUSD >= minTopup ? amountUSD.toFixed(2) : '—'} with ${selectedCoin?.label} (${selectedNetwork.label})`
                   : `Pay with Crypto`}
             </Button>
             {method === 'crypto' && selectedCoin && !selectedNetwork && selectedCoin.networks.length > 1 && (

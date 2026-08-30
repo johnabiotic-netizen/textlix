@@ -83,6 +83,11 @@ const userSchema = new mongoose.Schema(
     // user a "finish your top-up" nudge. Enforces the once-per-user-ever cap so
     // the recovery job can never re-nudge the same person.
     recoveryNudgeSentAt: { type: Date, default: null },
+    // Minimum top-up: users created before the new-user minimum took effect are
+    // grandfathered to the legacy floor (min_topup_usd). New signups default to
+    // false and get the higher new-user floor (min_topup_new_usd). Backfilled
+    // true for every existing user at rollout so nobody is retro-penalized.
+    minTopupGrandfathered: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

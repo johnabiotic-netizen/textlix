@@ -96,10 +96,18 @@ export default function AdminSettingsPage() {
           max={50}
         />
         <SettingField
-          label="Minimum Top-up (USD)"
-          description="Minimum amount in USD allowed for a single credit purchase"
-          value={form.min_topup_usd ?? 2}
+          label="Minimum Top-up — existing users (USD)"
+          description="Minimum for users who signed up before the new-user minimum took effect (grandfathered)"
+          value={form.min_topup_usd ?? 3}
           onChange={set('min_topup_usd')}
+          type="number"
+          min={0.5}
+        />
+        <SettingField
+          label="Minimum Top-up — new users (USD)"
+          description="Minimum for users who signed up after rollout. Raise to lift first-time top-up value; lower to reduce the barrier."
+          value={form.min_topup_new_usd ?? 5}
+          onChange={set('min_topup_new_usd')}
           type="number"
           min={0.5}
         />

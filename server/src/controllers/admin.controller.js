@@ -401,6 +401,7 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   'default_margin_percent',
   'number_timeout_minutes',
   'min_topup_usd',
+  'min_topup_new_usd',
   'sms_retention_hours',
   'sms_poll_interval_seconds',
   'announcementBanner',

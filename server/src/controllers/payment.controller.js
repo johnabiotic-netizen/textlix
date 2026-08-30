@@ -11,8 +11,20 @@ const { success } = require('../utils/response');
 const logger = require('../config/logger');
 const { getIO } = require('../config/io');
 const { getUsdToNgnRate } = require('../utils/exchangerate');
+const { getSettingNum } = require('../utils/settings');
 
 const getNgnRate = () => parseFloat(process.env.KORAPAY_NGN_RATE) || 1600;
+
+// Per-user minimum top-up (USD). Existing users are grandfathered to the legacy
+// floor; new signups get the higher new-user floor. Both are admin-configurable
+// via PlatformSettings: min_topup_usd (existing users, default $3) and
+// min_topup_new_usd (new users, default $5). Grandfathered via
+// User.minTopupGrandfathered — existing users stay one tier below new signups.
+async function minTopupForUser(user) {
+  const legacy = await getSettingNum('min_topup_usd', 3);
+  if (user && user.minTopupGrandfathered) return legacy;
+  return getSettingNum('min_topup_new_usd', 5);
+}
 
 // Recharge packages include a built-in bonus that scales with the top-up
 // amount — buy more, get more free credits. Starter has no bonus.
@@ -132,11 +144,18 @@ exports.getPromoStatus = async (req, res, next) => {
   }
 };
 
-exports.getPackages = (req, res) => {
-  success(res, {
-    packages: PACKAGES.map((p) => ({ ...p, totalCredits: p.credits + p.bonus })),
-    ngnRate: getNgnRate(),
-  });
+exports.getPackages = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId).select('minTopupGrandfathered');
+    const minTopupUsd = await minTopupForUser(user);
+    success(res, {
+      packages: PACKAGES.map((p) => ({ ...p, totalCredits: p.credits + p.bonus })),
+      ngnRate: getNgnRate(),
+      minTopupUsd,
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ─── 0xProcessing (crypto) ───────────────────────────────────────────────────
@@ -147,9 +166,10 @@ exports.oxprocessingCreate = async (req, res, next) => {
     const { credits: baseCredits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
     const promoBonus = await quotePromo(promoCode, finalAmount, baseCredits);
 
-    if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
-
     const user = await User.findById(req.user.userId);
+    const minTopup = await minTopupForUser(user);
+    if (finalAmount < minTopup) throw new AppError('VALIDATION_ERROR', 400, `Minimum top-up is $${minTopup}`);
+
     const payment = await Payment.create({
       userId: user._id,
       method: 'CRYPTO',
@@ -269,9 +289,10 @@ exports.korapayInitialize = async (req, res, next) => {
     const { credits: baseCredits, amountUSD: finalAmount } = calcCredits(parseFloat(amountUSD) || 0, packageId);
     const promoBonus = await quotePromo(promoCode, finalAmount, baseCredits);
 
-    if (finalAmount < 2) throw new AppError('VALIDATION_ERROR', 400, 'Minimum top-up is $2');
-
     const user = await User.findById(req.user.userId);
+    const minTopup = await minTopupForUser(user);
+    if (finalAmount < minTopup) throw new AppError('VALIDATION_ERROR', 400, `Minimum top-up is $${minTopup}`);
+
     const amountNGN = Math.round(finalAmount * getNgnRate() * 100) / 100;
 
     const payment = await Payment.create({
