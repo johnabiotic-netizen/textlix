@@ -99,11 +99,24 @@ let _slugToIdCache = null;
 let _catalogExpires = 0;
 const CATALOG_TTL = 60 * 60 * 1000;
 
+const CATALOG_COUNTRIES = ['US', 'DE', 'FR', 'GB']; // high-stock; unioned so one empty country can't blank the list
 const getServiceCatalog = async () => {
   if (_catalogCache && Date.now() < _catalogExpires) return _catalogCache;
   try {
-    const services = await getCountryData('GB'); // GB → UK via COUNTRY_CODE_MAP
-    if (!services || services.length === 0) return _catalogCache || [];
+    // Union services across a few high-stock countries. Sampling a single
+    // country (e.g. UK, which can sit at 0 available numbers → empty services)
+    // used to blank the entire rental catalog.
+    const lists = await Promise.all(CATALOG_COUNTRIES.map((c) => getCountryData(c).catch(() => null)));
+    const services = [];
+    const seenId = new Set();
+    for (const list of lists) {
+      if (!Array.isArray(list)) continue;
+      for (const s of list) {
+        const id = Number(s.id);
+        if (!seenId.has(id)) { seenId.add(id); services.push(s); }
+      }
+    }
+    if (services.length === 0) return _catalogCache || [];
 
     const catalog = [];
     const slugMap = {};
