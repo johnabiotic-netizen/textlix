@@ -657,8 +657,18 @@ exports.getServiceList = async (req, res, next) => {
     const { mode = 'otp' } = req.query;
 
     if (mode === 'rental') {
-      // Dynamic catalog from Get-SMS — every service they sell is rentable
-      const catalog = await getsms.getServiceCatalog();
+      // Dynamic catalog — union of BOTH rental providers so one being down (e.g.
+      // GetSMS behind a dead proxy) never empties the whole list. GetSMS = LIX 1,
+      // SMSPVA = LIX 2; either can carry rentals on its own.
+      const [gsCatalog, pvaCatalog] = await Promise.all([
+        getsms.getServiceCatalog().catch(() => []),
+        smspvaRentalEnabled() ? smspva.getServiceCatalog().catch(() => []) : Promise.resolve([]),
+      ]);
+      const bySlug = new Map();
+      for (const c of [...(gsCatalog || []), ...(pvaCatalog || [])]) {
+        if (c?.slug && !bySlug.has(c.slug)) bySlug.set(c.slug, c);
+      }
+      const catalog = [...bySlug.values()];
       // Enrich with DB Service icon/displayName where one exists
       const dbServices = await Service.find({ slug: { $in: catalog.map((c) => c.slug) }, isEnabled: true });
       const dbBySlug = Object.fromEntries(dbServices.map((s) => [s.slug, s]));

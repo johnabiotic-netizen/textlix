@@ -264,6 +264,28 @@ const cancel = async (rentId) => {
   }
 };
 
+// Flat service catalog for the rental service LIST. SMSPVA's service set is
+// per-country, so we union services across a few high-coverage countries.
+// Slugs use the same slugify as findService, so they round-trip to pricing.
+const CATALOG_COUNTRIES = ['US', 'GB', 'FR', 'DE', 'NL', 'ES'];
+let _catalogCache = null;
+let _catalogExpires = 0;
+const getServiceCatalog = async () => {
+  if (_catalogCache && Date.now() < _catalogExpires) return _catalogCache;
+  const seen = new Map();
+  for (const iso of CATALOG_COUNTRIES) {
+    const data = await getCountryData(iso, 'week').catch(() => null);
+    if (!Array.isArray(data)) continue;
+    for (const s of data) {
+      const slug = slugify(s.name || '');
+      if (slug && Number(s.count) > 0 && !seen.has(slug)) seen.set(slug, { slug, name: s.name });
+    }
+  }
+  const list = [...seen.values()];
+  if (list.length) { _catalogCache = list; _catalogExpires = Date.now() + 60 * 60 * 1000; }
+  return list;
+};
+
 // Account balance (USD). Lives on the activation endpoint, NOT the rent API —
 // priemnik.php?metod=get_balance → { response:"1", balance:"47.7600" }.
 const getBalance = async () => {
@@ -287,6 +309,7 @@ module.exports = {
   getSMS,
   cancel,
   getBalance,
+  getServiceCatalog,
   getSupportedCountries,
   getCountryData,
   DURATION_MAP,
