@@ -7,6 +7,7 @@ import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import { SkeletonCard } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
+import ServiceLogo from '../../components/common/ServiceLogo';
 
 const SERVICE_EMOJIS = {
   whatsapp: '💬', telegram: '✈️', google: '🔵', facebook: '📘', instagram: '📸',
@@ -155,7 +156,9 @@ export default function BrowseByModePage({ mode }) {
                   onMouseLeave={() => !isRental && setHoveredService(null)}
                   className="p-5"
                 >
-                  <div className="text-3xl mb-3">{SERVICE_EMOJIS[service.slug] || '📱'}</div>
+                  <div className="w-11 h-11 mb-3 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                    <ServiceLogo slug={service.slug} size={28} />
+                  </div>
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{service.name}</h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{service.countryCount} countr{service.countryCount !== 1 ? 'ies' : 'y'}</p>
                   <p className={`text-xs font-medium mt-1 ${isRental ? 'text-brand-600' : 'text-brand-600'}`}>

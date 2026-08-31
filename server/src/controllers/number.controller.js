@@ -886,10 +886,15 @@ exports.getCountries = async (req, res, next) => {
     const countries = await Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 });
 
     if (mode === 'rental') {
-      const [allCountries, supportedIso] = await Promise.all([
+      // Union BOTH rental providers' supported countries — GetSMS only lists
+      // countries with live stock (often ~11), SMSPVA covers ~49; using GetSMS
+      // alone hid most of the rental catalog.
+      const [allCountries, gsIso, pvaIso] = await Promise.all([
         Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 }),
-        getsms.getSupportedCountries(),
+        getsms.getSupportedCountries().catch(() => new Set()),
+        smspvaRentalEnabled() ? smspva.getSupportedCountries().catch(() => new Set()) : Promise.resolve(new Set()),
       ]);
+      const supportedIso = new Set([...gsIso, ...pvaIso]);
       const result = allCountries
         .filter((c) => supportedIso.size === 0 || supportedIso.has(c.code))
         .map((c) => ({
