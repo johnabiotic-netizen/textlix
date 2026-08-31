@@ -9,6 +9,7 @@ const expiryJob = require('./jobs/number-expiry.job');
 const cleanupJob = require('./jobs/sms-cleanup.job');
 const supportCleanupJob = require('./jobs/support-cleanup.job');
 const recoveryNudgeJob = require('./jobs/recovery-nudge.job');
+const providerHealthJob = require('./jobs/provider-health.job');
 const logger = require('./config/logger');
 
 // ── Startup env validation ────────────────────────────────────────────────────
@@ -76,6 +77,7 @@ const start = async () => {
   cleanupJob.start();
   supportCleanupJob.start();
   recoveryNudgeJob.start();
+  providerHealthJob.start();
 
   server.listen(PORT, () => {
     logger.info(`TextLix server running on port ${PORT}`);

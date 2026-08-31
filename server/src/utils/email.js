@@ -278,4 +278,34 @@ const sendRecoveryNudgeEmail = async (email, firstName) => {
   });
 };
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail, sendPaymentConfirmedEmail, sendGoodwillCreditEmail, sendSupportEscalationEmail, sendRecoveryNudgeEmail };
+// Ops alert: an SMS/rental provider is low on balance or unreachable/empty.
+// `rows` = [{ name, balance, catalog, problem }]; problem is null when healthy.
+const sendProviderHealthAlert = async (recipients, rows, problems, lowBal) => {
+  const money = (b) => (b == null ? '—' : `$${Number(b).toFixed(2)}`);
+  const cat = (c) => (c == null ? '—' : `${c} services`);
+  const problemList = problems.map((p) => `
+    <li style="margin:0 0 6px;font-size:14px;color:#b91c1c;"><strong>${p.name}</strong> — ${p.problem}${p.balance != null ? ` (balance ${money(p.balance)})` : ''}${p.catalog != null ? ` (${cat(p.catalog)})` : ''}</li>`).join('');
+  const tableRows = rows.map((r) => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #eef2f7;font-weight:600;color:#111827;">${r.name}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:right;color:#111827;">${money(r.balance)}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:right;color:#6b7280;">${r.catalog != null ? cat(r.catalog) : '—'}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:center;">${r.problem ? `<span style="color:#b91c1c;font-weight:700;">⚠ ${r.problem}</span>` : '<span style="color:#059669;">✓ ok</span>'}</td>
+    </tr>`).join('');
+  const body = `
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#b91c1c;">⚠️ Provider health alert</h1>
+    <p style="margin:0 0 18px;font-size:14px;color:#374151;line-height:1.6;">${problems.length} provider issue${problems.length === 1 ? '' : 's'} detected on the daily check (low-balance threshold ${money(lowBal)}). Act before it costs sales:</p>
+    <ul style="margin:0 0 22px;padding-left:18px;">${problemList}</ul>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eef2f7;border-radius:10px;overflow:hidden;font-size:13px;">
+      <tr style="background:#f9fafb;"><td style="padding:8px 10px;font-weight:700;color:#6b7280;">Provider</td><td style="padding:8px 10px;font-weight:700;color:#6b7280;text-align:right;">Balance</td><td style="padding:8px 10px;font-weight:700;color:#6b7280;text-align:right;">Catalog</td><td style="padding:8px 10px;font-weight:700;color:#6b7280;text-align:center;">Status</td></tr>
+      ${tableRows}
+    </table>
+    <p style="margin:18px 0 0;font-size:12px;color:#9ca3af;">Empty rental catalog usually means a dead proxy (GetSMS) or an out-of-stock sample country. Low balance = top up the provider account.</p>`;
+  await sendEmail({
+    to: recipients,
+    subject: `⚠️ TextLix provider alert — ${problems.length} issue${problems.length === 1 ? '' : 's'}`,
+    html: baseTemplate('Provider health alert — TextLix', body),
+  });
+};
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendSmsNotificationEmail, sendPaymentConfirmedEmail, sendGoodwillCreditEmail, sendSupportEscalationEmail, sendRecoveryNudgeEmail, sendProviderHealthAlert };
