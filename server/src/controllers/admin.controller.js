@@ -405,6 +405,7 @@ const ALLOWED_SETTINGS_KEYS = new Set([
   'min_topup_new_usd',
   'min_lix_success_rate',
   'provider_low_balance_usd',
+  'provider_alert_emails',
   'sms_retention_hours',
   'sms_poll_interval_seconds',
   'announcementBanner',

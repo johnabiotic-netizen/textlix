@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const logger = require('../config/logger');
-const { getSettingNum } = require('../utils/settings');
+const { getSettingNum, getSetting } = require('../utils/settings');
 const { sendProviderHealthAlert } = require('../utils/email');
 const fivesim = require('../providers/sms/fivesim.provider');
 const grizzlysms = require('../providers/sms/grizzlysms.provider');
@@ -55,6 +55,12 @@ async function sweep() {
   let recipients = admins.map((a) => a.email).filter(Boolean);
   const extra = process.env.SUPPORT_ESCALATION_EMAIL || process.env.ADMIN_EMAIL;
   if (extra) recipients.push(extra);
+  // Extra alert inboxes (comma/space separated) — e.g. a Gmail that reliably
+  // delivers. Admin-tunable via the provider_alert_emails setting.
+  try {
+    const extraCsv = await getSetting('provider_alert_emails');
+    if (extraCsv) recipients.push(...String(extraCsv).split(/[,;\s]+/).filter(Boolean));
+  } catch (_) {}
   recipients = [...new Set(recipients.map((e) => String(e).toLowerCase()))];
 
   if (recipients.length) {
