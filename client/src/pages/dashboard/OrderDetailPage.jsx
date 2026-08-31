@@ -1,9 +1,10 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { FiCopy, FiCheck, FiArrowLeft } from 'react-icons/fi';
 import dayjs from 'dayjs';
-import { getOrder } from '../../api/numbers';
+import toast from 'react-hot-toast';
+import { getOrder, extendRental } from '../../api/numbers';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import { copyToClipboard } from '../../utils/clipboard';
@@ -25,9 +26,20 @@ function CopyBtn({ text }) {
 
 export default function OrderDetailPage() {
   const { orderId } = useParams();
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => getOrder(orderId).then((r) => r.data.data.order),
+  });
+
+  const extendMut = useMutation({
+    mutationFn: (days) => extendRental(orderId, days),
+    onSuccess: () => {
+      toast.success('Rental extended');
+      qc.invalidateQueries({ queryKey: ['order', orderId] });
+      qc.invalidateQueries({ queryKey: ['activeOrders'] });
+    },
+    onError: (e) => toast.error(e.response?.data?.error?.message || 'Could not extend the rental'),
   });
 
   if (isLoading) return <div className="py-12 text-center text-gray-400 dark:text-gray-500">Loading...</div>;
@@ -109,6 +121,29 @@ export default function OrderDetailPage() {
                 <p className="text-sm text-gray-700 dark:text-gray-200">{msg.text}</p>
               </div>
             ))}
+          </div>
+        )}
+
+        {o.orderType === 'RENTAL' && o.status === 'ACTIVE' && (
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+            <div className="flex justify-between text-sm mb-3">
+              <span className="text-gray-500 dark:text-gray-400">Expires</span>
+              <span className="font-medium text-gray-900 dark:text-white">{o.expiresAt ? dayjs(o.expiresAt).format('MMM D, YYYY HH:mm') : '—'}</span>
+            </div>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Extend this rental — keep the same number for longer</p>
+            <div className="grid grid-cols-4 gap-2">
+              {[7, 14, 21, 30].map((d) => (
+                <button
+                  key={d}
+                  disabled={extendMut.isPending}
+                  onClick={() => extendMut.mutate(d)}
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg py-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:border-brand-400 hover:text-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  +{d} days
+                </button>
+              ))}
+            </div>
+            {extendMut.isPending && <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Extending…</p>}
           </div>
         )}
       </Card>

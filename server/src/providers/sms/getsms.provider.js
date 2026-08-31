@@ -357,7 +357,18 @@ const cancel = async (rentId) => {
   logger.info(`GetSMS rental ${rentId}: no cancel available, expires naturally`);
 };
 
+// Extend an active rental by more days (7/14/30). GetSMS: method=prolong, same
+// type/period params as createorder. Body carries status 200 on success.
+const extend = async (rentId, days) => {
+  const duration = DURATION_MAP[days];
+  if (!duration) throw new Error(`GetSMS: unsupported duration ${days} days`);
+  const raw = await call({ method: 'prolong', rentid: rentId, type: duration.type, period: duration.period });
+  if (raw?.status !== 200) throw new Error(`GetSMS prolong: ${raw?.data?.msg || 'failed'}`);
+  return true;
+};
+
 module.exports = {
+  extend,
   getPrices,
   getNumber,
   getSMS,

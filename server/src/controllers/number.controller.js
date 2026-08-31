@@ -1753,6 +1753,68 @@ exports.orderRental = async (req, res, next) => {
   }
 };
 
+// Extend an active rental by more days. Charges the same per-duration price and
+// calls the provider's prolong. Extends at the provider BEFORE charging so a
+// failure never costs the user; new expiry = current expiry + extra days.
+exports.extendRental = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const numDays = Number(req.body.days);
+    if (!RENTAL_DURATION_OPTIONS.includes(numDays)) {
+      throw new AppError('VALIDATION_ERROR', 400, `days must be one of ${RENTAL_DURATION_OPTIONS.join(', ')}`);
+    }
+
+    const order = await NumberOrder.findOne({ _id: req.params.id, userId });
+    if (!order) throw new AppError('NOT_FOUND', 404, 'Order not found');
+    if (order.orderType !== 'RENTAL') throw new AppError('VALIDATION_ERROR', 400, 'Only rentals can be extended');
+    if (order.status !== 'ACTIVE') throw new AppError('VALIDATION_ERROR', 400, 'Only active rentals can be extended');
+
+    const provider = order.provider;
+    const providerModule = RENTAL_PROVIDER_MODULE[provider];
+    if (!providerModule || typeof providerModule.extend !== 'function'
+        || (provider === 'smspva' && !smspvaRentalEnabled())) {
+      throw new AppError('VALIDATION_ERROR', 400, 'This rental cannot be extended');
+    }
+
+    const [user, service, country] = await Promise.all([
+      User.findById(userId),
+      Service.findById(order.serviceId),
+      Country.findById(order.countryId),
+    ]);
+    if (!user) throw new AppError('NOT_FOUND', 404, 'User not found');
+    if (!service || !country) throw new AppError('NOT_FOUND', 404, 'Order details missing');
+
+    const prices = await getRentalPrices(provider, country.code, service.slug);
+    const chargeCredits = prices?.[numDays];
+    if (!chargeCredits) {
+      throw new AppError('NOT_FOUND', 404, `${numDays}-day extension not available for ${service.name}`);
+    }
+    if (user.creditBalance < chargeCredits) {
+      throw new AppError('INSUFFICIENT_CREDITS', 402, `Need ${chargeCredits} credits, you have ${user.creditBalance}`);
+    }
+
+    // Extend at the provider first — a failure must never cost the user credits.
+    try {
+      await providerModule.extend(order.providerOrderId, numDays);
+    } catch (err) {
+      logger.warn(`Rental extend failed (${provider} order ${order.providerOrderId}, +${numDays}d): ${err.message}`);
+      throw new AppError('PROVIDER_ERROR', 502, 'Could not extend the rental right now. Please try again in a couple of minutes.');
+    }
+
+    await spendCredits(userId, chargeCredits, `Extend rental +${numDays}d: ${country.flagEmoji} ${country.name} - ${service.name}`);
+
+    order.expiresAt = new Date(Math.max(order.expiresAt.getTime(), Date.now()) + numDays * 24 * 60 * 60 * 1000);
+    order.rentalDays = (order.rentalDays || 0) + numDays;
+    order.creditsCharged = (order.creditsCharged || 0) + chargeCredits;
+    await order.save();
+
+    logger.info(`Rental extended +${numDays}d order ${order._id} via ${provider}: ${chargeCredits}cr`);
+    success(res, { order: { id: order._id, expiresAt: order.expiresAt, rentalDays: order.rentalDays, creditsCharged: chargeCredits } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ─── Dashboard widgets ────────────────────────────────────────────────────────
 
 /** GET /numbers/usage-sparkline — last 7 days of orders + credits spent */

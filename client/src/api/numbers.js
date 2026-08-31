@@ -23,6 +23,7 @@ export const getRentalPrice = (countryId, opts = {}) => {
   return api.get(`/numbers/countries/${countryId}/rental-price`, { params });
 };
 export const orderRental = (data) => api.post('/numbers/order/rental', data);
+export const extendRental = (orderId, days) => api.post(`/numbers/order/rental/${orderId}/extend`, { days });
 export const getRecommendations = (serviceSlug) => api.get(`/numbers/services/${serviceSlug}/recommendations`);
 export const getOrder = (orderId) => api.get(`/numbers/${orderId}`);
 export const getUsageSparkline = () => api.get('/numbers/usage-sparkline');

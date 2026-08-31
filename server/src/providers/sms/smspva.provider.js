@@ -303,7 +303,17 @@ const getBalance = async () => {
   }
 };
 
+// Extend an active rental by more days (7/14/21/30). SMSPVA: method=prolong,
+// same dtype/dcount as create. _doCall throws unless status===1, so no throw = ok.
+const extend = async (rentId, days) => {
+  const duration = DURATION_MAP[days];
+  if (!duration) throw new Error(`SMSPVA: unsupported duration ${days} days`);
+  await call({ method: 'prolong', id: rentId, dtype: duration.dtype, dcount: duration.dcount });
+  return true;
+};
+
 module.exports = {
+  extend,
   getPrices,
   getNumber,
   getSMS,

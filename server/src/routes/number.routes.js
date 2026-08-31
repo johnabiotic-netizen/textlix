@@ -27,6 +27,7 @@ router.get('/services/:serviceSlug/countries', browseCache, numberController.get
 router.get('/services/:serviceSlug/recommendations', browseCache, numberController.getRecommendations);
 router.post('/order', orderLimiter, numberController.orderNumber);
 router.post('/order/rental', orderLimiter, numberController.orderRental);
+router.post('/order/rental/:id/extend', orderLimiter, numberController.extendRental);
 router.get('/active', numberController.getActiveOrders);
 router.get('/history', numberController.getOrderHistory);
 // Dashboard widgets (must come before /:orderId to avoid being matched as an order id)
