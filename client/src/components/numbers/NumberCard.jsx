@@ -8,15 +8,30 @@ import toast from 'react-hot-toast';
 import { copyToClipboard } from '../../utils/clipboard';
 import dayjs from 'dayjs';
 
-function useCountdown(expiresAt) {
-  const [seconds, setSeconds] = useState(Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000)));
+// Prefer the server-computed `secondsRemaining` and tick down from it using a
+// monotonic clock (performance.now). This makes the timer immune to a skewed
+// device clock — the cause of the bug where a freshly-bought number showed as
+// "Expired" instantly because the phone's wall-clock ran ahead of real time.
+// Falls back to the expiresAt-vs-local-clock calc when the server value is absent.
+function useCountdown(expiresAt, secondsRemaining) {
+  const computeInitial = () =>
+    typeof secondsRemaining === 'number' && !Number.isNaN(secondsRemaining)
+      ? secondsRemaining
+      : Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000));
+
+  const [seconds, setSeconds] = useState(computeInitial);
 
   useEffect(() => {
+    const base = computeInitial();
+    setSeconds(base);
+    const mono = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const start = mono();
     const interval = setInterval(() => {
-      setSeconds(Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000)));
+      setSeconds(Math.max(0, Math.floor(base - (mono() - start) / 1000)));
     }, 1000);
     return () => clearInterval(interval);
-  }, [expiresAt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt, secondsRemaining]);
 
   const days = Math.floor(seconds / 86400);
   const hrs = Math.floor((seconds % 86400) / 3600);
@@ -42,7 +57,7 @@ function CopyButton({ text }) {
 export default function NumberCard({ order: initialOrder, onCancel, onSmsReceived }) {
   const [order, setOrder] = useState(initialOrder);
   const [cancelling, setCancelling] = useState(false);
-  const { days, hrs, mins, secs, expired } = useCountdown(order.expiresAt);
+  const { days, hrs, mins, secs, expired } = useCountdown(order.expiresAt, order.secondsRemaining);
   const isRental = order.orderType === 'RENTAL';
 
   // On mount: if the card is already completed (socket was missed before this

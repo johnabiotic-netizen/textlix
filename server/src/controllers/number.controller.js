@@ -597,6 +597,12 @@ function formatOrder(order) {
   const o = typeof order?.toObject === 'function' ? order.toObject() : { ...order };
   o.server = SERVER_LABEL[o.provider] || 'LIX 1';
   delete o.provider;
+  // Server-computed remaining lifetime. The client ticks down from this using a
+  // monotonic timer, so a skewed device clock can't make a live number read as
+  // "Expired" the instant it's bought.
+  if (o.expiresAt) {
+    o.secondsRemaining = Math.max(0, Math.round((new Date(o.expiresAt).getTime() - Date.now()) / 1000));
+  }
   return o;
 }
 
@@ -1380,6 +1386,7 @@ exports.orderNumber = async (req, res, next) => {
         country: { name: country.name, flagEmoji: country.flagEmoji },
         service: { name: service.name, icon: service.icon },
         expiresAt: order.expiresAt,
+        secondsRemaining: Math.max(0, Math.round((order.expiresAt.getTime() - Date.now()) / 1000)),
         creditsCharged: chargeCredits,
         status: order.status,
         server: SERVER_LABEL[usedProvider] || 'LIX 1',
@@ -1741,6 +1748,7 @@ exports.orderRental = async (req, res, next) => {
         country: { name: country.name, flagEmoji: country.flagEmoji },
         service: { name: service.name },
         expiresAt: order.expiresAt,
+        secondsRemaining: Math.max(0, Math.round((new Date(order.expiresAt).getTime() - Date.now()) / 1000)),
         creditsCharged: chargeCredits,
         rentalDays: numDays,
         orderType: 'RENTAL',
