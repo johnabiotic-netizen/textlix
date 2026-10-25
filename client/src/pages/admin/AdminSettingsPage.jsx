@@ -71,7 +71,7 @@ export default function AdminSettingsPage() {
         <SettingField
           label="Default Margin %"
           description="Markup applied over provider cost for all new pricing entries"
-          value={form.default_margin_percent ?? 30}
+          value={form.default_margin_percent ?? 60}
           onChange={set('default_margin_percent')}
           type="number"
           min={0}
@@ -85,15 +85,6 @@ export default function AdminSettingsPage() {
           type="number"
           min={1}
           max={60}
-        />
-        <SettingField
-          label="Max Active Numbers per User"
-          description="Maximum concurrent active number orders allowed per account"
-          value={form.max_active_numbers_per_user ?? 5}
-          onChange={set('max_active_numbers_per_user')}
-          type="number"
-          min={1}
-          max={50}
         />
         <SettingField
           label="Minimum Top-up — existing users (USD)"
@@ -132,16 +123,6 @@ export default function AdminSettingsPage() {
           type="number"
           min={2}
           max={60}
-        />
-      </Card>
-
-      <Card className="px-6 py-2">
-        <h2 className="font-semibold text-gray-900 pt-4 mb-2">Primary SMS Provider</h2>
-        <SettingField
-          label="Active Provider"
-          description="Primary provider: '5sim' or 'smsactivate'"
-          value={form.sms_provider ?? '5sim'}
-          onChange={set('sms_provider')}
         />
       </Card>
 

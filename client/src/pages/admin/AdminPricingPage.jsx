@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPricing, updatePricing } from '../../api/admin';
 import Card from '../../components/common/Card';
@@ -50,12 +50,23 @@ export default function AdminPricingPage() {
   const queryClient = useQueryClient();
   const [countryFilter, setCountryFilter] = useState('');
   const [serviceFilter, setServiceFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [bulkMargin, setBulkMargin] = useState('');
   const [applyingBulk, setApplyingBulk] = useState(false);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['adminPricing'],
-    queryFn: () => getPricing().then((r) => r.data.data),
+  // Debounce the text filters so we don't refetch on every keystroke; reset to
+  // page 1 whenever the filter changes.
+  const [debCountry, setDebCountry] = useState('');
+  const [debService, setDebService] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => { setDebCountry(countryFilter); setDebService(serviceFilter); setPage(1); }, 400);
+    return () => clearTimeout(t);
+  }, [countryFilter, serviceFilter]);
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['adminPricing', debCountry, debService, page],
+    queryFn: () => getPricing({ country: debCountry, service: debService, page, limit: 50 }).then((r) => r.data.data),
+    keepPreviousData: true,
   });
 
   const saveMutation = useMutation({
@@ -71,14 +82,18 @@ export default function AdminPricingPage() {
     return saveMutation.mutateAsync({ id, data });
   };
 
+  const pricing = data?.pricing || [];
+  const total = data?.total || 0;
+  const pages = data?.pages || 1;
+
   const handleBulkApply = async () => {
     if (!bulkMargin || isNaN(Number(bulkMargin))) return;
     setApplyingBulk(true);
     try {
-      const filtered = filteredPricing;
-      await Promise.all(filtered.map((p) => updatePricing(p._id, { marginPercent: Number(bulkMargin) })));
+      // Applies to the rows currently shown (this page).
+      await Promise.all(pricing.map((p) => updatePricing(p._id, { marginPercent: Number(bulkMargin) })));
       queryClient.invalidateQueries({ queryKey: ['adminPricing'] });
-      toast.success(`Applied ${bulkMargin}% margin to ${filtered.length} entries`);
+      toast.success(`Applied ${bulkMargin}% margin to ${pricing.length} entries on this page`);
       setBulkMargin('');
     } catch {
       toast.error('Bulk update failed');
@@ -86,13 +101,6 @@ export default function AdminPricingPage() {
       setApplyingBulk(false);
     }
   };
-
-  const allPricing = data?.pricing || [];
-  const filteredPricing = allPricing.filter((p) => {
-    const countryMatch = !countryFilter || p.countryId?.name?.toLowerCase().includes(countryFilter.toLowerCase());
-    const serviceMatch = !serviceFilter || p.serviceId?.name?.toLowerCase().includes(serviceFilter.toLowerCase());
-    return countryMatch && serviceMatch;
-  });
 
   return (
     <div className="space-y-6">
@@ -121,7 +129,7 @@ export default function AdminPricingPage() {
               className="w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
             <Button size="sm" loading={applyingBulk} onClick={handleBulkApply} disabled={!bulkMargin}>
-              Apply to {filteredPricing.length} rows
+              Apply to {pricing.length} rows (this page)
             </Button>
           </div>
         </div>
@@ -143,7 +151,7 @@ export default function AdminPricingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredPricing.length ? filteredPricing.map((p) => (
+              {pricing.length ? pricing.map((p) => (
                 <PricingRow key={p._id} pricing={p} onSave={handleSave} />
               )) : (
                 <tr>
@@ -153,6 +161,24 @@ export default function AdminPricingPage() {
             </tbody>
           </table>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && total > 0 && (
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <span>
+            {total.toLocaleString()} entries · page {page} of {pages}
+            {isFetching && <span className="ml-2 text-gray-400">updating…</span>}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" disabled={page <= 1 || isFetching} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              ← Prev
+            </Button>
+            <Button size="sm" variant="secondary" disabled={page >= pages || isFetching} onClick={() => setPage((p) => Math.min(pages, p + 1))}>
+              Next →
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
