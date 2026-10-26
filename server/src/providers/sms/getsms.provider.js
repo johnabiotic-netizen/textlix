@@ -71,24 +71,35 @@ const prettifyName = (name) => {
 // ─── Supported rental countries (dynamic, cached) ────────────────────────────
 let _countriesCache = null;
 let _countriesExpires = 0;
+let _countriesInflight = null;
 const COUNTRIES_TTL = 60 * 60 * 1000;
 
 const getSupportedCountries = async () => {
   if (_countriesCache && Date.now() < _countriesExpires) return _countriesCache;
-  try {
-    const raw = await call({ method: 'countries' });
-    const list = raw?.data?.countries;
-    if (!Array.isArray(list)) return _countriesCache || new Set();
-    // Convert provider-specific code back to ISO (e.g. UK → GB)
-    const REVERSE_MAP = Object.fromEntries(Object.entries(COUNTRY_CODE_MAP).map(([iso, prov]) => [prov, iso]));
-    const isoCodes = new Set(list.map((c) => REVERSE_MAP[c.code] || c.code));
-    _countriesCache = isoCodes;
-    _countriesExpires = Date.now() + COUNTRIES_TTL;
-    return isoCodes;
-  } catch (err) {
-    logger.warn(`GetSMS getSupportedCountries: ${err.message}`);
-    return _countriesCache || new Set();
-  }
+  // Single-flight: every rental page load calls this. Without sharing one upstream
+  // call, concurrent loads each enqueue their own request onto the serialized,
+  // rate-gapped queue — so a slow upstream backs the queue up unboundedly and the
+  // rental catalog endpoint never responds. One in-flight call, everyone awaits it.
+  if (_countriesInflight) return _countriesInflight;
+  _countriesInflight = (async () => {
+    try {
+      const raw = await call({ method: 'countries' });
+      const list = raw?.data?.countries;
+      if (!Array.isArray(list)) return _countriesCache || new Set();
+      // Convert provider-specific code back to ISO (e.g. UK → GB)
+      const REVERSE_MAP = Object.fromEntries(Object.entries(COUNTRY_CODE_MAP).map(([iso, prov]) => [prov, iso]));
+      const isoCodes = new Set(list.map((c) => REVERSE_MAP[c.code] || c.code));
+      _countriesCache = isoCodes;
+      _countriesExpires = Date.now() + COUNTRIES_TTL;
+      return isoCodes;
+    } catch (err) {
+      logger.warn(`GetSMS getSupportedCountries: ${err.message}`);
+      return _countriesCache || new Set();
+    } finally {
+      _countriesInflight = null;
+    }
+  })();
+  return _countriesInflight;
 };
 
 // ─── Service catalog (dynamic, cached) ────────────────────────────────────────

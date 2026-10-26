@@ -623,6 +623,16 @@ const RENTAL_PROVIDER_MODULE = {
 };
 const smspvaRentalEnabled = () => process.env.SMSPVA_RENTAL_ENABLED === 'true';
 
+// Never let a slow/hung rental provider block a catalog endpoint. If a provider
+// call doesn't settle within `ms`, return `fallback` now and let the (single-
+// flighted) provider call keep warming its own cache for the next load. Same
+// pattern as getSmsCodesCountryPrices / getGetSmsCountryPrices below. Without
+// this, a slow upstream + serialized provider queue made /numbers/countries
+// ?mode=rental hang forever (infinite skeletons on the rental page).
+const CATALOG_RACE_MS = 3000;
+const raceOr = (promise, fallback, ms = CATALOG_RACE_MS) =>
+  Promise.race([promise, new Promise((r) => setTimeout(() => r(fallback), ms))]);
+
 // Cache: `${provider}/${countryIso}/${serviceSlug}` → { expiresAt, data: { 7: credits, ... } }
 const rentalPriceCache = new Map();
 
@@ -667,8 +677,8 @@ exports.getServiceList = async (req, res, next) => {
       // GetSMS behind a dead proxy) never empties the whole list. GetSMS = LIX 1,
       // SMSPVA = LIX 2; either can carry rentals on its own.
       const [gsCatalog, pvaCatalog] = await Promise.all([
-        getsms.getServiceCatalog().catch(() => []),
-        smspvaRentalEnabled() ? smspva.getServiceCatalog().catch(() => []) : Promise.resolve([]),
+        raceOr(getsms.getServiceCatalog().catch(() => []), []),
+        smspvaRentalEnabled() ? raceOr(smspva.getServiceCatalog().catch(() => []), []) : Promise.resolve([]),
       ]);
       const bySlug = new Map();
       for (const c of [...(gsCatalog || []), ...(pvaCatalog || [])]) {
@@ -794,7 +804,7 @@ exports.getCountriesForService = async (req, res, next) => {
     if (mode === 'rental') {
       const [allCountries, supportedIso] = await Promise.all([
         Country.find({ isEnabled: true }),
-        getsms.getSupportedCountries(),
+        raceOr(getsms.getSupportedCountries().catch(() => new Set()), new Set()),
       ]);
       const result = allCountries
         .filter((c) => supportedIso.size === 0 || supportedIso.has(c.code))
@@ -897,8 +907,8 @@ exports.getCountries = async (req, res, next) => {
       // alone hid most of the rental catalog.
       const [allCountries, gsIso, pvaIso] = await Promise.all([
         Country.find({ isEnabled: true }).sort({ sortOrder: 1, name: 1 }),
-        getsms.getSupportedCountries().catch(() => new Set()),
-        smspvaRentalEnabled() ? smspva.getSupportedCountries().catch(() => new Set()) : Promise.resolve(new Set()),
+        raceOr(getsms.getSupportedCountries().catch(() => new Set()), new Set()),
+        smspvaRentalEnabled() ? raceOr(smspva.getSupportedCountries().catch(() => new Set()), new Set()) : Promise.resolve(new Set()),
       ]);
       const supportedIso = new Set([...gsIso, ...pvaIso]);
       const result = allCountries

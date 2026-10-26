@@ -96,22 +96,33 @@ const call = (params, opts = {}) => new Promise((resolve, reject) => {
 // ─── Supported rental countries (dynamic, cached 1h) ─────────────────────────
 let _countriesCache = null;
 let _countriesExpires = 0;
+let _countriesInflight = null;
 const COUNTRIES_TTL = 60 * 60 * 1000;
 
 const getSupportedCountries = async () => {
   if (_countriesCache && Date.now() < _countriesExpires) return _countriesCache;
-  try {
-    const raw = await call({ method: 'getcountries' });
-    if (!Array.isArray(raw?.data)) return _countriesCache || new Set();
-    const REVERSE_MAP = Object.fromEntries(Object.entries(COUNTRY_CODE_MAP).map(([iso, prov]) => [prov, iso]));
-    const isoCodes = new Set(raw.data.map((c) => REVERSE_MAP[c.code] || c.code));
-    _countriesCache = isoCodes;
-    _countriesExpires = Date.now() + COUNTRIES_TTL;
-    return isoCodes;
-  } catch (err) {
-    logger.warn(`SMSPVA getSupportedCountries: ${err.message}`);
-    return _countriesCache || new Set();
-  }
+  // Single-flight: every rental page load calls this. Without sharing one upstream
+  // call, concurrent loads each enqueue their own request onto the serialized,
+  // 4.2s-gapped queue — so a slow upstream backs the queue up unboundedly and the
+  // rental catalog endpoint never responds. One in-flight call, everyone awaits it.
+  if (_countriesInflight) return _countriesInflight;
+  _countriesInflight = (async () => {
+    try {
+      const raw = await call({ method: 'getcountries' });
+      if (!Array.isArray(raw?.data)) return _countriesCache || new Set();
+      const REVERSE_MAP = Object.fromEntries(Object.entries(COUNTRY_CODE_MAP).map(([iso, prov]) => [prov, iso]));
+      const isoCodes = new Set(raw.data.map((c) => REVERSE_MAP[c.code] || c.code));
+      _countriesCache = isoCodes;
+      _countriesExpires = Date.now() + COUNTRIES_TTL;
+      return isoCodes;
+    } catch (err) {
+      logger.warn(`SMSPVA getSupportedCountries: ${err.message}`);
+      return _countriesCache || new Set();
+    } finally {
+      _countriesInflight = null;
+    }
+  })();
+  return _countriesInflight;
 };
 
 // ─── Per-country service data (method=getdata) ───────────────────────────────
