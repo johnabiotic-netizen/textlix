@@ -281,8 +281,8 @@ const cancel = async (rentId) => {
 const CATALOG_COUNTRIES = ['US', 'GB', 'FR', 'DE', 'NL', 'ES'];
 let _catalogCache = null;
 let _catalogExpires = 0;
-const getServiceCatalog = async () => {
-  if (_catalogCache && Date.now() < _catalogExpires) return _catalogCache;
+let _catalogInflight = null;
+const _buildServiceCatalog = async () => {
   const seen = new Map();
   for (const iso of CATALOG_COUNTRIES) {
     const data = await getCountryData(iso, 'week').catch(() => null);
@@ -294,7 +294,20 @@ const getServiceCatalog = async () => {
   }
   const list = [...seen.values()];
   if (list.length) { _catalogCache = list; _catalogExpires = Date.now() + 60 * 60 * 1000; }
-  return list;
+  return list.length ? list : (_catalogCache || []);
+};
+const getServiceCatalog = async () => {
+  if (_catalogCache && Date.now() < _catalogExpires) return _catalogCache;
+  // Single-flight + stale-while-revalidate: this build walks 6 countries through
+  // the 4.2s-gapped queue (~25s cold), so concurrent loads must share it and a
+  // warmed list is served instantly while the rebuild runs in the background.
+  if (!_catalogInflight) {
+    _catalogInflight = _buildServiceCatalog()
+      .catch((err) => { logger.warn(`SMSPVA getServiceCatalog: ${err.message}`); return _catalogCache || []; })
+      .finally(() => { _catalogInflight = null; });
+  }
+  if (_catalogCache) return _catalogCache;
+  return _catalogInflight;
 };
 
 // Account balance (USD). Lives on the activation endpoint, NOT the rent API —

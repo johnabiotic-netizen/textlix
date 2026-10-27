@@ -630,6 +630,11 @@ const smspvaRentalEnabled = () => process.env.SMSPVA_RENTAL_ENABLED === 'true';
 // this, a slow upstream + serialized provider queue made /numbers/countries
 // ?mode=rental hang forever (infinite skeletons on the rental page).
 const CATALOG_RACE_MS = 3000;
+// The service catalog is a multi-country build (~6s cold on GetSMS), so it needs a
+// longer budget than the single-call country lookups. It's single-flighted and
+// served stale-while-revalidate in the providers, so this longer wait only ever
+// hits the first cold load after a deploy / cache expiry; everyone after is instant.
+const CATALOG_SVC_RACE_MS = 10000;
 const raceOr = (promise, fallback, ms = CATALOG_RACE_MS) =>
   Promise.race([promise, new Promise((r) => setTimeout(() => r(fallback), ms))]);
 
@@ -677,8 +682,8 @@ exports.getServiceList = async (req, res, next) => {
       // GetSMS behind a dead proxy) never empties the whole list. GetSMS = LIX 1,
       // SMSPVA = LIX 2; either can carry rentals on its own.
       const [gsCatalog, pvaCatalog] = await Promise.all([
-        raceOr(getsms.getServiceCatalog().catch(() => []), []),
-        smspvaRentalEnabled() ? raceOr(smspva.getServiceCatalog().catch(() => []), []) : Promise.resolve([]),
+        raceOr(getsms.getServiceCatalog().catch(() => []), [], CATALOG_SVC_RACE_MS),
+        smspvaRentalEnabled() ? raceOr(smspva.getServiceCatalog().catch(() => []), [], CATALOG_SVC_RACE_MS) : Promise.resolve([]),
       ]);
       const bySlug = new Map();
       for (const c of [...(gsCatalog || []), ...(pvaCatalog || [])]) {

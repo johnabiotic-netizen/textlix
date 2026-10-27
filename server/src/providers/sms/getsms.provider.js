@@ -108,11 +108,16 @@ const getSupportedCountries = async () => {
 let _catalogCache = null;
 let _slugToIdCache = null;
 let _catalogExpires = 0;
+let _catalogInflight = null;
 const CATALOG_TTL = 60 * 60 * 1000;
 
 const CATALOG_COUNTRIES = ['US', 'DE', 'FR', 'GB']; // high-stock; unioned so one empty country can't blank the list
-const getServiceCatalog = async () => {
-  if (_catalogCache && Date.now() < _catalogExpires) return _catalogCache;
+
+// Build the catalog from a union of high-stock countries. ~6s on a cold cache
+// (4 country calls through the 1.8s-gapped queue). Kept separate so getServiceCatalog
+// can single-flight it and serve a warmed list stale-while-revalidate — a bare
+// await here exceeded the rental endpoint's race budget and left the list empty.
+const _buildServiceCatalog = async () => {
   try {
     // Union services across a few high-stock countries. Sampling a single
     // country (e.g. UK, which can sit at 0 available numbers → empty services)
@@ -163,6 +168,18 @@ const getServiceCatalog = async () => {
     logger.warn(`GetSMS getServiceCatalog: ${err.message}`);
     return _catalogCache || [];
   }
+};
+
+const getServiceCatalog = async () => {
+  if (_catalogCache && Date.now() < _catalogExpires) return _catalogCache;
+  // Single-flight the rebuild so N concurrent rental loads share one build, not N.
+  if (!_catalogInflight) {
+    _catalogInflight = _buildServiceCatalog().finally(() => { _catalogInflight = null; });
+  }
+  // Stale-while-revalidate: once we have ANY catalog, serve it instantly and let
+  // the rebuild finish in the background; only a truly cold cache awaits the build.
+  if (_catalogCache) return _catalogCache;
+  return _catalogInflight;
 };
 
 // Slug → numeric ID lookup. Async because it may need to load the catalog.
