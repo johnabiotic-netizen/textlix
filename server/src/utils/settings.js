@@ -10,4 +10,14 @@ const getSettingNum = async (key, defaultVal) => {
   return val !== null ? parseFloat(val) : defaultVal;
 };
 
-module.exports = { getSetting, getSettingNum };
+// Upsert a setting. `value` is stored as a string (the column type), so JSON
+// snapshots should be JSON.stringify'd by the caller.
+const setSetting = async (key, value) => {
+  await PlatformSettings.updateOne(
+    { key },
+    { $set: { value: String(value) } },
+    { upsert: true }
+  );
+};
+
+module.exports = { getSetting, getSettingNum, setSetting };

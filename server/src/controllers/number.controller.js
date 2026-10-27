@@ -16,7 +16,7 @@ const smspva = require('../providers/sms/smspva.provider');
 const smsbus = require('../providers/sms/smsbus.provider');
 const AppError = require('../utils/AppError');
 const { success } = require('../utils/response');
-const { getSettingNum } = require('../utils/settings');
+const { getSettingNum, getSetting, setSetting } = require('../utils/settings');
 const logger = require('../config/logger');
 
 // Fallback ISO → 5sim slug map for countries where fivesimSlug isn't set in DB yet
@@ -695,11 +695,24 @@ exports.getServiceList = async (req, res, next) => {
       for (const c of [...(gsCatalog || []), ...(pvaCatalog || [])]) {
         if (c?.slug && !bySlug.has(c.slug)) bySlug.set(c.slug, c);
       }
-      const catalog = [...bySlug.values()];
+      let catalog = [...bySlug.values()];
+
+      // The live catalog is an in-memory cache that a restart (every deploy) wipes,
+      // and the cold rebuild can miss the race budget when the provider is slow —
+      // which left the service list blank. Persist a good live result as a DB
+      // snapshot and serve that snapshot when the live build comes back empty, so
+      // the list survives restarts and provider hiccups.
+      if (catalog.length) {
+        setSetting('rental_catalog_services', JSON.stringify(catalog)).catch(() => {});
+      } else {
+        const snap = await getSetting('rental_catalog_services').catch(() => null);
+        if (snap) { try { catalog = JSON.parse(snap) || []; } catch { catalog = []; } }
+      }
+
       // Enrich with DB Service icon/displayName where one exists
       const dbServices = await Service.find({ slug: { $in: catalog.map((c) => c.slug) }, isEnabled: true });
       const dbBySlug = Object.fromEntries(dbServices.map((s) => [s.slug, s]));
-      const result = catalog
+      let result = catalog
         .map((c) => {
           const db = dbBySlug[c.slug];
           return {
@@ -710,6 +723,17 @@ exports.getServiceList = async (req, res, next) => {
           };
         })
         .sort((a, b) => a.name.localeCompare(b.name));
+
+      // Last-resort fallback: no live catalog AND no snapshot yet (e.g. a brand-new
+      // deploy that has never built the catalog). Show the DB service list so the
+      // page is usable; the live catalog refines it (and seeds the snapshot) next load.
+      if (result.length === 0) {
+        const all = await Service.find({ isEnabled: true }, 'slug name icon sortOrder').sort({ sortOrder: 1, name: 1 });
+        result = all
+          .map((s) => ({ id: s._id.toString(), slug: s.slug, name: s.name, icon: s.icon || null }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+      }
+
       return success(res, { services: result });
     }
 
