@@ -30,6 +30,43 @@ const QUICK_SERVICES = [
   { slug: 'facebook',  label: 'Facebook',  emoji: '📘', bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
 ];
 
+function RentalRelaunchModal({ onDismiss }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-8 shadow-2xl">
+        <div className="text-center mb-6">
+          <div className="text-5xl mb-3">📅</div>
+          <h2 className="font-display font-bold text-2xl text-gray-900 dark:text-white mb-2">Rentals are back!</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">We fixed the issues — long-term number rentals are working smoothly again.</p>
+        </div>
+        <div className="space-y-4 mb-8">
+          {[
+            { icon: '📅', title: 'Rent for 1–30 days', desc: 'Keep the same number for as long as you need it.' },
+            { icon: '🔁', title: 'Unlimited codes, one number', desc: 'Every SMS for that service lands on the same number.' },
+            { icon: '✅', title: 'Fixed & fast again', desc: 'The slow loading and pricing issues are resolved.' },
+          ].map((s) => (
+            <div key={s.title} className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 flex items-center justify-center text-base shrink-0">{s.icon}</div>
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white">{s.title}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-3">
+          <Link to="/numbers/rental" onClick={onDismiss} className="flex-1 bg-brand-600 text-white text-center font-semibold py-3 rounded-xl hover:bg-brand-700 transition-colors">
+            Try a rental
+          </Link>
+          <button onClick={onDismiss} className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
+            Maybe later
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OnboardingModal({ onDismiss }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -76,11 +113,34 @@ export default function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem('textlix_onboarded');
   });
+  // "Rentals are back" relaunch modal — shown to EXISTING users only (onboarding
+  // already done) so it never stacks with the new-user onboarding. Shows up to 5
+  // times total, at most once per session (so navigating around the dashboard
+  // in one session doesn't burn through all 5 at once).
+  const [showRentalRelaunch, setShowRentalRelaunch] = useState(() => {
+    const onboarded = !!localStorage.getItem('textlix_onboarded');
+    const count = parseInt(localStorage.getItem('textlix_rental_relaunch_count') || '0', 10);
+    return onboarded && count < 5 && !sessionStorage.getItem('textlix_rental_relaunch_session');
+  });
 
   const dismissOnboarding = () => {
     localStorage.setItem('textlix_onboarded', '1');
     setShowOnboarding(false);
   };
+
+  const dismissRentalRelaunch = () => {
+    setShowRentalRelaunch(false);
+  };
+
+  // Count this session's display once (guard also prevents a double-count under
+  // React StrictMode's double-invoke in dev).
+  useEffect(() => {
+    if (!showRentalRelaunch) return;
+    if (sessionStorage.getItem('textlix_rental_relaunch_session')) return;
+    const count = parseInt(localStorage.getItem('textlix_rental_relaunch_count') || '0', 10);
+    localStorage.setItem('textlix_rental_relaunch_count', String(count + 1));
+    sessionStorage.setItem('textlix_rental_relaunch_session', '1');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: activeData, isLoading: loadingActive, refetch } = useQuery({
     queryKey: ['activeOrders'],
@@ -142,6 +202,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {showOnboarding && <OnboardingModal onDismiss={dismissOnboarding} />}
+      {!showOnboarding && showRentalRelaunch && <RentalRelaunchModal onDismiss={dismissRentalRelaunch} />}
 
       {/* ── Welcome banner ─────────────────────────────────────────────────── */}
       <div className="bg-gradient-to-r from-[#0A1831] to-brand-600 rounded-2xl p-6 md:p-8 text-white">
