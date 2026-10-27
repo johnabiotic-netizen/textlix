@@ -635,6 +635,12 @@ const CATALOG_RACE_MS = 3000;
 // served stale-while-revalidate in the providers, so this longer wait only ever
 // hits the first cold load after a deploy / cache expiry; everyone after is instant.
 const CATALOG_SVC_RACE_MS = 10000;
+// Live rental price for one (country, service). Healthy is <2s; cap it so a slow
+// upstream / queue backlog can't leave the "Loading pricing…" modal spinning
+// forever. On timeout we return null (modal shows "not available"), but the
+// underlying call keeps running and warms getCountryData's 30-min cache, so a
+// retry resolves instantly with real prices.
+const RENTAL_PRICE_RACE_MS = 15000;
 const raceOr = (promise, fallback, ms = CATALOG_RACE_MS) =>
   Promise.race([promise, new Promise((r) => setTimeout(() => r(fallback), ms))]);
 
@@ -1610,8 +1616,8 @@ exports.getRentalPrice = async (req, res, next) => {
     // LIX 1 (get-sms) always; LIX 2 (SMSPVA) only when flag-enabled — fetched
     // in parallel so the slower provider never delays the other.
     const [lix1Prices, lix2Prices] = await Promise.all([
-      getRentalPrices('getsms', country.code, serviceSlug),
-      smspvaRentalEnabled() ? getRentalPrices('smspva', country.code, serviceSlug) : Promise.resolve(null),
+      raceOr(getRentalPrices('getsms', country.code, serviceSlug), null, RENTAL_PRICE_RACE_MS),
+      smspvaRentalEnabled() ? raceOr(getRentalPrices('smspva', country.code, serviceSlug), null, RENTAL_PRICE_RACE_MS) : Promise.resolve(null),
     ]);
 
     const options = toOptions(lix1Prices);
